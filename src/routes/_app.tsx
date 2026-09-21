@@ -1,6 +1,4 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import { useConvexAuth } from "convex/react"
-import { useEffect } from "react"
 
 import { AppShell } from "@/components/app-shell"
 
@@ -16,14 +14,6 @@ export const Route = createFileRoute("/_app")({
 })
 
 function AppLayout() {
-  const { isAuthenticated, isLoading } = useConvexAuth()
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      window.location.replace("/connexion")
-    }
-  }, [isAuthenticated, isLoading])
-
   return (
     <AppShell>
       <Outlet />
