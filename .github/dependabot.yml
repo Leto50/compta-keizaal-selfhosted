@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 1
+    ignore:
+      # Keep Node types aligned with the Node 22 container runtime.
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
+    groups:
+      # Review Better Auth together with its Convex adapter.
+      authentication:
+        patterns:
+          - "better-auth"
+          - "@convex-dev/better-auth"
+      # Major upgrades stay in separate PRs for compatibility review.
+      maintenance:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

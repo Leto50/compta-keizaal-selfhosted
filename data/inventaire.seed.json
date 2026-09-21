@@ -1,0 +1,4616 @@
+{
+  "bundles": [
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:3",
+          "productName": "potion médicinale",
+          "quantity": 1
+        },
+        {
+          "legacyKey": "bundle-item:4",
+          "productName": "potions de soin mineur",
+          "quantity": 2
+        }
+      ],
+      "legacyKey": "bundle:l-aventurier-en-herbe",
+      "name": "L'aventurier en herbe",
+      "price": 29
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:8",
+          "productName": "potions de soin mineur",
+          "quantity": 11
+        }
+      ],
+      "legacyKey": "bundle:lot-de-soin-mineur",
+      "name": "Lot de soin mineur",
+      "price": 120
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:12",
+          "productName": "potions médicinale",
+          "quantity": 9
+        },
+        {
+          "legacyKey": "bundle-item:13",
+          "productName": "potion de soin mineur",
+          "quantity": 1
+        }
+      ],
+      "legacyKey": "bundle:lot-de-guerison",
+      "name": "Lot de Guérison",
+      "price": 99
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:18",
+          "productName": "Potions de berserker",
+          "quantity": 3
+        },
+        {
+          "legacyKey": "bundle-item:19",
+          "productName": "Potion de pied léger",
+          "quantity": 1
+        },
+        {
+          "legacyKey": "bundle-item:20",
+          "productName": "Potion de récupération",
+          "quantity": 1
+        }
+      ],
+      "legacyKey": "bundle:le-berserker",
+      "name": "Le Berserker",
+      "price": 70
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:24",
+          "productName": "Breuvages du guerrier",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:25",
+          "productName": "Potions de soin mineur",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:26",
+          "productName": "Breuvage de vigueur améliorée",
+          "quantity": 1
+        }
+      ],
+      "legacyKey": "bundle:le-dueliste",
+      "name": "Le Dueliste",
+      "price": 80
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:30",
+          "productName": "Potions de résistance magique",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:31",
+          "productName": "Potions de soin moyenne",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:32",
+          "productName": "Potion de soin profuse",
+          "quantity": 1
+        },
+        {
+          "legacyKey": "bundle-item:33",
+          "productName": "Potion médicinale",
+          "quantity": 1
+        }
+      ],
+      "legacyKey": "bundle:le-prudent",
+      "name": "Le Prudent",
+      "price": 90
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:37",
+          "productName": "Breuvages du guérisseur",
+          "quantity": 3
+        },
+        {
+          "legacyKey": "bundle-item:38",
+          "productName": "Potions de puissance durable",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:39",
+          "productName": "Potions médicinales",
+          "quantity": 2
+        }
+      ],
+      "legacyKey": "bundle:le-guerisseur",
+      "name": "Le Guérisseur",
+      "price": 110
+    },
+    {
+      "items": [
+        {
+          "legacyKey": "bundle-item:43",
+          "productName": "Potions de pied léger",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:44",
+          "productName": "Breuvages de récupération",
+          "quantity": 2
+        },
+        {
+          "legacyKey": "bundle-item:45",
+          "productName": "Breuvages de vigueur améliorée",
+          "quantity": 2
+        }
+      ],
+      "legacyKey": "bundle:le-sprinter",
+      "name": "Le Sprinter",
+      "price": 100
+    }
+  ],
+  "characters": [
+    {
+      "legacyKey": "character:alixard-veliane",
+      "name": "Alixard Veliane"
+    },
+    {
+      "legacyKey": "character:anoril-aliaria",
+      "name": "Anoril Aliaria"
+    },
+    {
+      "legacyKey": "character:denel-arverni",
+      "name": "Denel Arverni"
+    },
+    {
+      "legacyKey": "character:gand-ulf",
+      "name": "Gand Ulf"
+    },
+    {
+      "legacyKey": "character:grydine-palatine",
+      "name": "Grydine Palatine"
+    }
+  ],
+  "contacts": [
+    {
+      "kind": "supplier",
+      "legacyKey": "contact:supplier:akarion",
+      "name": "Akarion"
+    },
+    {
+      "kind": "supplier",
+      "legacyKey": "contact:supplier:alchimiste faillaise",
+      "name": "Alchimiste Faillaise"
+    },
+    {
+      "kind": "supplier",
+      "legacyKey": "contact:supplier:ferme de blancherive",
+      "name": "Ferme de Blancherive"
+    },
+    {
+      "kind": "client",
+      "legacyKey": "contact:client:garde de solitude",
+      "name": "Garde de Solitude"
+    },
+    {
+      "kind": "supplier",
+      "legacyKey": "contact:supplier:gue du sombreflot",
+      "name": "Gué du sombreflot"
+    },
+    {
+      "kind": "client",
+      "legacyKey": "contact:client:jahim al suna",
+      "name": "Jahim Al Suna"
+    },
+    {
+      "kind": "client",
+      "legacyKey": "contact:client:khlic khlac",
+      "name": "Khlic-Khlac"
+    },
+    {
+      "kind": "supplier",
+      "legacyKey": "contact:supplier:laenor mistyshore ferme de rorickbourg",
+      "name": "Laenor Mistyshore, Ferme de Rorickbourg"
+    },
+    {
+      "kind": "supplier",
+      "legacyKey": "contact:supplier:mordred",
+      "name": "Mordred"
+    },
+    {
+      "kind": "client",
+      "legacyKey": "contact:client:thalmor",
+      "name": "Thalmor"
+    },
+    {
+      "kind": "client",
+      "legacyKey": "contact:client:zahreen",
+      "name": "Zahreen"
+    }
+  ],
+  "metadata": {
+    "schemaVersion": 1,
+    "sourceModifiedAt": "2026-08-31T14:46:14.500Z",
+    "sourceWorkbook": "Copie de Inventaire au 19_08.xlsx",
+    "stats": {
+      "bundles": 8,
+      "characters": 5,
+      "contacts": 11,
+      "orders": 12,
+      "products": 84,
+      "recipes": 35,
+      "transactions": 232
+    }
+  },
+  "orders": [
+    {
+      "contactName": "Thalmor",
+      "kind": "client",
+      "legacyKey": "order:client:thalmor-3150-2026-07-25t00-00-00-000z",
+      "lines": [
+        {
+          "legacyKey": "order-line:client:3",
+          "productName": "Soin moyen",
+          "quantity": 150,
+          "total": 2550,
+          "unitPrice": 17
+        },
+        {
+          "legacyKey": "order-line:client:4",
+          "productName": "Potion Puissance durable",
+          "quantity": 30,
+          "total": 600,
+          "unitPrice": 20
+        }
+      ],
+      "status": "open",
+      "dueAt": 1784980800000,
+      "total": 3150
+    },
+    {
+      "contactName": "Akarion",
+      "kind": "supplier",
+      "legacyKey": "order:supplier:akarion-3",
+      "lines": [
+        {
+          "legacyKey": "order-line:supplier:3",
+          "productName": "Blé",
+          "quantity": 1000,
+          "unitPrice": 0.7,
+          "total": 700
+        }
+      ],
+      "status": "open",
+      "dueAt": 1788177600000,
+      "total": 700
+    },
+    {
+      "contactName": "Ferme de Blancherive",
+      "kind": "supplier",
+      "legacyKey": "order:supplier:ferme-de-blancherive-5",
+      "lines": [
+        {
+          "legacyKey": "order-line:supplier:5",
+          "productName": "Raisin de Jazbai",
+          "quantity": 1000,
+          "unitPrice": 0.1,
+          "total": 250
+        }
+      ],
+      "status": "open",
+      "dueAt": 1785240000000,
+      "total": 250
+    },
+    {
+      "contactName": "Khlic-Khlac",
+      "kind": "client",
+      "legacyKey": "order:client:khlic-khlac-1100",
+      "lines": [
+        {
+          "legacyKey": "order-line:client:6",
+          "productName": "Bière",
+          "quantity": 150,
+          "total": 500,
+          "unitPrice": 3.3333333333333335
+        },
+        {
+          "legacyKey": "order-line:client:7",
+          "productName": "Vin",
+          "quantity": 150,
+          "total": 600,
+          "unitPrice": 4
+        }
+      ],
+      "status": "open",
+      "notes": "750 blé 300 lavande 1200 raisins 450 hivernelle",
+      "total": 1100
+    },
+    {
+      "contactName": "Laenor Mistyshore, Ferme de Rorickbourg",
+      "kind": "supplier",
+      "legacyKey": "order:supplier:laenor-mistyshore-ferme-de-rorickbourg-7",
+      "lines": [
+        {
+          "legacyKey": "order-line:supplier:7",
+          "productName": "Blé",
+          "quantity": 315,
+          "unitPrice": 1.5,
+          "total": 300
+        }
+      ],
+      "status": "open",
+      "dueAt": 1785240000000,
+      "total": 300
+    },
+    {
+      "contactName": "Garde de Solitude",
+      "kind": "client",
+      "legacyKey": "order:client:garde-de-solitude-994-12-livre-le-01-08-26",
+      "lines": [
+        {
+          "legacyKey": "order-line:client:9",
+          "productName": "Potion médicinale",
+          "quantity": 25,
+          "total": 275,
+          "unitPrice": 11
+        },
+        {
+          "legacyKey": "order-line:client:10",
+          "productName": "Soin mineur",
+          "quantity": 50,
+          "total": 600,
+          "unitPrice": 12
+        },
+        {
+          "legacyKey": "order-line:client:11",
+          "productName": "Soin moyen",
+          "quantity": 15,
+          "total": 255,
+          "unitPrice": 17
+        }
+      ],
+      "status": "delivered",
+      "dueLabel": "Livré le 01/08/26",
+      "notes": "455 blé, 120 pied de lutin, 900 lys bleu, 175 cosse..."
+    },
+    {
+      "contactName": "Alchimiste Faillaise",
+      "kind": "supplier",
+      "legacyKey": "order:supplier:alchimiste-faillaise-9",
+      "lines": [
+        {
+          "legacyKey": "order-line:supplier:9",
+          "productName": "Pholiote à écaille",
+          "quantity": 200
+        }
+      ],
+      "status": "open"
+    },
+    {
+      "contactName": "Gué du sombreflot",
+      "kind": "supplier",
+      "legacyKey": "order:supplier:gue-du-sombreflot-11",
+      "lines": [
+        {
+          "legacyKey": "order-line:supplier:11",
+          "productName": "Raisin",
+          "quantity": 1200,
+          "total": 240
+        }
+      ],
+      "status": "open"
+    },
+    {
+      "contactName": "Zahreen",
+      "kind": "client",
+      "legacyKey": "order:client:zahreen-350-debut-de-semaine",
+      "lines": [
+        {
+          "legacyKey": "order-line:client:13",
+          "productName": "Potion médicinale",
+          "quantity": 5,
+          "total": 55,
+          "unitPrice": 11
+        },
+        {
+          "legacyKey": "order-line:client:14",
+          "productName": "Potion de soin mineur",
+          "quantity": 10,
+          "total": 120,
+          "unitPrice": 12
+        },
+        {
+          "legacyKey": "order-line:client:15",
+          "productName": "Potion de soin",
+          "quantity": 5,
+          "total": 85,
+          "unitPrice": 17
+        },
+        {
+          "legacyKey": "order-line:client:16",
+          "productName": "Potion de récupération",
+          "quantity": 5,
+          "total": 85,
+          "unitPrice": 17
+        }
+      ],
+      "status": "open",
+      "dueLabel": "Début de semaine",
+      "notes": "15 ail, 25, oeuf de poisson c., 35 cosse, 200 lys bleu, 105 blé, 40 pied de lutin, 40 amanite, 40 pholiote",
+      "total": 350
+    },
+    {
+      "contactName": "Mordred",
+      "kind": "supplier",
+      "legacyKey": "order:supplier:mordred-14",
+      "lines": [
+        {
+          "legacyKey": "order-line:supplier:14",
+          "productName": "Lys bleu",
+          "quantity": 2000,
+          "total": 200
+        }
+      ],
+      "status": "open",
+      "dueLabel": "milieu de semaine",
+      "total": 200
+    },
+    {
+      "contactName": "Jahim Al Suna",
+      "kind": "client",
+      "legacyKey": "order:client:jahim-al-suna-1100-debut-de-semaine",
+      "lines": [
+        {
+          "legacyKey": "order-line:client:22",
+          "productName": "Bière",
+          "quantity": 150,
+          "total": 500,
+          "unitPrice": 3.3333333333333335
+        },
+        {
+          "legacyKey": "order-line:client:23",
+          "productName": "Vin",
+          "quantity": 150,
+          "total": 600,
+          "unitPrice": 4
+        }
+      ],
+      "status": "open",
+      "dueLabel": "Début de semaine",
+      "total": 1100
+    },
+    {
+      "contactName": "Garde de Solitude",
+      "kind": "client",
+      "legacyKey": "order:client:garde-de-solitude-935-reduit-a-800-livre-le-11-08-26",
+      "lines": [
+        {
+          "legacyKey": "order-line:client:25",
+          "productName": "Potion médicinale",
+          "quantity": 10,
+          "total": 110,
+          "unitPrice": 11
+        },
+        {
+          "legacyKey": "order-line:client:26",
+          "productName": "Soin mineur",
+          "quantity": 30,
+          "total": 360,
+          "unitPrice": 12
+        },
+        {
+          "legacyKey": "order-line:client:27",
+          "productName": "Soin moyen",
+          "quantity": 20,
+          "total": 340,
+          "unitPrice": 17
+        },
+        {
+          "legacyKey": "order-line:client:28",
+          "productName": "Soin profus",
+          "quantity": 5,
+          "total": 125,
+          "unitPrice": 25
+        }
+      ],
+      "status": "delivered",
+      "dueLabel": "Livré le 11/08/26",
+      "notes": "385 blé, ?? pied de lutin, ?? lys bleu, ?? cosse..."
+    }
+  ],
+  "products": [
+    {
+      "category": "ingredient",
+      "currentStock": 1459,
+      "minimumStock": 50,
+      "name": "Ail",
+      "purchasePrice": 0.3333333333333333,
+      "tracksStock": true,
+      "legacyKey": "product:ail",
+      "normalizedName": "ail"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 673,
+      "minimumStock": 50,
+      "name": "Amanite t.m.",
+      "purchasePrice": 0.125,
+      "tracksStock": true,
+      "legacyKey": "product:amanite t m",
+      "normalizedName": "amanite t m"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 28,
+      "minimumStock": 50,
+      "name": "Amethyste",
+      "purchasePrice": 1,
+      "tracksStock": true,
+      "legacyKey": "product:amethyste",
+      "normalizedName": "amethyste"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Bière",
+      "salePrice": 7,
+      "tracksStock": true,
+      "legacyKey": "product:biere",
+      "normalizedName": "biere"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 913,
+      "minimumStock": 50,
+      "name": "Blé",
+      "purchasePrice": 0.5,
+      "tracksStock": true,
+      "legacyKey": "product:ble",
+      "normalizedName": "ble"
+    },
+    {
+      "category": "potion",
+      "currentStock": 11,
+      "minimumStock": 5,
+      "name": "Breuvage Berserker",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage berserker",
+      "normalizedName": "breuvage berserker"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Breuvage Destruction",
+      "salePrice": 60,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage destruction",
+      "normalizedName": "breuvage destruction"
+    },
+    {
+      "category": "potion",
+      "currentStock": 4,
+      "minimumStock": 5,
+      "name": "Breuvage Guérisseur",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage guerisseur",
+      "normalizedName": "breuvage guerisseur"
+    },
+    {
+      "category": "potion",
+      "currentStock": 6,
+      "minimumStock": 5,
+      "name": "Breuvage Guerrier",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage guerrier",
+      "normalizedName": "breuvage guerrier"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Breuvage Magie accrue",
+      "salePrice": 0,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage magie accrue",
+      "normalizedName": "breuvage magie accrue"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Breuvage Puissance durable",
+      "salePrice": 60,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage puissance durable",
+      "normalizedName": "breuvage puissance durable"
+    },
+    {
+      "category": "potion",
+      "currentStock": 4,
+      "minimumStock": 5,
+      "name": "Breuvage Récupération",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage recuperation",
+      "normalizedName": "breuvage recuperation"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Breuvage Résistance magique",
+      "salePrice": 40,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage resistance magique",
+      "normalizedName": "breuvage resistance magique"
+    },
+    {
+      "category": "potion",
+      "currentStock": 10,
+      "minimumStock": 5,
+      "name": "Breuvage Vigueur améliorée",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:breuvage vigueur amelioree",
+      "normalizedName": "breuvage vigueur amelioree"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 943,
+      "minimumStock": 50,
+      "name": "Champignon luisant",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:champignon luisant",
+      "normalizedName": "champignon luisant"
+    },
+    {
+      "category": "potion",
+      "currentStock": 1,
+      "minimumStock": 2,
+      "name": "Chevalier",
+      "salePrice": 12,
+      "tracksStock": true,
+      "legacyKey": "product:chevalier",
+      "normalizedName": "chevalier"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 630,
+      "minimumStock": 50,
+      "name": "Cosse",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:cosse",
+      "normalizedName": "cosse"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 1203,
+      "minimumStock": 50,
+      "name": "Coton",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:coton",
+      "normalizedName": "coton"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 1223,
+      "minimumStock": 50,
+      "name": "Couronne sanglante",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:couronne sanglante",
+      "normalizedName": "couronne sanglante"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 2,
+      "minimumStock": 50,
+      "name": "Ectoplasme",
+      "purchasePrice": 5,
+      "tracksStock": true,
+      "legacyKey": "product:ectoplasme",
+      "normalizedName": "ectoplasme"
+    },
+    {
+      "category": "potion",
+      "currentStock": 3,
+      "minimumStock": 2,
+      "name": "Escarmoucheur",
+      "salePrice": 12,
+      "tracksStock": true,
+      "legacyKey": "product:escarmoucheur",
+      "normalizedName": "escarmoucheur"
+    },
+    {
+      "category": "potion",
+      "currentStock": 8,
+      "minimumStock": 2,
+      "name": "Force",
+      "salePrice": 12,
+      "tracksStock": true,
+      "legacyKey": "product:force",
+      "normalizedName": "force"
+    },
+    {
+      "category": "potion",
+      "currentStock": 2,
+      "minimumStock": 2,
+      "name": "Forgeron",
+      "tracksStock": true,
+      "legacyKey": "product:forgeron",
+      "normalizedName": "forgeron"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 96,
+      "minimumStock": 50,
+      "name": "Gemme insignifiante",
+      "purchasePrice": 0.2,
+      "tracksStock": true,
+      "legacyKey": "product:gemme insignifiante",
+      "normalizedName": "gemme insignifiante"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 943,
+      "minimumStock": 50,
+      "name": "Genièvres",
+      "purchasePrice": 0.125,
+      "tracksStock": true,
+      "legacyKey": "product:genievres",
+      "normalizedName": "genievres"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 4826,
+      "minimumStock": 50,
+      "name": "Givreboise",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:givreboise",
+      "normalizedName": "givreboise"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 167,
+      "minimumStock": 50,
+      "name": "Graisse de troll",
+      "purchasePrice": 3,
+      "tracksStock": true,
+      "legacyKey": "product:graisse de troll",
+      "normalizedName": "graisse de troll"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 115,
+      "minimumStock": 50,
+      "name": "Griffe d'ours",
+      "purchasePrice": 3,
+      "tracksStock": true,
+      "legacyKey": "product:griffe d ours",
+      "normalizedName": "griffe d ours"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 448,
+      "minimumStock": 50,
+      "name": "Hivernelle",
+      "purchasePrice": 0.5,
+      "tracksStock": true,
+      "legacyKey": "product:hivernelle",
+      "normalizedName": "hivernelle"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Hydromelle",
+      "salePrice": 17,
+      "tracksStock": true,
+      "legacyKey": "product:hydromelle",
+      "normalizedName": "hydromelle"
+    },
+    {
+      "category": "potion",
+      "currentStock": 2,
+      "minimumStock": 2,
+      "name": "Invocateur",
+      "tracksStock": true,
+      "legacyKey": "product:invocateur",
+      "normalizedName": "invocateur"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 2416,
+      "minimumStock": 50,
+      "name": "Langue de dragon",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:langue de dragon",
+      "normalizedName": "langue de dragon"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 1799,
+      "minimumStock": 50,
+      "name": "Lavande",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:lavande",
+      "normalizedName": "lavande"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 324,
+      "minimumStock": 50,
+      "name": "Lichen Geant",
+      "purchasePrice": 0.2,
+      "tracksStock": true,
+      "legacyKey": "product:lichen geant",
+      "normalizedName": "lichen geant"
+    },
+    {
+      "category": "service",
+      "currentStock": 0,
+      "minimumStock": 0,
+      "name": "Location table citoyen",
+      "salePrice": 10,
+      "tracksStock": false,
+      "legacyKey": "product:location table citoyen",
+      "normalizedName": "location table citoyen"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 6026,
+      "minimumStock": 50,
+      "name": "Lys bleu",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:lys bleu",
+      "normalizedName": "lys bleu"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 1721,
+      "minimumStock": 50,
+      "name": "Lys rouge",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:lys rouge",
+      "normalizedName": "lys rouge"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 2132,
+      "minimumStock": 50,
+      "name": "Lys violet",
+      "purchasePrice": 0.06666666666666667,
+      "tracksStock": true,
+      "legacyKey": "product:lys violet",
+      "normalizedName": "lys violet"
+    },
+    {
+      "category": "potion",
+      "currentStock": 24,
+      "minimumStock": 5,
+      "name": "Mana Mineur",
+      "salePrice": 12,
+      "tracksStock": true,
+      "legacyKey": "product:mana mineur",
+      "normalizedName": "mana mineur"
+    },
+    {
+      "category": "potion",
+      "currentStock": 7,
+      "minimumStock": 5,
+      "name": "Mana Moyen",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:mana moyen",
+      "normalizedName": "mana moyen"
+    },
+    {
+      "category": "potion",
+      "currentStock": 1,
+      "minimumStock": 5,
+      "name": "Mana Profus",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:mana profus",
+      "normalizedName": "mana profus"
+    },
+    {
+      "category": "potion",
+      "currentStock": 27,
+      "minimumStock": 5,
+      "name": "Médicinale",
+      "salePrice": 11,
+      "tracksStock": true,
+      "legacyKey": "product:medicinale",
+      "normalizedName": "medicinale"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 35,
+      "minimumStock": 50,
+      "name": "Miel",
+      "purchasePrice": 1.5,
+      "tracksStock": true,
+      "legacyKey": "product:miel",
+      "normalizedName": "miel"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 452,
+      "minimumStock": 50,
+      "name": "Mora tapinella",
+      "purchasePrice": 0.16666666666666666,
+      "tracksStock": true,
+      "legacyKey": "product:mora tapinella",
+      "normalizedName": "mora tapinella"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 66,
+      "minimumStock": 50,
+      "name": "Oeil de smilodon",
+      "purchasePrice": 3,
+      "tracksStock": true,
+      "legacyKey": "product:oeil de smilodon",
+      "normalizedName": "oeil de smilodon"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 953,
+      "minimumStock": 50,
+      "name": "Oeuf de chaurus",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:oeuf de chaurus",
+      "normalizedName": "oeuf de chaurus"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 378,
+      "minimumStock": 50,
+      "name": "Oeuf de fauvette",
+      "purchasePrice": 1,
+      "tracksStock": true,
+      "legacyKey": "product:oeuf de fauvette",
+      "normalizedName": "oeuf de fauvette"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 590,
+      "minimumStock": 50,
+      "name": "Oeuf de poisson carnassier",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:oeuf de poisson carnassier",
+      "normalizedName": "oeuf de poisson carnassier"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 6086,
+      "minimumStock": 50,
+      "name": "Oreilles d'elfes",
+      "purchasePrice": 0,
+      "tracksStock": true,
+      "legacyKey": "product:oreilles d elfes",
+      "normalizedName": "oreilles d elfes"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 826,
+      "minimumStock": 50,
+      "name": "Pholiote à écaille",
+      "purchasePrice": 0.2,
+      "tracksStock": true,
+      "legacyKey": "product:pholiote a ecaille",
+      "normalizedName": "pholiote a ecaille"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 284,
+      "minimumStock": 50,
+      "name": "Pied de lutin",
+      "purchasePrice": 0.25,
+      "tracksStock": true,
+      "legacyKey": "product:pied de lutin",
+      "normalizedName": "pied de lutin"
+    },
+    {
+      "category": "potion",
+      "currentStock": 2,
+      "minimumStock": 5,
+      "name": "Pied léger",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:pied leger",
+      "normalizedName": "pied leger"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 685,
+      "minimumStock": 50,
+      "name": "Plante grimpante",
+      "purchasePrice": 0.25,
+      "tracksStock": true,
+      "legacyKey": "product:plante grimpante",
+      "normalizedName": "plante grimpante"
+    },
+    {
+      "category": "potion",
+      "currentStock": 72,
+      "minimumStock": 5,
+      "name": "Potion Berserker",
+      "salePrice": 15,
+      "tracksStock": true,
+      "legacyKey": "product:potion berserker",
+      "normalizedName": "potion berserker"
+    },
+    {
+      "category": "potion",
+      "currentStock": 1,
+      "minimumStock": 5,
+      "name": "Potion Destruction",
+      "salePrice": 35,
+      "tracksStock": true,
+      "legacyKey": "product:potion destruction",
+      "normalizedName": "potion destruction"
+    },
+    {
+      "category": "potion",
+      "currentStock": 33,
+      "minimumStock": 5,
+      "name": "Potion Guérisseur",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:potion guerisseur",
+      "normalizedName": "potion guerisseur"
+    },
+    {
+      "category": "potion",
+      "currentStock": 17,
+      "minimumStock": 5,
+      "name": "Potion Guerrier",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:potion guerrier",
+      "normalizedName": "potion guerrier"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Potion Magie accrue",
+      "salePrice": 0,
+      "tracksStock": true,
+      "legacyKey": "product:potion magie accrue",
+      "normalizedName": "potion magie accrue"
+    },
+    {
+      "category": "potion",
+      "currentStock": 25,
+      "minimumStock": 5,
+      "name": "Potion Puissance durable",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:potion puissance durable",
+      "normalizedName": "potion puissance durable"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Potion Récupération",
+      "salePrice": 17,
+      "tracksStock": true,
+      "legacyKey": "product:potion recuperation",
+      "normalizedName": "potion recuperation"
+    },
+    {
+      "category": "potion",
+      "currentStock": 9,
+      "minimumStock": 5,
+      "name": "Potion Résistance magique",
+      "salePrice": 15,
+      "tracksStock": true,
+      "legacyKey": "product:potion resistance magique",
+      "normalizedName": "potion resistance magique"
+    },
+    {
+      "category": "potion",
+      "currentStock": 13,
+      "minimumStock": 5,
+      "name": "Potion Vigueur améliorée",
+      "salePrice": 15,
+      "tracksStock": true,
+      "legacyKey": "product:potion vigueur amelioree",
+      "normalizedName": "potion vigueur amelioree"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 345,
+      "minimumStock": 50,
+      "name": "Racine de canis",
+      "purchasePrice": 0.2,
+      "tracksStock": true,
+      "legacyKey": "product:racine de canis",
+      "normalizedName": "racine de canis"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 1543,
+      "minimumStock": 50,
+      "name": "Raisin jasbay",
+      "purchasePrice": 0.16666666666666666,
+      "tracksStock": true,
+      "legacyKey": "product:raisin jasbay",
+      "normalizedName": "raisin jasbay"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 430,
+      "minimumStock": 50,
+      "name": "Rayon de miel",
+      "purchasePrice": 3,
+      "tracksStock": true,
+      "legacyKey": "product:rayon de miel",
+      "normalizedName": "rayon de miel"
+    },
+    {
+      "category": "potion",
+      "currentStock": 1,
+      "minimumStock": 2,
+      "name": "Res. feu",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:res feu",
+      "normalizedName": "res feu"
+    },
+    {
+      "category": "potion",
+      "currentStock": 1,
+      "minimumStock": 2,
+      "name": "Res. foudre",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:res foudre",
+      "normalizedName": "res foudre"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 2,
+      "name": "Res. Glace",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:res glace",
+      "normalizedName": "res glace"
+    },
+    {
+      "category": "potion",
+      "currentStock": 5,
+      "minimumStock": 2,
+      "name": "Respiration aqua.",
+      "salePrice": 10,
+      "tracksStock": true,
+      "legacyKey": "product:respiration aqua",
+      "normalizedName": "respiration aqua"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 6,
+      "minimumStock": 50,
+      "name": "Rubis",
+      "tracksStock": true,
+      "legacyKey": "product:rubis",
+      "normalizedName": "rubis"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 6,
+      "minimumStock": 50,
+      "name": "Saphir",
+      "tracksStock": true,
+      "legacyKey": "product:saphir",
+      "normalizedName": "saphir"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 2110,
+      "minimumStock": 50,
+      "name": "Sel",
+      "purchasePrice": 0,
+      "tracksStock": true,
+      "legacyKey": "product:sel",
+      "normalizedName": "sel"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 0,
+      "minimumStock": 50,
+      "name": "Sel de Feu",
+      "purchasePrice": 2,
+      "tracksStock": true,
+      "legacyKey": "product:sel de feu",
+      "normalizedName": "sel de feu"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 6,
+      "minimumStock": 50,
+      "name": "Sel de Givre",
+      "purchasePrice": 2,
+      "tracksStock": true,
+      "legacyKey": "product:sel de givre",
+      "normalizedName": "sel de givre"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 14,
+      "minimumStock": 50,
+      "name": "Sel de Néant",
+      "purchasePrice": 2,
+      "tracksStock": true,
+      "legacyKey": "product:sel de neant",
+      "normalizedName": "sel de neant"
+    },
+    {
+      "category": "potion",
+      "currentStock": 10,
+      "minimumStock": 5,
+      "name": "Soin Mineur",
+      "salePrice": 12,
+      "tracksStock": true,
+      "legacyKey": "product:soin mineur",
+      "normalizedName": "soin mineur"
+    },
+    {
+      "category": "potion",
+      "currentStock": 24,
+      "minimumStock": 5,
+      "name": "Soin Moyen",
+      "salePrice": 17,
+      "tracksStock": true,
+      "legacyKey": "product:soin moyen",
+      "normalizedName": "soin moyen"
+    },
+    {
+      "category": "potion",
+      "currentStock": 4,
+      "minimumStock": 5,
+      "name": "Soin Profus",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:soin profus",
+      "normalizedName": "soin profus"
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 0,
+      "legacyKey": "product:sucrelune",
+      "minimumStock": 50,
+      "name": "Sucrelune",
+      "normalizedName": "sucrelune",
+      "tracksStock": true
+    },
+    {
+      "category": "ingredient",
+      "currentStock": 2969,
+      "minimumStock": 50,
+      "name": "Tige de Chardon",
+      "purchasePrice": 0.1,
+      "tracksStock": true,
+      "legacyKey": "product:tige de chardon",
+      "normalizedName": "tige de chardon"
+    },
+    {
+      "category": "potion",
+      "currentStock": 19,
+      "minimumStock": 5,
+      "name": "Vigueur Mineur",
+      "salePrice": 20,
+      "tracksStock": true,
+      "legacyKey": "product:vigueur mineur",
+      "normalizedName": "vigueur mineur"
+    },
+    {
+      "category": "potion",
+      "currentStock": 3,
+      "minimumStock": 5,
+      "name": "Vigueur Moyen",
+      "salePrice": 25,
+      "tracksStock": true,
+      "legacyKey": "product:vigueur moyen",
+      "normalizedName": "vigueur moyen"
+    },
+    {
+      "category": "potion",
+      "currentStock": 0,
+      "minimumStock": 5,
+      "name": "Vigueur Profus",
+      "salePrice": 30,
+      "tracksStock": true,
+      "legacyKey": "product:vigueur profus",
+      "normalizedName": "vigueur profus"
+    },
+    {
+      "category": "potion",
+      "currentStock": 2,
+      "minimumStock": 5,
+      "name": "Vin",
+      "salePrice": 7,
+      "tracksStock": true,
+      "legacyKey": "product:vin",
+      "normalizedName": "vin"
+    }
+  ],
+  "recipes": [
+    {
+      "family": "Soin",
+      "ingredients": [
+        {
+          "ingredientName": "blé",
+          "legacyKey": "recipe-ingredient:5:3",
+          "quantity": 7,
+          "raw": "7 blé"
+        },
+        {
+          "ingredientName": "lys bleu",
+          "legacyKey": "recipe-ingredient:5:4",
+          "quantity": 15,
+          "raw": "15 lys bleu"
+        }
+      ],
+      "legacyKey": "recipe:5",
+      "name": "Soin mineur",
+      "effect": "Restoration 30 pts",
+      "cost": 5
+    },
+    {
+      "family": "Soin",
+      "ingredients": [
+        {
+          "ingredientName": "blé",
+          "legacyKey": "recipe-ingredient:6:3",
+          "quantity": 7,
+          "raw": "7 blé"
+        },
+        {
+          "ingredientName": "lys bleu",
+          "legacyKey": "recipe-ingredient:6:4",
+          "quantity": 10,
+          "raw": "10 lys bleu"
+        },
+        {
+          "ingredientName": "pied de lutin",
+          "legacyKey": "recipe-ingredient:6:5",
+          "quantity": 8,
+          "raw": "8 pied de lutin"
+        }
+      ],
+      "legacyKey": "recipe:6",
+      "name": "Soin moyen",
+      "effect": "Restoration 50 pts",
+      "cost": 6.5
+    },
+    {
+      "family": "Soin",
+      "ingredients": [
+        {
+          "ingredientName": "blé",
+          "legacyKey": "recipe-ingredient:7:3",
+          "quantity": 7,
+          "raw": "7 blé"
+        },
+        {
+          "ingredientName": "lys bleu",
+          "legacyKey": "recipe-ingredient:7:4",
+          "quantity": 10,
+          "raw": "10 lys bleu"
+        },
+        {
+          "ingredientName": "pied de lutin",
+          "legacyKey": "recipe-ingredient:7:5",
+          "quantity": 8,
+          "raw": "8 pied de lutin"
+        },
+        {
+          "ingredientName": "oeil de smilodon",
+          "legacyKey": "recipe-ingredient:7:6",
+          "quantity": 2,
+          "raw": "2 oeil de smilodon"
+        }
+      ],
+      "legacyKey": "recipe:7",
+      "name": "Soin Profus",
+      "effect": "Restoration 75 pts",
+      "cost": 12.5
+    },
+    {
+      "family": "Mana",
+      "ingredients": [
+        {
+          "ingredientName": "oreille elfe",
+          "legacyKey": "recipe-ingredient:8:3",
+          "quantity": 12,
+          "raw": "12 oreille elfe"
+        },
+        {
+          "ingredientName": "lichen geant",
+          "legacyKey": "recipe-ingredient:8:4",
+          "quantity": 10,
+          "raw": "10 lichen geant"
+        }
+      ],
+      "legacyKey": "recipe:8",
+      "name": "Mana mineur",
+      "effect": "Restoration 25 pts"
+    },
+    {
+      "family": "Mana",
+      "ingredients": [
+        {
+          "ingredientName": "oreille elfe",
+          "legacyKey": "recipe-ingredient:9:3",
+          "quantity": 12,
+          "raw": "12 oreille elfe"
+        },
+        {
+          "ingredientName": "lichen geant",
+          "legacyKey": "recipe-ingredient:9:4",
+          "quantity": 10,
+          "raw": "10 lichen geant"
+        },
+        {
+          "ingredientName": "plantes grimpantes",
+          "legacyKey": "recipe-ingredient:9:5",
+          "quantity": 8,
+          "raw": "8 plantes grimpantes"
+        }
+      ],
+      "legacyKey": "recipe:9",
+      "name": "Mana moyen",
+      "effect": "Restoration 50 pts"
+    },
+    {
+      "family": "Mana",
+      "ingredients": [
+        {
+          "ingredientName": "oreille elfe",
+          "legacyKey": "recipe-ingredient:10:3",
+          "quantity": 12,
+          "raw": "12 oreille elfe"
+        },
+        {
+          "ingredientName": "lichen",
+          "legacyKey": "recipe-ingredient:10:4",
+          "quantity": 8,
+          "raw": "8 lichen"
+        },
+        {
+          "ingredientName": "plantes grimpantes",
+          "legacyKey": "recipe-ingredient:10:5",
+          "quantity": 8,
+          "raw": "8 plantes grimpantes"
+        },
+        {
+          "ingredientName": "mora tapinella",
+          "legacyKey": "recipe-ingredient:10:6",
+          "quantity": 12,
+          "raw": "12 mora tapinella"
+        }
+      ],
+      "legacyKey": "recipe:10",
+      "name": "Mana Profus",
+      "effect": "Restoration 75 pts"
+    },
+    {
+      "family": "Vigueur",
+      "ingredients": [
+        {
+          "ingredientName": "lys violet",
+          "legacyKey": "recipe-ingredient:11:3",
+          "quantity": 10,
+          "raw": "10 lys violet"
+        },
+        {
+          "ingredientName": "rayon de miel",
+          "legacyKey": "recipe-ingredient:11:4",
+          "quantity": 4,
+          "raw": "4 rayon de miel"
+        }
+      ],
+      "legacyKey": "recipe:11",
+      "name": "Vigueur mineur",
+      "effect": "Restoration 25 pts",
+      "cost": 17
+    },
+    {
+      "family": "Vigueur",
+      "ingredients": [
+        {
+          "ingredientName": "lys violet",
+          "legacyKey": "recipe-ingredient:12:3",
+          "quantity": 12,
+          "raw": "12 lys violet"
+        },
+        {
+          "ingredientName": "rayon de miel",
+          "legacyKey": "recipe-ingredient:12:4",
+          "quantity": 6,
+          "raw": "6 rayon de miel"
+        },
+        {
+          "ingredientName": "genièvre",
+          "legacyKey": "recipe-ingredient:12:5",
+          "quantity": 8,
+          "raw": "8 genièvre"
+        }
+      ],
+      "legacyKey": "recipe:12",
+      "name": "Vigueur moyen",
+      "effect": "Restoration 50 pts",
+      "cost": 26
+    },
+    {
+      "family": "Vigueur",
+      "ingredients": [
+        {
+          "ingredientName": "lys violet",
+          "legacyKey": "recipe-ingredient:13:3",
+          "quantity": 10,
+          "raw": "10 lys violet"
+        },
+        {
+          "ingredientName": "rayon de miel",
+          "legacyKey": "recipe-ingredient:13:4",
+          "quantity": 4,
+          "raw": "4 rayon de miel"
+        },
+        {
+          "ingredientName": "genièvre",
+          "legacyKey": "recipe-ingredient:13:5",
+          "quantity": 5,
+          "raw": "5 genièvre"
+        },
+        {
+          "ingredientName": "griffe d'ours",
+          "legacyKey": "recipe-ingredient:13:6",
+          "quantity": 2,
+          "raw": "2 griffe d'ours"
+        }
+      ],
+      "legacyKey": "recipe:13",
+      "name": "Vigueur Profus",
+      "effect": "Restoration 75 pts",
+      "cost": 23.5
+    },
+    {
+      "family": "Récupération",
+      "ingredients": [
+        {
+          "ingredientName": "amanite t,m",
+          "legacyKey": "recipe-ingredient:14:3",
+          "quantity": 8,
+          "raw": "8 amanite t,m,"
+        },
+        {
+          "ingredientName": "Pholiote à écaille",
+          "legacyKey": "recipe-ingredient:14:4",
+          "quantity": 8,
+          "raw": "8 Pholiote à écaille"
+        }
+      ],
+      "legacyKey": "recipe:14",
+      "name": "Potion Récupération",
+      "effect": "Régénération 50% pour 5 min.",
+      "cost": 3
+    },
+    {
+      "family": "Récupération",
+      "ingredients": [
+        {
+          "ingredientName": "amanite t,m",
+          "legacyKey": "recipe-ingredient:15:3",
+          "quantity": 8,
+          "raw": "8 amanite t,m,"
+        },
+        {
+          "ingredientName": "Pholiote à écaille",
+          "legacyKey": "recipe-ingredient:15:4",
+          "quantity": 8,
+          "raw": "8 Pholiote à écaille"
+        },
+        {
+          "ingredientName": "tige de chardon",
+          "legacyKey": "recipe-ingredient:15:5",
+          "quantity": 10,
+          "raw": "10 tige de chardon"
+        }
+      ],
+      "legacyKey": "recipe:15",
+      "name": "Breuvage Récupération",
+      "effect": "Régénération 60% pour 5 min.",
+      "cost": 4
+    },
+    {
+      "family": "Vigueur améliorée",
+      "ingredients": [
+        {
+          "ingredientName": "ail",
+          "legacyKey": "recipe-ingredient:16:3",
+          "quantity": 8,
+          "raw": "8 ail"
+        },
+        {
+          "ingredientName": "lavande",
+          "legacyKey": "recipe-ingredient:16:4",
+          "quantity": 12,
+          "raw": "12 lavande"
+        }
+      ],
+      "legacyKey": "recipe:16",
+      "name": "Potion Vigueur accru",
+      "effect": "20 point pour 5 min.",
+      "cost": 4
+    },
+    {
+      "family": "Vigueur améliorée",
+      "ingredients": [
+        {
+          "ingredientName": "ail",
+          "legacyKey": "recipe-ingredient:17:3",
+          "quantity": 8,
+          "raw": "8 ail"
+        },
+        {
+          "ingredientName": "lavande",
+          "legacyKey": "recipe-ingredient:17:4",
+          "quantity": 12,
+          "raw": "12 lavande"
+        },
+        {
+          "ingredientName": "oeuf de chaurus",
+          "legacyKey": "recipe-ingredient:17:5",
+          "quantity": 4,
+          "raw": "4 oeuf de chaurus"
+        }
+      ],
+      "legacyKey": "recipe:17",
+      "name": "Breuvage Vigueur accru",
+      "effect": "40 point pour 5 min.",
+      "cost": 4.5
+    },
+    {
+      "family": "Pied léger",
+      "ingredients": [
+        {
+          "ingredientName": "blé",
+          "legacyKey": "recipe-ingredient:18:3",
+          "quantity": 10,
+          "raw": "10 blé"
+        },
+        {
+          "ingredientName": "lys rouge",
+          "legacyKey": "recipe-ingredient:18:4",
+          "quantity": 10,
+          "raw": "10 lys rouge"
+        },
+        {
+          "ingredientName": "plantes grimpantes",
+          "legacyKey": "recipe-ingredient:18:5",
+          "quantity": 6,
+          "raw": "6 plantes grimpantes"
+        }
+      ],
+      "legacyKey": "recipe:18",
+      "name": "Pied léger",
+      "effect": "Renfort 50 et Régénération 50 % pour 1 min.",
+      "cost": 7.5
+    },
+    {
+      "family": "Berserker",
+      "ingredients": [
+        {
+          "ingredientName": "amanite t,m",
+          "legacyKey": "recipe-ingredient:19:3",
+          "quantity": 12,
+          "raw": "12 amanite t,m,"
+        },
+        {
+          "ingredientName": "langue de dragon",
+          "legacyKey": "recipe-ingredient:19:4",
+          "quantity": 8,
+          "raw": "8 langue de dragon"
+        }
+      ],
+      "legacyKey": "recipe:19",
+      "name": "Potion Berserker",
+      "effect": "Renfort 2 mains 20% pour 1 min.",
+      "cost": 2.5
+    },
+    {
+      "family": "Berserker",
+      "ingredients": [
+        {
+          "ingredientName": "amanite t,m",
+          "legacyKey": "recipe-ingredient:20:3",
+          "quantity": 8,
+          "raw": "8 amanite t,m,"
+        },
+        {
+          "ingredientName": "langue de dragon",
+          "legacyKey": "recipe-ingredient:20:4",
+          "quantity": 12,
+          "raw": "12 langue de dragon"
+        },
+        {
+          "ingredientName": "graisse de troll",
+          "legacyKey": "recipe-ingredient:20:5",
+          "quantity": 2,
+          "raw": "2 graisse de troll"
+        }
+      ],
+      "legacyKey": "recipe:20",
+      "name": "Breuvage Berserker",
+      "effect": "Renfort 2 mains 30% pour 1 min.",
+      "cost": 6.5
+    },
+    {
+      "family": "Guerrier",
+      "ingredients": [
+        {
+          "ingredientName": "racine canis",
+          "legacyKey": "recipe-ingredient:21:3",
+          "quantity": 8,
+          "raw": "8 racine canis"
+        },
+        {
+          "ingredientName": "oeuf fauvette",
+          "legacyKey": "recipe-ingredient:21:4",
+          "quantity": 6,
+          "raw": "6 oeuf fauvette"
+        }
+      ],
+      "legacyKey": "recipe:21",
+      "name": "Potion Guerrier",
+      "effect": "Renfort 1 main 20% pour 1 min.",
+      "cost": 5
+    },
+    {
+      "family": "Guerrier",
+      "ingredients": [
+        {
+          "ingredientName": "racine canis",
+          "legacyKey": "recipe-ingredient:22:3",
+          "quantity": 8,
+          "raw": "8 racine canis"
+        },
+        {
+          "ingredientName": "oeuf fauvette",
+          "legacyKey": "recipe-ingredient:22:4",
+          "quantity": 4,
+          "raw": "4 oeuf fauvette"
+        },
+        {
+          "ingredientName": "griffes d'ours",
+          "legacyKey": "recipe-ingredient:22:5",
+          "quantity": 2,
+          "raw": "2 griffes d'ours"
+        }
+      ],
+      "legacyKey": "recipe:22",
+      "name": "Breuvage Guerrier",
+      "effect": "Renfort 1 main 30% pour 1 min.",
+      "cost": 11
+    },
+    {
+      "family": "Résistance magique",
+      "ingredients": [
+        {
+          "ingredientName": "coton",
+          "legacyKey": "recipe-ingredient:23:3",
+          "quantity": 10,
+          "raw": "10 coton"
+        },
+        {
+          "ingredientName": "couronne sanglante",
+          "legacyKey": "recipe-ingredient:23:4",
+          "quantity": 8,
+          "raw": "8 couronne sanglante"
+        }
+      ],
+      "legacyKey": "recipe:23",
+      "name": "Potion Resistance magie",
+      "effect": "10% pour 1min.",
+      "cost": 2
+    },
+    {
+      "family": "Résistance magique",
+      "ingredients": [
+        {
+          "ingredientName": "coton",
+          "legacyKey": "recipe-ingredient:24:3",
+          "quantity": 10,
+          "raw": "10 coton"
+        },
+        {
+          "ingredientName": "couronne sanglante",
+          "legacyKey": "recipe-ingredient:24:4",
+          "quantity": 8,
+          "raw": "8 couronne sanglante"
+        },
+        {
+          "ingredientName": "Sel du néant",
+          "legacyKey": "recipe-ingredient:24:5",
+          "quantity": 1,
+          "raw": "Sel du néant"
+        }
+      ],
+      "legacyKey": "recipe:24",
+      "name": "Breuvage Resistance magie",
+      "effect": "15% pour 1min."
+    },
+    {
+      "family": "Puissance durable",
+      "ingredients": [
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:25:3",
+          "quantity": 5,
+          "raw": "5 sel"
+        },
+        {
+          "ingredientName": "ail",
+          "legacyKey": "recipe-ingredient:25:4",
+          "quantity": 15,
+          "raw": "15 ail"
+        }
+      ],
+      "legacyKey": "recipe:25",
+      "name": "Potion Puissance Durable",
+      "effect": "Régénération 50% pour 5 min.",
+      "cost": 7
+    },
+    {
+      "family": "Puissance durable",
+      "ingredients": [
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:26:3",
+          "quantity": 5,
+          "raw": "5 sel"
+        },
+        {
+          "ingredientName": "ail",
+          "legacyKey": "recipe-ingredient:26:4",
+          "quantity": 15,
+          "raw": "15 ail"
+        },
+        {
+          "ingredientName": "sucrelune",
+          "legacyKey": "recipe-ingredient:26:5",
+          "quantity": 2,
+          "raw": "2 sucrelune"
+        }
+      ],
+      "legacyKey": "recipe:26",
+      "name": "Breuvage Puissance Durable",
+      "effect": "Régénération 60% pour 5 min.",
+      "cost": 57
+    },
+    {
+      "family": "Magie accrue",
+      "ingredients": [
+        {
+          "ingredientName": "coton",
+          "legacyKey": "recipe-ingredient:27:3",
+          "quantity": 10,
+          "raw": "10 coton"
+        },
+        {
+          "ingredientName": "sel du néant",
+          "legacyKey": "recipe-ingredient:27:4",
+          "quantity": 3,
+          "raw": "3 sel du néant"
+        }
+      ],
+      "legacyKey": "recipe:27",
+      "name": "Potion Mana accru",
+      "effect": "20 point pour 1 min."
+    },
+    {
+      "family": "Magie accrue",
+      "ingredients": [
+        {
+          "ingredientName": "coton",
+          "legacyKey": "recipe-ingredient:28:3",
+          "quantity": 10,
+          "raw": "10 coton"
+        },
+        {
+          "ingredientName": "sel du néant",
+          "legacyKey": "recipe-ingredient:28:4",
+          "quantity": 3,
+          "raw": "3 sel du néant"
+        },
+        {
+          "ingredientName": "Ectoplasme",
+          "legacyKey": "recipe-ingredient:28:5",
+          "quantity": 2,
+          "raw": "2 Ectoplasme"
+        }
+      ],
+      "legacyKey": "recipe:28",
+      "name": "Breuvage Mana accru",
+      "effect": "40 point pour 1 min."
+    },
+    {
+      "family": "Guérisseur",
+      "ingredients": [
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:29:3",
+          "quantity": 5,
+          "raw": "5 sel"
+        },
+        {
+          "ingredientName": "lys rouge",
+          "legacyKey": "recipe-ingredient:29:4",
+          "quantity": 15,
+          "raw": "15 lys rouge"
+        }
+      ],
+      "legacyKey": "recipe:29",
+      "name": "Potion Guérisseur",
+      "effect": "Renfort 20% pour 1 min.",
+      "cost": 3.5
+    },
+    {
+      "family": "Guérisseur",
+      "ingredients": [
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:30:3",
+          "quantity": 5,
+          "raw": "5 sel"
+        },
+        {
+          "ingredientName": "lys rouge",
+          "legacyKey": "recipe-ingredient:30:4",
+          "quantity": 15,
+          "raw": "15 lys rouge"
+        },
+        {
+          "ingredientName": "genièvre",
+          "legacyKey": "recipe-ingredient:30:5",
+          "quantity": 8,
+          "raw": "8 genièvre"
+        }
+      ],
+      "legacyKey": "recipe:30",
+      "name": "Breuvage Guérisseur",
+      "effect": "Renfort 30% pour 1 min.",
+      "cost": 4.5
+    },
+    {
+      "family": "Destruction",
+      "ingredients": [
+        {
+          "ingredientName": "champignon luisant",
+          "legacyKey": "recipe-ingredient:31:3",
+          "quantity": 8,
+          "raw": "8 champignon luisant"
+        },
+        {
+          "ingredientName": "rayon de miel",
+          "legacyKey": "recipe-ingredient:31:4",
+          "quantity": 6,
+          "raw": "6 rayon de miel"
+        }
+      ],
+      "legacyKey": "recipe:31",
+      "name": "Potion Destruction",
+      "effect": "Renfort 20% pour 1 min.",
+      "cost": 37
+    },
+    {
+      "family": "Destruction",
+      "ingredients": [
+        {
+          "ingredientName": "champignon luisant",
+          "legacyKey": "recipe-ingredient:32:3",
+          "quantity": 8,
+          "raw": "8 champignon luisant"
+        },
+        {
+          "ingredientName": "rayon de miel",
+          "legacyKey": "recipe-ingredient:32:4",
+          "quantity": 6,
+          "raw": "6 rayon de miel"
+        },
+        {
+          "ingredientName": "Ectoplasme",
+          "legacyKey": "recipe-ingredient:32:5",
+          "quantity": 2,
+          "raw": "2 Ectoplasme"
+        }
+      ],
+      "legacyKey": "recipe:32",
+      "name": "Breuvage Destruction",
+      "effect": "Renfort 30% pour 1 min.",
+      "cost": 47
+    },
+    {
+      "family": "Médicinale",
+      "ingredients": [
+        {
+          "ingredientName": "ail",
+          "legacyKey": "recipe-ingredient:33:3",
+          "quantity": 3,
+          "raw": "3 ail"
+        },
+        {
+          "ingredientName": "oeuf de poisson carnassier",
+          "legacyKey": "recipe-ingredient:33:4",
+          "quantity": 5,
+          "raw": "5 oeuf de poisson carnassier"
+        },
+        {
+          "ingredientName": "cosse",
+          "legacyKey": "recipe-ingredient:33:5",
+          "quantity": 7,
+          "raw": "7 cosse"
+        }
+      ],
+      "legacyKey": "recipe:33",
+      "name": "Médicinal",
+      "cost": 3
+    },
+    {
+      "family": "Sel",
+      "ingredients": [
+        {
+          "ingredientName": "gemme spirituelle insignifiante",
+          "legacyKey": "recipe-ingredient:34:3",
+          "quantity": 1,
+          "raw": "1 gemme spirituelle insignifiante"
+        },
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:34:4",
+          "quantity": 2,
+          "raw": "2 sel"
+        },
+        {
+          "ingredientName": "rubis",
+          "legacyKey": "recipe-ingredient:34:5",
+          "quantity": 2,
+          "raw": "2 rubis"
+        }
+      ],
+      "legacyKey": "recipe:34",
+      "name": "Sel Feu"
+    },
+    {
+      "family": "Sel",
+      "ingredients": [
+        {
+          "ingredientName": "gemme spirituelle insignifiante",
+          "legacyKey": "recipe-ingredient:35:3",
+          "quantity": 1,
+          "raw": "1 gemme spirituelle insignifiante"
+        },
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:35:4",
+          "quantity": 2,
+          "raw": "2 sel"
+        },
+        {
+          "ingredientName": "saphir",
+          "legacyKey": "recipe-ingredient:35:5",
+          "quantity": 2,
+          "raw": "2 saphir"
+        }
+      ],
+      "legacyKey": "recipe:35",
+      "name": "Sel Givre"
+    },
+    {
+      "family": "Sel",
+      "ingredients": [
+        {
+          "ingredientName": "gemme spirituelle insignifiante",
+          "legacyKey": "recipe-ingredient:36:3",
+          "quantity": 1,
+          "raw": "1 gemme spirituelle insignifiante"
+        },
+        {
+          "ingredientName": "sel",
+          "legacyKey": "recipe-ingredient:36:4",
+          "quantity": 2,
+          "raw": "2 sel"
+        },
+        {
+          "ingredientName": "amethyste",
+          "legacyKey": "recipe-ingredient:36:5",
+          "quantity": 2,
+          "raw": "2 amethyste"
+        }
+      ],
+      "legacyKey": "recipe:36",
+      "name": "Sel Néant"
+    },
+    {
+      "family": "Alcool",
+      "ingredients": [
+        {
+          "ingredientName": "blé",
+          "legacyKey": "recipe-ingredient:37:3",
+          "quantity": 5,
+          "raw": "5 blé"
+        },
+        {
+          "ingredientName": "lavande",
+          "legacyKey": "recipe-ingredient:37:4",
+          "quantity": 2,
+          "raw": "2 lavande"
+        }
+      ],
+      "legacyKey": "recipe:37",
+      "name": "Bière",
+      "cost": 2.7
+    },
+    {
+      "family": "Alcool",
+      "ingredients": [
+        {
+          "ingredientName": "hyvernelle",
+          "legacyKey": "recipe-ingredient:38:3",
+          "quantity": 3,
+          "raw": "3 hyvernelle"
+        },
+        {
+          "ingredientName": "raisin",
+          "legacyKey": "recipe-ingredient:38:4",
+          "quantity": 8,
+          "raw": "8 raisin"
+        }
+      ],
+      "legacyKey": "recipe:38",
+      "name": "Vin",
+      "cost": 2.5
+    },
+    {
+      "family": "Alcool",
+      "ingredients": [
+        {
+          "ingredientName": "givreboise",
+          "legacyKey": "recipe-ingredient:39:3",
+          "quantity": 2,
+          "raw": "2 givreboise"
+        },
+        {
+          "ingredientName": "miel",
+          "legacyKey": "recipe-ingredient:39:4",
+          "quantity": 5,
+          "raw": "5 miel"
+        }
+      ],
+      "legacyKey": "recipe:39",
+      "name": "Hydromel",
+      "cost": 10.2
+    }
+  ],
+  "transactions": [
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:2",
+      "occurredAt": 1785758400000,
+      "productName": "Pied de lutin",
+      "quantity": 40,
+      "total": -10,
+      "unitPrice": 0.25,
+      "counterparty": "Linerm"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:3",
+      "occurredAt": 1785758400000,
+      "productName": "Hivernelle",
+      "quantity": 31,
+      "total": -14,
+      "discount": 1.5,
+      "unitPrice": 0.5,
+      "counterparty": "Linerm"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "service",
+      "legacyKey": "transaction:4",
+      "occurredAt": 1785758400000,
+      "productName": "Location table citoyen",
+      "quantity": 1,
+      "total": 10,
+      "unitPrice": 10,
+      "counterparty": "Velyn Salven"
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "purchase",
+      "legacyKey": "transaction:5",
+      "occurredAt": 1785758400000,
+      "productName": "Pied de lutin",
+      "quantity": 54,
+      "total": -6,
+      "discount": 7.5,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "purchase",
+      "legacyKey": "transaction:6",
+      "occurredAt": 1785758400000,
+      "productName": "Racine de canis",
+      "quantity": 15,
+      "total": -3,
+      "discount": 0.75,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "purchase",
+      "legacyKey": "transaction:7",
+      "occurredAt": 1785758400000,
+      "productName": "Oeil de smilodon",
+      "quantity": 4,
+      "total": -8,
+      "discount": 4,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "purchase",
+      "legacyKey": "transaction:8",
+      "occurredAt": 1785758400000,
+      "productName": "Hivernelle",
+      "quantity": 15,
+      "total": -7,
+      "discount": 0.5,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "order",
+      "legacyKey": "transaction:9",
+      "occurredAt": 1785758400000,
+      "productName": "Client",
+      "quantity": 1,
+      "total": 700,
+      "counterparty": "Jahim AL suna",
+      "comment": "150 bière 50 vin"
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "order",
+      "legacyKey": "transaction:10",
+      "occurredAt": 1785844800000,
+      "productName": "Client",
+      "quantity": 1,
+      "total": 350,
+      "counterparty": "Zahreen"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:11",
+      "occurredAt": 1785844800000,
+      "productName": "Potion Vigueur améliorée",
+      "quantity": 4,
+      "total": -39,
+      "counterparty": "Tia",
+      "comment": "1 potion de soin profue, 1 potion de respiration aquatique, 1 potion de vigueur améliorer, 1 potion de force"
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "purchase",
+      "legacyKey": "transaction:12",
+      "occurredAt": 1785931200000,
+      "productName": "Oeil de smilodon",
+      "quantity": 14,
+      "total": -42,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:13",
+      "occurredAt": 1785931200000,
+      "productName": "Médicinale",
+      "quantity": 2,
+      "total": 22,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "bundle",
+      "legacyKey": "transaction:14",
+      "occurredAt": 1785931200000,
+      "productName": "L'aventurier débutant",
+      "quantity": 1,
+      "total": 35,
+      "unitPrice": 29
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "bundle",
+      "legacyKey": "transaction:15",
+      "occurredAt": 1785931200000,
+      "productName": "Lot de soin mineur",
+      "quantity": 2,
+      "total": 240,
+      "unitPrice": 120
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:16",
+      "occurredAt": 1785931200000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:17",
+      "occurredAt": 1785931200000,
+      "productName": "Soin Moyen",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:18",
+      "occurredAt": 1785931200000,
+      "productName": "Soin Mineur",
+      "quantity": 1,
+      "total": 12,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "order",
+      "legacyKey": "transaction:19",
+      "occurredAt": 1785931200000,
+      "productName": "Fournisseur",
+      "quantity": 800,
+      "total": -400,
+      "counterparty": "Eliane Valene",
+      "comment": "800 blé"
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "order",
+      "legacyKey": "transaction:20",
+      "occurredAt": 1786017600000,
+      "productName": "Fournisseur",
+      "quantity": 1,
+      "total": -400,
+      "counterparty": "Confrérie du dragon d'or",
+      "comment": "1200 raisins 50 rayons de miel"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "service",
+      "legacyKey": "transaction:21",
+      "occurredAt": 1786017600000,
+      "productName": "Location table étranger",
+      "quantity": 1,
+      "total": 20,
+      "unitPrice": 20,
+      "counterparty": "Kaä' Allÿs"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "service",
+      "legacyKey": "transaction:22",
+      "occurredAt": 1786017600000,
+      "productName": "Location table étranger",
+      "quantity": 1,
+      "total": 20,
+      "unitPrice": 20,
+      "counterparty": "Velyrith Velvayn"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "service",
+      "legacyKey": "transaction:23",
+      "occurredAt": 1786017600000,
+      "productName": "Location table citoyen",
+      "quantity": 1,
+      "total": 10,
+      "unitPrice": 10,
+      "counterparty": "Gideon Nervion"
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "purchase",
+      "legacyKey": "transaction:24",
+      "occurredAt": 1786017600000,
+      "productName": "Pied de lutin",
+      "quantity": 32,
+      "total": -8,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:25",
+      "occurredAt": 1786017600000,
+      "productName": "Blé",
+      "quantity": 250,
+      "total": -125,
+      "unitPrice": 0.5,
+      "counterparty": "Fernar Briselame",
+      "comment": "Marchant de la ferme des baies de givre (vendeaume)"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:26",
+      "occurredAt": 1786017600000,
+      "productName": "Lys rouge",
+      "quantity": 310,
+      "total": -31,
+      "unitPrice": 0.1
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:27",
+      "occurredAt": 1786017600000,
+      "productName": "Blé",
+      "quantity": 312,
+      "total": -156,
+      "unitPrice": 0.5,
+      "counterparty": "Shalayer",
+      "comment": "Marchant de la ferme des baies de givre (vendeaume)"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:28",
+      "occurredAt": 1786017600000,
+      "productName": "Blé",
+      "quantity": 358,
+      "total": -179,
+      "unitPrice": 0.5,
+      "counterparty": "Hundal Rosewind",
+      "comment": "Marchant de la ferme des baies de givre (vendeaume)"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:31",
+      "occurredAt": 1786104000000,
+      "productName": "Blé",
+      "quantity": 70,
+      "total": -49,
+      "unitPrice": 0.7
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:32",
+      "occurredAt": 1786104000000,
+      "productName": "Raisin jasbay",
+      "quantity": 5,
+      "total": -1,
+      "unitPrice": 0.1666666667
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:33",
+      "occurredAt": 1786104000000,
+      "productName": "Lys rouge",
+      "quantity": 10,
+      "total": -1,
+      "unitPrice": 0.1
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:34",
+      "occurredAt": 1786104000000,
+      "productName": "Lavande",
+      "quantity": 43,
+      "total": -2,
+      "unitPrice": 0.1
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:35",
+      "occurredAt": 1786104000000,
+      "productName": "Rayon de miel",
+      "quantity": 73,
+      "total": -210,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "sale",
+      "legacyKey": "transaction:36",
+      "occurredAt": 1786017600000,
+      "productName": "Res. foudre",
+      "quantity": 2,
+      "total": 44,
+      "discount": 4,
+      "unitPrice": 20
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "sale",
+      "legacyKey": "transaction:37",
+      "occurredAt": 1786017600000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "sale",
+      "legacyKey": "transaction:38",
+      "occurredAt": 1786104000000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 15,
+      "discount": 4,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "sale",
+      "legacyKey": "transaction:39",
+      "occurredAt": 1786104000000,
+      "productName": "Lys bleu",
+      "quantity": 5,
+      "total": 2,
+      "discount": 1,
+      "unitPrice": 0.2,
+      "counterparty": "Boutique alchimie de Epervine",
+      "comment": "C'était des lys jaunes"
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "purchase",
+      "legacyKey": "transaction:40",
+      "occurredAt": 1786190400000,
+      "productName": "Blé",
+      "quantity": 25,
+      "total": -12,
+      "discount": 0.5,
+      "unitPrice": 0.5,
+      "counterparty": "kHARNE DhA'CIER"
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "purchase",
+      "legacyKey": "transaction:41",
+      "occurredAt": 1786190400000,
+      "productName": "Lys bleu",
+      "quantity": 98,
+      "total": 0,
+      "discount": 9.8,
+      "unitPrice": 0.1,
+      "counterparty": "Mordred roncecarlate"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "service",
+      "legacyKey": "transaction:42",
+      "occurredAt": 1786190400000,
+      "productName": "Location table citoyen",
+      "quantity": 1,
+      "total": 10,
+      "unitPrice": 10,
+      "counterparty": "Naldulmo Fanlidil (Thalmor)"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:43",
+      "occurredAt": 1786190400000,
+      "productName": "Blé",
+      "quantity": 100,
+      "total": -50,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:44",
+      "occurredAt": 1786190400000,
+      "productName": "Mana Profus",
+      "quantity": 1,
+      "total": 25,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "service",
+      "legacyKey": "transaction:45",
+      "occurredAt": 1786190400000,
+      "productName": "Location table citoyen",
+      "quantity": 1,
+      "total": 10,
+      "unitPrice": 10,
+      "counterparty": "Agent Felis (Penitus oculatus)"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:46",
+      "occurredAt": 1786190400000,
+      "productName": "Soin Mineur",
+      "quantity": 8,
+      "total": -48,
+      "unitPrice": 6
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "service",
+      "legacyKey": "transaction:47",
+      "occurredAt": 1786190400000,
+      "productName": "Location table étranger",
+      "quantity": 1,
+      "total": 20,
+      "unitPrice": 20,
+      "counterparty": "Wallasse D Castellanos"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:48",
+      "occurredAt": 1786276800000,
+      "productName": "Lavande",
+      "quantity": 129,
+      "total": -13,
+      "unitPrice": 0.1
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "purchase",
+      "legacyKey": "transaction:49",
+      "occurredAt": 1786276800000,
+      "productName": "Lavande",
+      "quantity": 20,
+      "total": -2,
+      "unitPrice": 0.1
+    },
+    {
+      "actorName": "Grydine Palatine",
+      "kind": "order",
+      "legacyKey": "transaction:50",
+      "occurredAt": 1786276800000,
+      "productName": "Client",
+      "quantity": 1,
+      "total": 450,
+      "counterparty": "Vizaro",
+      "comment": "50 soin m/ 40 soin/ 15 Soin profus"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:51",
+      "occurredAt": 1786363200000,
+      "productName": "Potion Berserker",
+      "quantity": 1,
+      "total": 15,
+      "unitPrice": 15
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:52",
+      "occurredAt": 1786363200000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 22,
+      "discount": 2,
+      "unitPrice": 12,
+      "counterparty": "Vizaro"
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "order",
+      "legacyKey": "transaction:53",
+      "occurredAt": 1786363200000,
+      "productName": "Fournisseur",
+      "quantity": 1,
+      "total": -200,
+      "counterparty": "Mordred",
+      "comment": "le reste pour les lys bleu"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "order",
+      "legacyKey": "transaction:54",
+      "occurredAt": 1786363200000,
+      "productName": "Client",
+      "quantity": 1,
+      "total": 1100,
+      "counterparty": "Jahim Al Suna",
+      "comment": "150 Bières, 150 Vin"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:55",
+      "occurredAt": 1786363200000,
+      "productName": "Lys bleu",
+      "quantity": 100,
+      "total": 20,
+      "unitPrice": 0.2,
+      "counterparty": "Syss"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:56",
+      "occurredAt": 1786363200000,
+      "productName": "Médicinale",
+      "quantity": 8,
+      "total": 88,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:57",
+      "occurredAt": 1786363200000,
+      "productName": "Soin Mineur",
+      "quantity": 1,
+      "total": 12,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:58",
+      "occurredAt": 1786363200000,
+      "productName": "Soin Moyen",
+      "quantity": 3,
+      "total": 51,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:59",
+      "occurredAt": 1786363200000,
+      "productName": "Soin Profus",
+      "quantity": 8,
+      "total": 200,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "order",
+      "legacyKey": "transaction:60",
+      "occurredAt": 1786363200000,
+      "productName": "Client",
+      "quantity": 1,
+      "total": 800,
+      "counterparty": "Vizaro (Garde de solitude)",
+      "comment": "10 Medicinale, 30 Soin Mineur, 20 Soin Moyenne, 5 Soin Profuse"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:61",
+      "occurredAt": 1786363200000,
+      "productName": "Res. Glace",
+      "quantity": 1,
+      "total": -8,
+      "unitPrice": 8,
+      "comment": "on en avait plus et on peut pas les craft"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "bundle",
+      "legacyKey": "transaction:62",
+      "occurredAt": 1786363200000,
+      "productName": "Lot de soin mineur",
+      "quantity": 2,
+      "total": 240,
+      "unitPrice": 120
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "bundle",
+      "legacyKey": "transaction:63",
+      "occurredAt": 1786449600000,
+      "productName": "L'aventurier débutant",
+      "quantity": 1,
+      "total": 29,
+      "unitPrice": 29
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:64",
+      "occurredAt": 1786449600000,
+      "productName": "Oeil de smilodon",
+      "quantity": 7,
+      "total": -21,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:65",
+      "occurredAt": 1786449600000,
+      "productName": "Oeil de smilodon",
+      "quantity": 4,
+      "total": -12,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:66",
+      "occurredAt": 1786449600000,
+      "productName": "Soin Mineur",
+      "quantity": 5,
+      "total": 60,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:67",
+      "occurredAt": 1786449600000,
+      "productName": "Invocateur",
+      "quantity": 1,
+      "total": -5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:68",
+      "occurredAt": 1786449600000,
+      "productName": "Potion Destruction",
+      "quantity": 4,
+      "total": 140,
+      "unitPrice": 35
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:69",
+      "occurredAt": 1786449600000,
+      "productName": "Oeil de smilodon",
+      "quantity": 50,
+      "total": -150,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "order",
+      "legacyKey": "transaction:70",
+      "occurredAt": 1786536000000,
+      "productName": "Client",
+      "quantity": 1,
+      "total": 550,
+      "counterparty": "Père Aurèle",
+      "comment": "25 Médicinales, 25 Soins Mineur, 300 Chardons"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:71",
+      "occurredAt": 1786536000000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:72",
+      "occurredAt": 1786536000000,
+      "productName": "Soin Moyen",
+      "quantity": 3,
+      "total": 51,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "service",
+      "legacyKey": "transaction:73",
+      "occurredAt": 1786536000000,
+      "productName": "Location table étranger",
+      "quantity": 1,
+      "total": 20,
+      "unitPrice": 20,
+      "counterparty": "Lutheas"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:74",
+      "occurredAt": 1786536000000,
+      "productName": "Soin Moyen",
+      "quantity": 5,
+      "total": 85,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:75",
+      "occurredAt": 1786536000000,
+      "productName": "Hivernelle",
+      "quantity": 1,
+      "total": -4,
+      "comment": "15 hivernelles, 3 lichens géants, 1 racine de canis"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:76",
+      "occurredAt": 1786536000000,
+      "productName": "Soin Moyen",
+      "quantity": 2,
+      "total": 34,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:77",
+      "occurredAt": 1786536000000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:78",
+      "occurredAt": 1786536000000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:79",
+      "occurredAt": 1786536000000,
+      "productName": "Pied de lutin",
+      "quantity": 6,
+      "total": -1,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:80",
+      "occurredAt": 1786622400000,
+      "productName": "Soin Moyen",
+      "quantity": 5,
+      "total": 85,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:81",
+      "occurredAt": 1786622400000,
+      "productName": "Potion Résistance magique",
+      "quantity": 1,
+      "total": 15,
+      "unitPrice": 15
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:82",
+      "occurredAt": 1786622400000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:83",
+      "occurredAt": 1786622400000,
+      "productName": "Pied de lutin",
+      "quantity": 20,
+      "total": -5,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:84",
+      "occurredAt": 1786622400000,
+      "productName": "Ectoplasme",
+      "quantity": 2,
+      "total": -10,
+      "unitPrice": 5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:85",
+      "occurredAt": 1786622400000,
+      "productName": "Escarmoucheur",
+      "quantity": 1,
+      "total": -5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:86",
+      "occurredAt": 1786622400000,
+      "productName": "Pied de lutin",
+      "quantity": 26,
+      "total": -6,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:87",
+      "occurredAt": 1786622400000,
+      "productName": "Pied de lutin",
+      "quantity": 106,
+      "total": -20,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "service",
+      "legacyKey": "transaction:88",
+      "occurredAt": 1786622400000,
+      "productName": "Location table citoyen",
+      "quantity": 1,
+      "total": 10,
+      "unitPrice": 10
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "order",
+      "legacyKey": "transaction:89",
+      "occurredAt": 1786622400000,
+      "productName": "Fournisseur",
+      "quantity": 1,
+      "total": -240,
+      "counterparty": "Dar'Rem Gué de Sombreflot",
+      "comment": "1200 raisin"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:90",
+      "occurredAt": 1786708800000,
+      "productName": "Soin Moyen",
+      "quantity": 15,
+      "total": 255,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:91",
+      "occurredAt": 1786708800000,
+      "productName": "Pied de lutin",
+      "quantity": 49,
+      "total": -12,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:92",
+      "occurredAt": 1786708800000,
+      "productName": "Pied de lutin",
+      "quantity": 4,
+      "total": -1,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:93",
+      "occurredAt": 1786708800000,
+      "productName": "Pied de lutin",
+      "quantity": 39,
+      "total": 0,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:94",
+      "occurredAt": 1786708800000,
+      "productName": "Soin Moyen",
+      "quantity": 2,
+      "total": 34,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:95",
+      "occurredAt": 1786708800000,
+      "productName": "Breuvage Guerrier",
+      "quantity": 2,
+      "total": 50,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:96",
+      "occurredAt": 1786708800000,
+      "productName": "Soin Mineur",
+      "quantity": 1,
+      "total": 12,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "order",
+      "legacyKey": "transaction:97",
+      "occurredAt": 1786708800000,
+      "productName": "Fournisseur",
+      "quantity": 1,
+      "total": -400,
+      "counterparty": "Eliane Valene",
+      "comment": "800 Blés"
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "sale",
+      "legacyKey": "transaction:98",
+      "occurredAt": 1786708800000,
+      "productName": "Soin Moyen",
+      "quantity": 3,
+      "total": 51,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:99",
+      "occurredAt": 1786795200000,
+      "productName": "Soin Mineur",
+      "quantity": 3,
+      "total": 36,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:100",
+      "occurredAt": 1786795200000,
+      "productName": "Soin Mineur",
+      "quantity": 1,
+      "total": 12,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Alixard Veliane",
+      "kind": "service",
+      "legacyKey": "transaction:101",
+      "occurredAt": 1786795200000,
+      "productName": "Location table citoyen",
+      "quantity": 1,
+      "total": 10,
+      "unitPrice": 10,
+      "counterparty": "Sebas Tian",
+      "comment": "Jusqu'au 16/08 à 18h"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:102",
+      "occurredAt": 1786795200000,
+      "productName": "Soin Moyen",
+      "quantity": 3,
+      "total": 51,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:103",
+      "occurredAt": 1786795200000,
+      "productName": "Pied de lutin",
+      "quantity": 20,
+      "total": -4,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:104",
+      "occurredAt": 1786795200000,
+      "productName": "Hivernelle",
+      "quantity": 20,
+      "total": -4,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:105",
+      "occurredAt": 1786795200000,
+      "productName": "Soin Moyen",
+      "quantity": 2,
+      "total": 34,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:106",
+      "occurredAt": 1786795200000,
+      "productName": "Oeil de smilodon",
+      "quantity": 4,
+      "total": -12,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:107",
+      "occurredAt": 1786795200000,
+      "productName": "Pied de lutin",
+      "quantity": 22,
+      "total": -4,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:108",
+      "occurredAt": 1786881600000,
+      "productName": "Soin Moyen",
+      "quantity": 5,
+      "total": 85,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:109",
+      "occurredAt": 1786968000000,
+      "productName": "Soin Moyen",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:110",
+      "occurredAt": 1786968000000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:111",
+      "occurredAt": 1786968000000,
+      "productName": "Vigueur Moyen",
+      "quantity": 1,
+      "total": 25,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:112",
+      "occurredAt": 1786968000000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:113",
+      "occurredAt": 1786968000000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Denel Arverni",
+      "kind": "sale",
+      "legacyKey": "transaction:114",
+      "occurredAt": 1786968000000,
+      "productName": "Soin Moyen",
+      "quantity": 5,
+      "total": 85,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:115",
+      "occurredAt": 1787054400000,
+      "productName": "Pied de lutin",
+      "quantity": 140,
+      "total": -28,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:116",
+      "occurredAt": 1787227200000,
+      "productName": "Potion Résistance magique",
+      "quantity": 2,
+      "total": 30,
+      "unitPrice": 15
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:117",
+      "occurredAt": 1787227200000,
+      "productName": "Soin Mineur",
+      "quantity": 6,
+      "total": 72,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:118",
+      "occurredAt": 1787227200000,
+      "productName": "Soin Moyen",
+      "quantity": 3,
+      "total": 51,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:119",
+      "occurredAt": 1787227200000,
+      "productName": "Médicinale",
+      "quantity": 3,
+      "total": 33,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:120",
+      "occurredAt": 1787227200000,
+      "productName": "Médicinale",
+      "quantity": 2,
+      "total": 10,
+      "discount": 12,
+      "unitPrice": 11,
+      "comment": "12 septims offert pour le temple"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:121",
+      "occurredAt": 1787227200000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 10,
+      "discount": 14,
+      "unitPrice": 12,
+      "comment": "14 septims offert pour le temple"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:122",
+      "occurredAt": 1787313600000,
+      "productName": "Soin Mineur",
+      "quantity": 4,
+      "total": 48,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:123",
+      "occurredAt": 1787313600000,
+      "productName": "Soin Moyen",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:124",
+      "occurredAt": 1787313600000,
+      "productName": "Vigueur Mineur",
+      "quantity": 4,
+      "total": 80,
+      "unitPrice": 20
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:125",
+      "occurredAt": 1787313600000,
+      "productName": "Vigueur Moyen",
+      "quantity": 1,
+      "total": 25,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:126",
+      "occurredAt": 1787400000000,
+      "productName": "Soin Moyen",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:127",
+      "occurredAt": 1787400000000,
+      "productName": "Médicinale",
+      "quantity": 2,
+      "total": 22,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:128",
+      "occurredAt": 1787400000000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:129",
+      "occurredAt": 1787400000000,
+      "productName": "Soin Moyen",
+      "quantity": 2,
+      "total": 34,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:130",
+      "occurredAt": 1787486400000,
+      "productName": "Sel de Feu",
+      "quantity": 22,
+      "total": 110,
+      "unitPrice": 5
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:131",
+      "occurredAt": 1787486400000,
+      "productName": "Sel de Givre",
+      "quantity": 46,
+      "total": 230,
+      "unitPrice": 5
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:132",
+      "occurredAt": 1787486400000,
+      "productName": "Sel de Néant",
+      "quantity": 14,
+      "total": 70,
+      "unitPrice": 5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:133",
+      "occurredAt": 1787486400000,
+      "productName": "Soin Mineur",
+      "quantity": 1,
+      "total": 12,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:134",
+      "occurredAt": 1787486400000,
+      "productName": "Gemme insignifiante",
+      "quantity": 1,
+      "total": -2,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:135",
+      "occurredAt": 1787486400000,
+      "productName": "Sel de Givre",
+      "quantity": 2,
+      "total": -2,
+      "unitPrice": 1
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:136",
+      "occurredAt": 1787486400000,
+      "productName": "Sel de Néant",
+      "quantity": 1,
+      "total": -1,
+      "unitPrice": 1
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "order",
+      "legacyKey": "transaction:138",
+      "occurredAt": 1787572800000,
+      "productName": "Blé",
+      "quantity": 800,
+      "total": -400,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:139",
+      "occurredAt": 1787572800000,
+      "productName": "Saphir",
+      "quantity": 9,
+      "total": -2,
+      "comment": "4 Saphir, 4 rubis, 1 amethyste"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:140",
+      "occurredAt": 1787572800000,
+      "productName": "Soin Mineur",
+      "quantity": 5,
+      "total": 60,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:141",
+      "occurredAt": 1787572800000,
+      "productName": "Amethyste",
+      "quantity": 37,
+      "total": -7,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:142",
+      "occurredAt": 1787572800000,
+      "productName": "Gemme insignifiante",
+      "quantity": 5,
+      "total": -10,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:143",
+      "occurredAt": 1787572800000,
+      "productName": "Chevalier",
+      "quantity": 1,
+      "total": -8
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:144",
+      "occurredAt": 1787572800000,
+      "productName": "Res. feu",
+      "quantity": 1,
+      "total": -8,
+      "unitPrice": 8
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:145",
+      "occurredAt": 1787572800000,
+      "productName": "Sel de Néant",
+      "quantity": 1,
+      "total": -1,
+      "unitPrice": 1
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:146",
+      "occurredAt": 1787572800000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "order",
+      "legacyKey": "transaction:147",
+      "occurredAt": 1787572800000,
+      "productName": "Vin",
+      "quantity": 150,
+      "total": 600,
+      "unitPrice": 600,
+      "counterparty": "Jahim / taverne Solitude"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "order",
+      "legacyKey": "transaction:148",
+      "occurredAt": 1787572800000,
+      "productName": "Bière",
+      "quantity": 150,
+      "total": 500,
+      "unitPrice": 500,
+      "counterparty": "Jahim / taverne Solitude"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:149",
+      "occurredAt": 1787659200000,
+      "productName": "Soin Mineur",
+      "quantity": 3,
+      "total": 36,
+      "unitPrice": 12,
+      "comment": "sEL DE FEU, GIVRE, NEANT, ŒIL DE sMILODON"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:150",
+      "occurredAt": 1787659200000,
+      "productName": "Sel de Néant",
+      "quantity": 3,
+      "total": -7,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:151",
+      "occurredAt": 1787659200000,
+      "productName": "Gemme insignifiante",
+      "quantity": 1,
+      "total": -5,
+      "unitPrice": 2,
+      "comment": "gEMMES, SAPHIR, ..."
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:152",
+      "occurredAt": 1787659200000,
+      "productName": "Soin Profus",
+      "quantity": 6,
+      "total": 150,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:153",
+      "occurredAt": 1787659200000,
+      "productName": "Breuvage Récupération",
+      "quantity": 4,
+      "total": 80,
+      "unitPrice": 20
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:154",
+      "occurredAt": 1787659200000,
+      "productName": "Potion Résistance magique",
+      "quantity": 4,
+      "total": 60,
+      "unitPrice": 15
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:155",
+      "occurredAt": 1787659200000,
+      "productName": "Soin Mineur",
+      "quantity": 1,
+      "total": 12,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:156",
+      "occurredAt": 1787659200000,
+      "productName": "Oeil de smilodon",
+      "quantity": 2,
+      "total": -6,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:157",
+      "occurredAt": 1787659200000,
+      "productName": "Gemme insignifiante",
+      "quantity": 1,
+      "total": -2,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:158",
+      "occurredAt": 1787659200000,
+      "productName": "Soin Mineur",
+      "quantity": 5,
+      "total": 60,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:159",
+      "occurredAt": 1787659200000,
+      "productName": "Amethyste",
+      "quantity": 10,
+      "total": -2,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:160",
+      "occurredAt": 1787659200000,
+      "productName": "Rubis",
+      "quantity": 10,
+      "total": -2,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:161",
+      "occurredAt": 1787659200000,
+      "productName": "Rubis",
+      "quantity": 1,
+      "total": 0,
+      "unitPrice": 0.2,
+      "comment": "Don d'un client généreux"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:162",
+      "occurredAt": 1787659200000,
+      "productName": "Oeil de smilodon",
+      "quantity": 2,
+      "total": -6,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:163",
+      "occurredAt": 1787659200000,
+      "productName": "Res. Glace",
+      "quantity": 5,
+      "total": -50,
+      "unitPrice": 10
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:164",
+      "occurredAt": 1787659200000,
+      "productName": "Soin Moyen",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:165",
+      "occurredAt": 1787745600000,
+      "productName": "Oeil de smilodon",
+      "quantity": 4,
+      "total": -12,
+      "unitPrice": 3,
+      "comment": "+ don 1 dent de smilodon"
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:166",
+      "occurredAt": 1787745600000,
+      "productName": "Sel de Givre",
+      "quantity": 2,
+      "total": -4,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:167",
+      "occurredAt": 1787745600000,
+      "productName": "Sel de Néant",
+      "quantity": 2,
+      "total": -4,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:168",
+      "occurredAt": 1787745600000,
+      "productName": "Rubis",
+      "quantity": 8,
+      "total": -1,
+      "unitPrice": 0.2,
+      "comment": "+ don 1 saphir"
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:169",
+      "occurredAt": 1787745600000,
+      "productName": "Amethyste",
+      "quantity": 2,
+      "total": 0,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:170",
+      "occurredAt": 1787745600000,
+      "productName": "Gemme insignifiante",
+      "quantity": 1,
+      "total": -2,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:171",
+      "occurredAt": 1787745600000,
+      "productName": "Soin Mineur",
+      "quantity": 2,
+      "total": 24,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:172",
+      "occurredAt": 1787745600000,
+      "productName": "Soin Mineur",
+      "quantity": 3,
+      "total": 36,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:174",
+      "occurredAt": 1787745600000,
+      "productName": "Soin Moyen",
+      "quantity": 5,
+      "total": 85,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:175",
+      "occurredAt": 1787745600000,
+      "productName": "Gemme insignifiante",
+      "quantity": 1,
+      "total": -2,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:176",
+      "occurredAt": 1787745600000,
+      "productName": "Rubis",
+      "quantity": 5,
+      "total": -1,
+      "unitPrice": 0.2,
+      "comment": "rUBIS/sAPHIR/aMETHYSTE"
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "order",
+      "legacyKey": "transaction:177",
+      "occurredAt": 1787745600000,
+      "productName": "Soin Mineur",
+      "quantity": 25,
+      "total": 225,
+      "counterparty": "Aurèle",
+      "comment": "Commande du Temple"
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "order",
+      "legacyKey": "transaction:178",
+      "occurredAt": 1787745600000,
+      "productName": "Médicinale",
+      "quantity": 25,
+      "total": 225,
+      "counterparty": "Aurèle",
+      "comment": "Commande du Temple"
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:179",
+      "occurredAt": 1787745600000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:180",
+      "occurredAt": 1787745600000,
+      "productName": "Chevalier",
+      "quantity": 1,
+      "total": -6,
+      "unitPrice": 6
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:181",
+      "occurredAt": 1787745600000,
+      "productName": "Rubis",
+      "quantity": 32,
+      "total": -6,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:182",
+      "occurredAt": 1787745600000,
+      "productName": "Saphir",
+      "quantity": 30,
+      "total": -6,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:183",
+      "occurredAt": 1787745600000,
+      "productName": "Amethyste",
+      "quantity": 14,
+      "total": -2,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:184",
+      "occurredAt": 1787832000000,
+      "productName": "Blé",
+      "quantity": 40,
+      "total": -20,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:185",
+      "occurredAt": 1787832000000,
+      "productName": "Amethyste",
+      "quantity": 5,
+      "total": -1,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:186",
+      "occurredAt": 1787832000000,
+      "productName": "Rubis",
+      "quantity": 12,
+      "total": -2,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:187",
+      "occurredAt": 1787832000000,
+      "productName": "Saphir",
+      "quantity": 9,
+      "total": -2,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:188",
+      "occurredAt": 1787832000000,
+      "productName": "Oeil de smilodon",
+      "quantity": 5,
+      "total": -15,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:189",
+      "occurredAt": 1787832000000,
+      "productName": "Pied de lutin",
+      "quantity": 114,
+      "total": -28,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:190",
+      "occurredAt": 1787832000000,
+      "productName": "Rayon de miel",
+      "quantity": 2,
+      "total": -6,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:191",
+      "occurredAt": 1787832000000,
+      "productName": "Raisin jasbay",
+      "quantity": 24,
+      "total": -4,
+      "unitPrice": 0.1666666667
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:192",
+      "occurredAt": 1787832000000,
+      "productName": "Hivernelle",
+      "quantity": 2,
+      "total": -1,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:193",
+      "occurredAt": 1787832000000,
+      "productName": "Oeil de smilodon",
+      "quantity": 2,
+      "total": -6,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:194",
+      "occurredAt": 1787832000000,
+      "productName": "Graisse de troll",
+      "quantity": 2,
+      "total": -6,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:195",
+      "occurredAt": 1787832000000,
+      "productName": "Oeil de smilodon",
+      "quantity": 3,
+      "total": -9,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:196",
+      "occurredAt": 1787832000000,
+      "productName": "Oeuf de fauvette",
+      "quantity": 9,
+      "total": -2,
+      "unitPrice": 1,
+      "comment": "dont 1 pieds de lutin offerts"
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:197",
+      "occurredAt": 1787832000000,
+      "productName": "Racine de canis",
+      "quantity": 8,
+      "total": -1,
+      "unitPrice": 0.25,
+      "comment": "dont 3 racine de canis offerte"
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "sale",
+      "legacyKey": "transaction:198",
+      "occurredAt": 1787832000000,
+      "productName": "Soin Moyen",
+      "quantity": 2,
+      "total": 34,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:199",
+      "occurredAt": 1787918400000,
+      "productName": "Soin Moyen",
+      "quantity": 3,
+      "total": 51,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:200",
+      "occurredAt": 1787918400000,
+      "productName": "Oeil de smilodon",
+      "quantity": 1,
+      "total": -3,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:201",
+      "occurredAt": 1787918400000,
+      "productName": "Pied de lutin",
+      "quantity": 6,
+      "total": -1,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:202",
+      "occurredAt": 1787918400000,
+      "productName": "Gemme insignifiante",
+      "quantity": 1,
+      "total": -2,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:203",
+      "occurredAt": 1787918400000,
+      "productName": "Sel de Feu",
+      "quantity": 2,
+      "total": -4,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:204",
+      "occurredAt": 1787918400000,
+      "productName": "Sel de Givre",
+      "quantity": 4,
+      "total": -8,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:205",
+      "occurredAt": 1787918400000,
+      "productName": "Blé",
+      "quantity": 15,
+      "total": 15,
+      "unitPrice": 1
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:206",
+      "occurredAt": 1787918400000,
+      "productName": "Pied de lutin",
+      "quantity": 54,
+      "total": -13,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:207",
+      "occurredAt": 1787918400000,
+      "productName": "Oeuf de fauvette",
+      "quantity": 18,
+      "total": -18,
+      "unitPrice": 1
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:208",
+      "occurredAt": 1787918400000,
+      "productName": "Oeil de smilodon",
+      "quantity": 1,
+      "total": -3,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:209",
+      "occurredAt": 1787918400000,
+      "productName": "Rayon de miel",
+      "quantity": 2,
+      "total": -6,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:210",
+      "occurredAt": 1787918400000,
+      "productName": "Amethyste",
+      "quantity": 2,
+      "total": 0,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:211",
+      "occurredAt": 1787918400000,
+      "productName": "Rubis",
+      "quantity": 7,
+      "total": -1,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:212",
+      "occurredAt": 1787918400000,
+      "productName": "Saphir",
+      "quantity": 1,
+      "total": 0,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "sale",
+      "legacyKey": "transaction:213",
+      "occurredAt": 1787918400000,
+      "productName": "Potion Guerrier",
+      "quantity": 5,
+      "total": 100,
+      "unitPrice": 20
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "sale",
+      "legacyKey": "transaction:214",
+      "occurredAt": 1787918400000,
+      "productName": "Soin Moyen",
+      "quantity": 8,
+      "total": 136,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "sale",
+      "legacyKey": "transaction:215",
+      "occurredAt": 1787918400000,
+      "productName": "Potion Résistance magique",
+      "quantity": 4,
+      "total": 60,
+      "unitPrice": 15
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:216",
+      "occurredAt": 1788004800000,
+      "productName": "Pied de lutin",
+      "quantity": 8,
+      "total": -2,
+      "unitPrice": 0.25
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:217",
+      "occurredAt": 1788004800000,
+      "productName": "Raisin jasbay",
+      "quantity": 793,
+      "total": -159,
+      "unitPrice": 0.2,
+      "counterparty": "Confrérie du dragon d'or",
+      "comment": "+1 rayon de miel"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:218",
+      "occurredAt": 1788004800000,
+      "productName": "Rubis",
+      "quantity": 59,
+      "total": -11,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:219",
+      "occurredAt": 1788004800000,
+      "productName": "Saphir",
+      "quantity": 56,
+      "total": -11,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:220",
+      "occurredAt": 1788004800000,
+      "productName": "Amethyste",
+      "quantity": 16,
+      "total": -3,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "sale",
+      "legacyKey": "transaction:221",
+      "occurredAt": 1788004800000,
+      "productName": "Médicinale",
+      "quantity": 1,
+      "total": 11,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:222",
+      "occurredAt": 1788004800000,
+      "productName": "Blé",
+      "quantity": 40,
+      "total": -20,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:223",
+      "occurredAt": 1788004800000,
+      "productName": "Graisse de troll",
+      "quantity": 3,
+      "total": -9,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "bundle",
+      "legacyKey": "transaction:224",
+      "occurredAt": 1788004800000,
+      "productName": "L'aventurier débutant",
+      "quantity": 1,
+      "total": 29,
+      "unitPrice": 29
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "purchase",
+      "legacyKey": "transaction:225",
+      "occurredAt": 1788004800000,
+      "productName": "Chevalier",
+      "quantity": 1,
+      "total": -8,
+      "unitPrice": 8,
+      "comment": "C'est une potion d'illusion en réalité  mais je peux pas l'écrire !!!"
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:226",
+      "occurredAt": 1788091200000,
+      "productName": "Potion Récupération",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Anoril Aliaria",
+      "kind": "sale",
+      "legacyKey": "transaction:227",
+      "occurredAt": 1788091200000,
+      "productName": "Médicinale",
+      "quantity": 10,
+      "total": 110,
+      "unitPrice": 11
+    },
+    {
+      "actorName": "Silas d'Amenos",
+      "kind": "purchase",
+      "legacyKey": "transaction:228",
+      "occurredAt": 1788091200000,
+      "productName": "Blé",
+      "quantity": 140,
+      "total": -70,
+      "unitPrice": 0.5
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:229",
+      "occurredAt": 1788091200000,
+      "productName": "Breuvage Récupération",
+      "quantity": 3,
+      "total": 60,
+      "unitPrice": 20
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:230",
+      "occurredAt": 1788091200000,
+      "productName": "Soin Moyen",
+      "quantity": 1,
+      "total": 17,
+      "unitPrice": 17
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:231",
+      "occurredAt": 1788091200000,
+      "productName": "Soin Mineur",
+      "quantity": 3,
+      "total": 36,
+      "unitPrice": 12
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:232",
+      "occurredAt": 1788091200000,
+      "productName": "Rubis",
+      "quantity": 1,
+      "total": -1,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:233",
+      "occurredAt": 1788091200000,
+      "productName": "Amethyste",
+      "quantity": 1,
+      "total": 0,
+      "unitPrice": 0.2
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:234",
+      "occurredAt": 1788091200000,
+      "productName": "Graisse de troll",
+      "quantity": 3,
+      "total": -9,
+      "unitPrice": 3
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:235",
+      "occurredAt": 1788091200000,
+      "productName": "Gemme insignifiante",
+      "quantity": 3,
+      "total": -6,
+      "unitPrice": 2
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "sale",
+      "legacyKey": "transaction:236",
+      "occurredAt": 1788091200000,
+      "productName": "Breuvage Guerrier",
+      "quantity": 2,
+      "total": 30,
+      "discount": 20,
+      "unitPrice": 25
+    },
+    {
+      "actorName": "Gand Ulf",
+      "kind": "purchase",
+      "legacyKey": "transaction:237",
+      "occurredAt": 1788091200000,
+      "productName": "Saphir",
+      "quantity": 2,
+      "total": 0,
+      "unitPrice": 0.2
+    }
+  ]
+}

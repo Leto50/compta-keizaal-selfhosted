@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.netlify/
+.output/
+.tanstack/
+.convex/
+coverage/
+
+.env
+.env.*
+!.env.example
+!.env.convex.example
+
+*.log
+.DS_Store
