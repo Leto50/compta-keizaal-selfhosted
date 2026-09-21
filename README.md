@@ -41,6 +41,14 @@ docker compose --env-file .env.local up -d postgres backend dashboard
 pnpm selfhost:key
 ```
 
+Sur une plateforme de déploiement, créer la variable `POSTGRES_PASSWORD` dans
+son interface avec la valeur hexadécimale générée. Le fichier Compose doit
+conserver exactement `${POSTGRES_PASSWORD:?...}` avec un seul `$`. Écrire `$$`
+empêche l’interpolation et transmet la chaîne `${POSTGRES_PASSWORD...}` au
+conteneur. Docker Compose charge automatiquement `.env`, mais pas `.env.local` ;
+en ligne de commande, ce projet passe donc explicitement
+`--env-file .env.local`.
+
 Copier la clé affichée dans `CONVEX_SELF_HOSTED_ADMIN_KEY` de `.env.local`.
 Remplacer ensuite les secrets de `.env.convex.local`. Deux secrets peuvent être
 générés ainsi :

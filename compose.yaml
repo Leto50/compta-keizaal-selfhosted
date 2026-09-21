@@ -7,12 +7,12 @@ services:
     environment:
       POSTGRES_DB: convex_self_hosted
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définissez POSTGRES_PASSWORD dans .env.local}
-      POSTGRES_USER: ${POSTGRES_USER:-convex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définissez POSTGRES_PASSWORD dans l'environnement de déploiement}
+      POSTGRES_USER: convex
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ["CMD", "pg_isready", "-U", "convex", "-d", "convex_self_hosted"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -39,7 +39,7 @@ services:
       DISABLE_METRICS_ENDPOINT: ${DISABLE_METRICS_ENDPOINT:-true}
       DOCUMENT_RETENTION_DELAY: ${DOCUMENT_RETENTION_DELAY:-172800}
       INSTANCE_NAME: ${INSTANCE_NAME:-convex-self-hosted}
-      POSTGRES_URL: postgresql://${POSTGRES_USER:-convex}:${POSTGRES_PASSWORD:?Définissez POSTGRES_PASSWORD dans .env.local}@postgres:5432
+      POSTGRES_URL: postgresql://convex:${POSTGRES_PASSWORD:?Définissez POSTGRES_PASSWORD dans l'environnement de déploiement}@postgres:5432
       DO_NOT_REQUIRE_SSL: "1"
       REDACT_LOGS_TO_CLIENT: ${REDACT_LOGS_TO_CLIENT:-true}
       RUST_LOG: ${RUST_LOG:-info}
