@@ -123,6 +123,7 @@ function AccountPage() {
     isHydrated && (session?.user.role?.split(",").includes("admin") ?? false)
   const currentWeek = data.weeks[0]
   const resultAfterCharges = (currentWeek?.net ?? 0) - data.charges.total
+  const chancelleryPayment = data.charges.census + data.charges.tax
   const [selectedWeekStartsAt, setSelectedWeekStartsAt] = useState(
     currentWeek?.startsAt.toString() ?? ""
   )
@@ -505,7 +506,7 @@ function AccountPage() {
         <Card className="h-fit rounded-none border-t-[3px] border-[#5b462b]/35 border-t-primary/60 bg-[#fff8e7]/30 ring-0">
           <CardHeader>
             <CardTitle className="font-display text-xl">
-              Charges de la semaine
+              Charges de la semaine en cours
             </CardTitle>
             <CardDescription>
               Estimation avec les paramètres comptables actuels.
@@ -524,7 +525,7 @@ function AccountPage() {
               value={data.charges.census}
             />
             <ChargeRow
-              detail={`${formatNumber(data.settings.taxRate * 100)} % des entrées`}
+              detail={`${formatNumber(data.settings.taxRate * 100)} % du bénéfice après cens et loyer`}
               icon={ArrowUpRight}
               label="Taxe"
               value={data.charges.tax}
@@ -535,6 +536,20 @@ function AccountPage() {
               label="Salaires"
               value={data.charges.salary}
             />
+            <Separator className="my-1" />
+            <div className="flex items-end justify-between gap-4 border border-primary/20 bg-primary/6 p-3">
+              <div>
+                <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                  À verser à la châtellerie
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Cens + taxe
+                </p>
+              </div>
+              <p className="font-display text-2xl text-primary tabular-nums">
+                {formatDecimalSeptims(chancelleryPayment)}
+              </p>
+            </div>
             <Separator className="my-1" />
             <div className="flex items-end justify-between gap-4">
               <div>

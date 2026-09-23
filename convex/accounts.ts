@@ -119,11 +119,14 @@ export const overview = query({
       }
     })
     const currentWeek = weeks[0]
+    const census = settings.censusPerEmployee * settings.employeeCount
+    const rent = settings.weeklyRent
+    const taxableProfit = Math.max((currentWeek?.net ?? 0) - census - rent, 0)
     const charges = {
-      census: settings.censusPerEmployee * settings.employeeCount,
-      rent: settings.weeklyRent,
+      census,
+      rent,
       salary: currentWeek?.salary ?? 0,
-      tax: Math.floor((currentWeek?.incoming ?? 0) * settings.taxRate),
+      tax: Math.floor(taxableProfit * settings.taxRate),
     }
     return {
       charges: {

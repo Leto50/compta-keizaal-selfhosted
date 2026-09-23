@@ -280,8 +280,8 @@ describe("accounts", () => {
       census: 160,
       rent: 500,
       salary: 25,
-      tax: 20,
-      total: 705,
+      tax: 0,
+      total: 685,
     })
     expect(account.journalBalance).toBe(115)
   })
@@ -334,8 +334,38 @@ describe("accounts", () => {
       salaryRevenue: 0,
       transactionCount: 1,
     })
-    expect(account.charges.tax).toBe(20)
+    expect(account.charges.tax).toBe(0)
     expect(account.journalBalance).toBe(20)
+  })
+
+  it("calcule la taxe sur le bénéfice après déduction du cens et du loyer", async () => {
+    const backend = createTestBackend()
+    const admin = await asAuthenticatedUser(backend, "admin")
+    const now = Date.now()
+    await admin.mutation(api.accounts.saveSettings, {
+      cashBalance: 0,
+      censusPerEmployee: 50,
+      employeeCount: 2,
+      fundsBalance: 0,
+      salaryRate: 0.25,
+      taxRate: 0.2,
+      weeklyRent: 100,
+    })
+    await insertTransaction(backend, now, 1_000, "Alix")
+    await insertTransaction(backend, now, -200, "Alix")
+
+    const account = await admin.query(api.accounts.overview, {
+      currentWeekStartsAt: now,
+    })
+
+    expect(account.weeks[0]?.net).toBe(800)
+    expect(account.charges).toEqual({
+      census: 100,
+      rent: 100,
+      salary: 250,
+      tax: 120,
+      total: 570,
+    })
   })
 
   it("calcule les salaires par personnage sur les ventes hors commande", async () => {

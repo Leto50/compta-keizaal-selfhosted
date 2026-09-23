@@ -342,7 +342,7 @@ export function AccountSettingsDialog({
                 return (
                   <Field data-invalid={invalid}>
                     <FieldLabel htmlFor={`${fieldId}-tax`}>
-                      Taxe sur les entrées
+                      Taxe sur les bénéfices
                     </FieldLabel>
                     <InputGroup>
                       <InputGroupInput
@@ -365,6 +365,10 @@ export function AccountSettingsDialog({
                         <InputGroupText>%</InputGroupText>
                       </InputGroupAddon>
                     </InputGroup>
+                    <FieldDescription>
+                      Appliquée au bénéfice hebdomadaire après déduction du cens
+                      et du loyer.
+                    </FieldDescription>
                     {invalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : null}
