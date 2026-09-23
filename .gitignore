@@ -6,6 +6,14 @@ dist/
 .convex/
 coverage/
 
+# L'infrastructure et les exports restent propres au serveur.
+/compose.yaml
+/compose.yml
+/docker-compose.yaml
+/docker-compose.yml
+/backups/
+/convex-cloud-export-*.zip
+
 .env
 .env.*
 !.env.example
