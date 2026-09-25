@@ -45,6 +45,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Les paquets DSM ne sont pas tous dans le PATH du service systemd.
+          export PATH="/var/packages/Git/target/bin:/usr/local/bin:/opt/bin:$PATH"
+
+          command -v git >/dev/null
+          command -v docker >/dev/null
+
           cd /volume1/docker/eau-roche
 
           git fetch origin main
