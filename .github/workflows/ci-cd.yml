@@ -61,9 +61,13 @@ jobs:
             --entrypoint sh \
             alpine/git:latest \
             -lc '
+              if [ ! -d .git ]; then
+                git init
+                git remote add origin https://github.com/Leto50/compta-keizaal-selfhosted.git
+              fi
+
               git -c safe.directory=/repo fetch origin main &&
-              git -c safe.directory=/repo checkout main &&
-              git -c safe.directory=/repo merge --ff-only "$GITHUB_SHA" &&
+              git -c safe.directory=/repo reset --hard "$GITHUB_SHA" &&
               test "$(git -c safe.directory=/repo rev-parse HEAD)" = "$GITHUB_SHA"
             '
 
