@@ -164,7 +164,7 @@ function AccountPage() {
         eyebrow="Tenue de boutique"
         title="Compte"
       >
-        Suivez les entrées, les sorties et les charges de L’eau d’Roche 2 sans
+        Suivez les entrées, les sorties et les charges de L’eau d’Roche sans
         refaire les calculs du classeur.
       </PageHeader>
 

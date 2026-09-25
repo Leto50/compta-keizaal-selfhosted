@@ -1,6 +1,6 @@
-# L’eau d’Roche 2
+# L’eau d’Roche
 
-Application de gestion de la boutique RP Skyrim L’eau d’Roche 2. Le frontend
+Application de gestion de la boutique RP Skyrim L’eau d’Roche. Le frontend
 utilise TanStack Start et le backend utilise un déploiement Convex auto-hébergé.
 
 Ce dépôt contient le code applicatif, les fonctions Convex et le `Dockerfile` de
