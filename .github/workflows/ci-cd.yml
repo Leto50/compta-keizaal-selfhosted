@@ -48,16 +48,25 @@ jobs:
           # Les paquets DSM ne sont pas tous dans le PATH du service systemd.
           export PATH="/var/packages/Git/target/bin:/usr/local/bin:/opt/bin:$PATH"
 
-          command -v git >/dev/null
           command -v docker >/dev/null
 
           cd /volume1/docker/eau-roche
 
-          git fetch origin main
-          git checkout main
-          git merge --ff-only "$GITHUB_SHA"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --env GITHUB_SHA \
+            --env HOME=/tmp \
+            --volume "$PWD:/repo" \
+            --workdir /repo \
+            --entrypoint sh \
+            alpine/git:latest \
+            -lc '
+              git -c safe.directory=/repo fetch origin main &&
+              git -c safe.directory=/repo checkout main &&
+              git -c safe.directory=/repo merge --ff-only "$GITHUB_SHA" &&
+              test "$(git -c safe.directory=/repo rev-parse HEAD)" = "$GITHUB_SHA"
+            '
 
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test -f docker-compose.yaml
           test -f .env
           test -f .env.site2
