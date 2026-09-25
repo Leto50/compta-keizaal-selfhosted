@@ -61,10 +61,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         content:
-          "L’application de gestion de L’eau d’Roche : inventaire, opérations, commandes et recettes.",
+          "L’application de gestion de L’eau d’Roche 2 : inventaire, opérations, commandes et recettes.",
         name: "description",
       },
-      { title: "L’eau d’Roche" },
+      { title: "L’eau d’Roche 2" },
       { content: "#1c1a15", name: "theme-color" },
     ],
   }),

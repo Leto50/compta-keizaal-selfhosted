@@ -106,7 +106,7 @@ function Brand() {
       <ShopMark className="size-9 shrink-0 text-sidebar-primary" />
       <div className="min-w-0 group-data-[collapsible=icon]:hidden">
         <p className="truncate font-display text-base tracking-[0.12em] text-sidebar-foreground">
-          L’eau d’Roche
+          L’eau d’Roche 2
         </p>
         <p className="truncate text-[0.62rem] tracking-[0.22em] text-sidebar-foreground/60 uppercase">
           Gestion de boutique
@@ -229,7 +229,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
             className="text-[#eee2cc] hover:bg-white/5 hover:text-white"
           />
           <span className="font-display text-sm tracking-[0.12em]">
-            L’eau d’Roche
+            L’eau d’Roche 2
           </span>
         </header>
 

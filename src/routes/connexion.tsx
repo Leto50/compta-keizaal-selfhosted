@@ -22,7 +22,7 @@ export const Route = createFileRoute("/connexion")({
     }
   },
   component: AuthenticationPage,
-  head: () => ({ meta: [{ title: "Connexion · L’eau d’Roche" }] }),
+  head: () => ({ meta: [{ title: "Connexion · L’eau d’Roche 2" }] }),
 })
 
 function AuthenticationPage() {
@@ -61,7 +61,7 @@ function AuthenticationPage() {
             Gestion de la boutique
           </p>
           <h1 className="mt-4 font-display text-4xl leading-tight text-[#f0e4ce] sm:text-6xl">
-            L’eau d’Roche
+            L’eau d’Roche 2
           </h1>
           <p className="mt-6 max-w-md text-base leading-7 text-[#bcb09d]">
             Inventaire, ventes, achats, commandes et recettes dans un outil
@@ -77,7 +77,7 @@ function AuthenticationPage() {
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 text-[#55452e] lg:hidden">
             <ShopMark />
-            <p className="font-display tracking-wider">L’eau d’Roche</p>
+            <p className="font-display tracking-wider">L’eau d’Roche 2</p>
           </div>
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Espace employés
