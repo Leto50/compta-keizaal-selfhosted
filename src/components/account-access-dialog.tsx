@@ -38,8 +38,11 @@ import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { authClient } from "@/lib/auth-client"
 import { passwordResetFormSchema } from "@/lib/form-schemas"
-
-export type AccountRole = "admin" | "user"
+import {
+  accountRoleLabels,
+  isAccountRole,
+  type AccountRole,
+} from "../../shared/account-roles"
 
 export interface ManagedAccount {
   banned: boolean
@@ -54,10 +57,6 @@ interface AccountAccessDialogProps {
   currentUserId?: string
   isLastActiveAdmin: boolean
   trigger: ReactNode
-}
-
-function isAccountRole(value: string): value is AccountRole {
-  return value === "admin" || value === "user"
 }
 
 function resultError(
@@ -148,7 +147,7 @@ export function AccountAccessDialog({
         return
       }
       toast.success(
-        `${account.name} est maintenant ${role === "admin" ? "administrateur" : "employé"}.`
+        `${account.name} est maintenant ${accountRoleLabels[role].toLowerCase()}.`
       )
     } catch {
       toast.error("Impossible de modifier ce rôle.")
@@ -245,6 +244,9 @@ export function AccountAccessDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem disabled={roleIsProtected} value="reader">
+                    Lecteur
+                  </SelectItem>
                   <SelectItem disabled={roleIsProtected} value="user">
                     Employé
                   </SelectItem>
@@ -256,7 +258,7 @@ export function AccountAccessDialog({
               disabled={
                 isSavingRole ||
                 role === account.role ||
-                (role === "user" && roleIsProtected)
+                (role !== "admin" && roleIsProtected)
               }
               onClick={handleRoleSave}
               type="button"

@@ -1,10 +1,12 @@
-import betterAuthTest from "@convex-dev/better-auth/test"
 import { convexTest } from "convex-test"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { api, components, internal } from "./_generated/api"
 import schema from "./schema"
 import { modules } from "./test.setup"
+import authSchema from "./betterAuth/schema"
+
+const authModules = import.meta.glob("./betterAuth/**/*.ts")
 
 function documentId(value: unknown): string {
   if (
@@ -22,7 +24,7 @@ function documentId(value: unknown): string {
 
 function createTestBackend() {
   const backend = convexTest(schema, modules)
-  betterAuthTest.register(backend)
+  backend.registerComponent("betterAuth", authSchema, authModules)
   return backend
 }
 
@@ -39,6 +41,7 @@ async function asAuthenticatedMember(
           email: "employe@example.test",
           emailVerified: true,
           name: "Employé test",
+          role: "user",
           updatedAt: now,
         },
         model: "user",

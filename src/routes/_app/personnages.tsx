@@ -1,6 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { Pencil, UserRound } from "lucide-react"
 
 import {
@@ -14,8 +14,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardHeader, CardTitle } from "@/components/ui/card"
 import { api } from "../../../convex/_generated/api"
+import { hasAccountRole } from "../../../shared/account-roles"
 
 export const Route = createFileRoute("/_app/personnages")({
+  beforeLoad: async ({ context }) => {
+    const user = await context.queryClient.fetchQuery({
+      ...convexQuery(api.auth.getCurrentUser, {}),
+      staleTime: 0,
+    })
+    if (!hasAccountRole(user?.role, "admin")) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: "/" })
+    }
+  },
   component: CharactersPage,
   errorComponent: PageError,
   loader: async ({ context }) => {

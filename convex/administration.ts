@@ -4,6 +4,7 @@ import { v } from "convex/values"
 import { internalMutation, query } from "./_generated/server"
 import { createAuth } from "./auth"
 import { requireAdmin } from "./lib/auth"
+import { accountRole } from "../shared/account-roles"
 
 function timestamp(value: Date | number): number {
   return value instanceof Date ? value.getTime() : value
@@ -41,7 +42,7 @@ export const listAccounts = query({
       id: user.id,
       identifier: accountIdentifier(user),
       name: user.name,
-      role: user.role?.split(",").includes("admin") ? "admin" : "user",
+      role: accountRole(user.role),
       updatedAt: timestamp(user.updatedAt),
     }))
   },

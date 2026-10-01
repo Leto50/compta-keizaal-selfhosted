@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { convexQuery } from "@convex-dev/react-query"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useQuery } from "convex/react"
 import { type FunctionReturnType } from "convex/server"
 import {
@@ -13,10 +14,7 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 
-import {
-  AccountAccessDialog,
-  type ManagedAccount,
-} from "@/components/account-access-dialog"
+import { AccountAccessDialog } from "@/components/account-access-dialog"
 import { AccountDialog } from "@/components/account-dialog"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
@@ -42,9 +40,14 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useHydrated } from "@/hooks/use-hydrated"
+import { usePermissions } from "@/hooks/use-permissions"
 import { authClient } from "@/lib/auth-client"
 import { formatDate } from "@/lib/format"
 import { api } from "../../../convex/_generated/api"
+import {
+  accountRoleLabels,
+  hasAccountRole,
+} from "../../../shared/account-roles"
 
 const PAGE_SIZE = 30
 
@@ -135,12 +138,22 @@ function validateAdministrationSearch(
 }
 
 export const Route = createFileRoute("/_app/administration")({
+  beforeLoad: async ({ context }) => {
+    const user = await context.queryClient.fetchQuery({
+      ...convexQuery(api.auth.getCurrentUser, {}),
+      staleTime: 0,
+    })
+    if (!hasAccountRole(user?.role, "admin")) {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw redirect({ to: "/" })
+    }
+  },
   component: AdministrationPage,
   validateSearch: validateAdministrationSearch,
 })
 
 function accountRoleLabel(role: Account["role"]): string {
-  return role === "admin" ? "Administrateur" : "Employé"
+  return accountRoleLabels[role]
 }
 
 function AccountStatusBadge({ banned }: Readonly<{ banned: boolean }>) {
@@ -169,7 +182,7 @@ function ManageAccountButton({
 }>) {
   return (
     <AccountAccessDialog
-      account={account as ManagedAccount}
+      account={account}
       currentUserId={currentUserId}
       isLastActiveAdmin={isLastActiveAdmin}
       trigger={
@@ -507,7 +520,7 @@ function AdministrationPage() {
   const navigate = Route.useNavigate()
   const { data: session, isPending: isSessionPending } = authClient.useSession()
   const isHydrated = useHydrated()
-  const isAdmin = session?.user.role?.split(",").includes("admin") ?? false
+  const { isAdmin, isPending: isPermissionsPending } = usePermissions()
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false)
   const [pagination, setPagination] = useState<PaginationState>({
     cursor: null,
@@ -529,7 +542,8 @@ function AdministrationPage() {
       : "skip"
   )
 
-  if (!isHydrated || isSessionPending) return <PageSkeleton />
+  if (!isHydrated || isSessionPending || isPermissionsPending)
+    return <PageSkeleton />
   if (!isAdmin) return <RestrictedAdministration />
   if (accounts === undefined) return <PageSkeleton />
 

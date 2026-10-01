@@ -4,6 +4,7 @@ import { components } from "./_generated/api"
 import authSchema from "./betterAuth/schema"
 import schema from "./schema"
 import { modules } from "./test.setup"
+import { accountRoleLabels, type AccountRole } from "../shared/account-roles"
 
 const authModules = import.meta.glob("./betterAuth/**/*.ts")
 
@@ -29,7 +30,7 @@ export function createTestBackend() {
 
 export async function asAuthenticatedUser(
   backend: ReturnType<typeof createTestBackend>,
-  role: "admin" | "user" = "user"
+  role: AccountRole = "user"
 ) {
   const now = Date.now()
   const createdUser: unknown = await backend.mutation(
@@ -40,7 +41,10 @@ export async function asAuthenticatedUser(
           createdAt: now,
           email: `${role}@example.test`,
           emailVerified: true,
-          name: role === "admin" ? "Administratrice test" : "Employé test",
+          name:
+            role === "admin"
+              ? "Administratrice test"
+              : `${accountRoleLabels[role]} test`,
           role,
           updatedAt: now,
           username: role,

@@ -3,7 +3,7 @@ import { paginationOptsValidator } from "convex/server"
 
 import { type Doc, type Id } from "./_generated/dataModel"
 import { mutation, query, type QueryCtx } from "./_generated/server"
-import { requireUser } from "./lib/auth"
+import { requireUser, requireWriter } from "./lib/auth"
 import { isFinancialTransaction } from "./lib/accountSummary"
 import { resolveOrderContact } from "./lib/contacts"
 import {
@@ -24,6 +24,7 @@ import { readModelsAreReady } from "./lib/readModels"
 import { normalizeName } from "./lib/text"
 import { buildTransactionSearchText } from "./lib/transactionSearch"
 import { financialTransactionKind, stockOperationKind } from "./lib/validators"
+import { canWrite } from "../shared/account-roles"
 
 const MAX_TEXT_LENGTH = 500
 const MAX_SEARCH_LENGTH = 100
@@ -71,7 +72,8 @@ function cleanOptionalText(value: string | undefined): string | undefined {
 
 async function withTransactionDetails(
   ctx: QueryCtx,
-  transaction: Doc<"transactions">
+  transaction: Doc<"transactions">,
+  canManage: boolean
 ) {
   const [lines, movements] = await Promise.all([
     transaction.lineCount
@@ -98,8 +100,8 @@ async function withTransactionDetails(
   }
   return {
     ...transaction,
-    canManage: true,
-    canDelete: true,
+    canManage,
+    canDelete: canManage,
     lines,
     stockDeltas: [...deltas].map(([productId, delta]) => ({
       delta,
@@ -118,7 +120,7 @@ export const listPage = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const user = await requireUser(ctx)
     const readModelsReady = await readModelsAreReady(ctx)
     const from = args.from
     const to = args.to
@@ -277,8 +279,8 @@ export const listPage = query({
       ...result,
       page: result.page.map((transaction) => ({
         ...transaction,
-        canManage: true,
-        canDelete: true,
+        canManage: canWrite(user.role),
+        canDelete: canWrite(user.role),
       })),
     }
   },
@@ -289,10 +291,10 @@ export const getDetails = query({
     transactionId: v.id("transactions"),
   },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const user = await requireUser(ctx)
     const transaction = await ctx.db.get(args.transactionId)
     if (!transaction) return null
-    return withTransactionDetails(ctx, transaction)
+    return withTransactionDetails(ctx, transaction, canWrite(user.role))
   },
 })
 
@@ -301,7 +303,7 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const user = await requireUser(ctx)
     const limit = Math.min(200, Math.max(10, Math.round(args.limit ?? 100)))
     const transactions = await ctx.db
       .query("transactions")
@@ -310,7 +312,7 @@ export const list = query({
       .take(limit)
     return Promise.all(
       transactions.map((transaction) =>
-        withTransactionDetails(ctx, transaction)
+        withTransactionDetails(ctx, transaction, canWrite(user.role))
       )
     )
   },
@@ -326,7 +328,7 @@ export const recordExchange = mutation({
     occurredAt: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const character = await ctx.db.get(args.characterId)
     if (!character?.active) {
       throw new ConvexError({
@@ -453,7 +455,7 @@ export const recordTrade = mutation({
     occurredAt: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const character = await ctx.db.get(args.characterId)
     if (!character?.active) {
       throw new ConvexError({
@@ -705,7 +707,7 @@ export const record = mutation({
     unitPrice: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const [product, character] = await Promise.all([
       ctx.db.get(args.productId),
       ctx.db.get(args.characterId),
@@ -858,7 +860,7 @@ export const updateExchange = mutation({
     transactionId: v.id("transactions"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const transaction = await ctx.db.get(args.transactionId)
     if (!transaction) {
       throw new ConvexError({
@@ -1126,7 +1128,7 @@ export const remove = mutation({
     transactionId: v.id("transactions"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const transaction = await ctx.db.get(args.transactionId)
     if (!transaction) {
       throw new ConvexError({
@@ -1209,7 +1211,7 @@ export const update = mutation({
     unitPrice: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const transaction = await ctx.db.get(args.transactionId)
     if (!transaction) {
       throw new ConvexError({

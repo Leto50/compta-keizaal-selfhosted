@@ -1,5 +1,6 @@
 import { useForm, useStore } from "@tanstack/react-form"
 import { useMutation, useQuery } from "convex/react"
+import { usePermissions } from "@/hooks/use-permissions"
 import { type FunctionReturnType } from "convex/server"
 import {
   Archive,
@@ -679,6 +680,7 @@ export function RecipeDialog({
 }
 
 export function RecipeArchivesDialog() {
+  const { canWrite } = usePermissions()
   const archivedRecipes = useQuery(api.recipes.listArchived)
   const setRecipeActive = useMutation(api.recipes.setActive)
   const [restoringId, setRestoringId] = useState<string>()
@@ -714,7 +716,9 @@ export function RecipeArchivesDialog() {
             Recettes archivées
           </DialogTitle>
           <DialogDescription>
-            Réactivez une recette pour la faire réapparaître dans le registre.
+            {canWrite
+              ? "Réactivez une recette pour la faire réapparaître dans le registre."
+              : "Les recettes retirées du registre de fabrication."}
           </DialogDescription>
         </DialogHeader>
 
@@ -749,25 +753,27 @@ export function RecipeArchivesDialog() {
                         : ` · ${formatDecimalSeptims(recipe.cost)}`}
                     </p>
                   </div>
-                  <Button
-                    disabled={restoringId !== undefined}
-                    onClick={() => {
-                      void restoreRecipe(recipe)
-                    }}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {restoringId === recipe._id ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : (
-                      <ArchiveRestore aria-hidden="true" />
-                    )}
-                    Réactiver
-                  </Button>
+                  {canWrite ? (
+                    <Button
+                      disabled={restoringId !== undefined}
+                      onClick={() => {
+                        void restoreRecipe(recipe)
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {restoringId === recipe._id ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" />
+                      )}
+                      Réactiver
+                    </Button>
+                  ) : null}
                 </div>
               ))}
             </div>

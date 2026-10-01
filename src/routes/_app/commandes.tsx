@@ -28,6 +28,7 @@ import { OrderPreparationDetails } from "@/components/order-preparation-details"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
+import { usePermissions } from "@/hooks/use-permissions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
@@ -161,6 +162,7 @@ export const Route = createFileRoute("/_app/commandes")({
 })
 
 function OrdersPage() {
+  const { canWrite } = usePermissions()
   const { view } = Route.useSearch()
   const navigate = Route.useNavigate()
   const [historyPagination, setHistoryPagination] =
@@ -287,16 +289,18 @@ function OrdersPage() {
     <div className="animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
       <PageHeader
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <ContactManagerDialog />
-            <OrderDialog
-              characters={characters}
-              contacts={contacts}
-              initialKind={kind}
-              products={products}
-              recipes={recipes}
-            />
-          </div>
+          canWrite ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <ContactManagerDialog />
+              <OrderDialog
+                characters={characters}
+                contacts={contacts}
+                initialKind={kind}
+                products={products}
+                recipes={recipes}
+              />
+            </div>
+          ) : null
         }
         eyebrow="Suivi des commandes"
         title="Commandes"
@@ -444,6 +448,7 @@ function OrderEntry({
   products: readonly Doc<"products">[]
   recipes: readonly Recipe[]
 }>) {
+  const { canWrite } = usePermissions()
   const total = orderTotal(order)
   const preparation = calculateOrderPreparation(order.lines, products, recipes)
   const overdue = orderIsOverdue(order)
@@ -483,39 +488,41 @@ function OrderEntry({
             ) : null}
           </CardDescription>
         ) : null}
-        <CardAction className="flex items-center gap-1">
-          <Select onValueChange={onStatusChange} value={displayedStatus}>
-            <SelectTrigger
-              aria-label={`État de la commande ${order.contactName}`}
-              className="w-36 bg-background/40"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {orderStatusesForKind(order.kind).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {formatOrderStatus(status, order.kind)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <OrderDialog
-            characters={characters}
-            contacts={contacts}
-            order={order}
-            products={products}
-            recipes={recipes}
-            trigger={
-              <Button
-                aria-label={`Modifier la commande de ${order.contactName}`}
-                size="icon"
-                variant="ghost"
+        {canWrite ? (
+          <CardAction className="flex items-center gap-1">
+            <Select onValueChange={onStatusChange} value={displayedStatus}>
+              <SelectTrigger
+                aria-label={`État de la commande ${order.contactName}`}
+                className="w-36 bg-background/40"
               >
-                <Pencil aria-hidden="true" />
-              </Button>
-            }
-          />
-        </CardAction>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {orderStatusesForKind(order.kind).map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {formatOrderStatus(status, order.kind)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <OrderDialog
+              characters={characters}
+              contacts={contacts}
+              order={order}
+              products={products}
+              recipes={recipes}
+              trigger={
+                <Button
+                  aria-label={`Modifier la commande de ${order.contactName}`}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Pencil aria-hidden="true" />
+                </Button>
+              }
+            />
+          </CardAction>
+        ) : null}
       </CardHeader>
 
       <CardContent className="grid gap-4">
@@ -567,8 +574,10 @@ function OrderEntry({
             ) : null}
             {formatOrderStatus(displayedStatus, order.kind)}
           </Badge>
-          <OrderProcessingDialog characters={characters} order={order} />
-          {orderIsHistorical(order) ? (
+          {canWrite ? (
+            <OrderProcessingDialog characters={characters} order={order} />
+          ) : null}
+          {canWrite && orderIsHistorical(order) ? (
             <OrderDialog
               characters={characters}
               contacts={contacts}

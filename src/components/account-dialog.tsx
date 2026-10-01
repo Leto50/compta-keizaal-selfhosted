@@ -29,16 +29,11 @@ import {
 } from "@/components/ui/select"
 import { authClient } from "@/lib/auth-client"
 import { accountFormSchema } from "@/lib/form-schemas"
+import { isAccountRole, type AccountRole } from "../../shared/account-roles"
 import {
   internalAccountEmail,
   normalizeAccountIdentifier,
 } from "../../shared/account-identifiers"
-
-type AccountRole = "admin" | "user"
-
-function isAccountRole(value: string): value is AccountRole {
-  return value === "admin" || value === "user"
-}
 
 interface AccountDialogProps {
   onOpenChange: (open: boolean) => void
@@ -99,7 +94,7 @@ export function AccountDialog({
             Créer un compte
           </DialogTitle>
           <DialogDescription>
-            Créez un accès employé ou administrateur pour la boutique.
+            Créez un accès lecteur, employé ou administrateur pour la boutique.
           </DialogDescription>
         </DialogHeader>
 
@@ -202,10 +197,15 @@ export function AccountDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="reader">Lecteur</SelectItem>
                       <SelectItem value="user">Employé</SelectItem>
                       <SelectItem value="admin">Administrateur</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FieldDescription>
+                    Un lecteur peut consulter les données, sans les modifier ni
+                    accéder à l’administration.
+                  </FieldDescription>
                   {invalid ? (
                     <FieldError errors={field.state.meta.errors} />
                   ) : null}

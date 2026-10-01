@@ -18,6 +18,7 @@ import { OperationDialog } from "@/components/operation-dialog"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
+import { usePermissions } from "@/hooks/use-permissions"
 import { ProductDialog } from "@/components/product-dialog"
 import { RecipeArchivesDialog, RecipeDialog } from "@/components/recipe-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -102,6 +103,7 @@ export const Route = createFileRoute("/_app/recettes")({
 })
 
 function RecipesPage() {
+  const { canWrite } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data: recipes } = useSuspenseQuery(convexQuery(api.recipes.list, {}))
@@ -260,10 +262,12 @@ function RecipesPage() {
             </div>
             <div className="flex items-center gap-2">
               <RecipeArchivesDialog />
-              <RecipeDialog
-                linkedProductIds={linkedProductIds}
-                products={products}
-              />
+              {canWrite ? (
+                <RecipeDialog
+                  linkedProductIds={linkedProductIds}
+                  products={products}
+                />
+              ) : null}
               <BookMarked aria-hidden="true" className="size-5 text-primary" />
             </div>
           </div>
@@ -305,7 +309,7 @@ function RecipesPage() {
             </div>
             <div className="flex items-center gap-2">
               <BundleArchivesDialog />
-              <BundleDialog products={products} />
+              {canWrite ? <BundleDialog products={products} /> : null}
               <PackageOpen aria-hidden="true" className="size-5 text-primary" />
             </div>
           </div>
@@ -333,7 +337,7 @@ function RecipesPage() {
         </section>
       )}
 
-      {productionProductId ? (
+      {canWrite && productionProductId ? (
         <OperationDialog
           characters={characters}
           initialKind="production"
@@ -363,6 +367,7 @@ function RecipeEntry({
   products: readonly Doc<"products">[]
   recipe: Recipe
 }>) {
+  const { canWrite } = usePermissions()
   const outputProduct = recipe.productId
     ? products.find((product) => product._id === recipe.productId)
     : undefined
@@ -376,22 +381,24 @@ function RecipeEntry({
         <CardTitle className="font-display text-lg font-medium">
           {recipe.name}
         </CardTitle>
-        <CardAction>
-          <RecipeDialog
-            linkedProductIds={linkedProductIds}
-            products={products}
-            recipe={recipe}
-            trigger={
-              <Button
-                aria-label={`Modifier ${recipe.name}`}
-                size="icon"
-                variant="ghost"
-              >
-                <Pencil aria-hidden="true" />
-              </Button>
-            }
-          />
-        </CardAction>
+        {canWrite ? (
+          <CardAction>
+            <RecipeDialog
+              linkedProductIds={linkedProductIds}
+              products={products}
+              recipe={recipe}
+              trigger={
+                <Button
+                  aria-label={`Modifier ${recipe.name}`}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Pencil aria-hidden="true" />
+                </Button>
+              }
+            />
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent className="flex flex-1 flex-col p-4 pt-3">
         <dl className="mb-4 grid grid-cols-2 gap-3 border-y border-border/60 py-2 text-xs">
@@ -436,7 +443,7 @@ function RecipeEntry({
               </>
             )
 
-            return product ? (
+            return canWrite && product ? (
               <ProductDialog
                 hasRecipe={linkedProductIds.includes(product._id)}
                 key={ingredient._id}
@@ -466,16 +473,18 @@ function RecipeEntry({
         </div>
         {recipe.productId ? (
           <div className="mt-auto grid gap-2 pt-4">
-            <Button
-              className="w-full"
-              onClick={() => onProduce(recipe.productId!)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Hammer aria-hidden="true" />
-              Produire cette recette
-            </Button>
+            {canWrite ? (
+              <Button
+                className="w-full"
+                onClick={() => onProduce(recipe.productId!)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Hammer aria-hidden="true" />
+                Produire cette recette
+              </Button>
+            ) : null}
             <Button asChild className="w-full" size="sm" variant="ghost">
               <Link search={{ q: recipe.name }} to="/inventaire">
                 <Boxes aria-hidden="true" />
@@ -502,6 +511,7 @@ function BundleEntry({
   products: readonly Doc<"products">[]
   recipes: readonly Recipe[]
 }>) {
+  const { canWrite } = usePermissions()
   const cost = calculateBundleCost(bundle.items, products, recipes)
 
   return (
@@ -510,21 +520,23 @@ function BundleEntry({
         <CardTitle className="font-display text-base font-medium">
           {bundle.name}
         </CardTitle>
-        <CardAction>
-          <BundleDialog
-            bundle={bundle}
-            products={products}
-            trigger={
-              <Button
-                aria-label={`Modifier ${bundle.name}`}
-                size="icon"
-                variant="ghost"
-              >
-                <Pencil aria-hidden="true" />
-              </Button>
-            }
-          />
-        </CardAction>
+        {canWrite ? (
+          <CardAction>
+            <BundleDialog
+              bundle={bundle}
+              products={products}
+              trigger={
+                <Button
+                  aria-label={`Modifier ${bundle.name}`}
+                  size="icon"
+                  variant="ghost"
+                >
+                  <Pencil aria-hidden="true" />
+                </Button>
+              }
+            />
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent className="p-4 pt-3">
         <dl className="mb-3 grid grid-cols-2 gap-3 border-y border-border/60 py-2 text-xs">

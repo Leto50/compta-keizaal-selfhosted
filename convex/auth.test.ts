@@ -67,6 +67,7 @@ describe("auth.assertAdminContinuity", () => {
     ["/admin/ban-user", { userId: "admin-1" }],
     ["/admin/remove-user", { userId: "admin-1" }],
     ["/admin/set-role", { role: "user", userId: "admin-1" }],
+    ["/admin/set-role", { role: "reader", userId: "admin-1" }],
   ])("bloque %s pour le dernier administrateur actif", async (path, body) => {
     await expect(
       assertAdminContinuity({

@@ -8,7 +8,7 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server"
-import { requireUser } from "./lib/auth"
+import { requireUser, requireWriter } from "./lib/auth"
 import {
   type exchangeLineValidator,
   loadStockBeforeTransaction,
@@ -335,7 +335,7 @@ export const save = mutation({
     total: v.union(v.number(), v.null()),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     if (!orderStatusesForKind(args.kind).includes(args.status)) {
       throw new ConvexError({
         code: "INVALID_INPUT",
@@ -580,7 +580,7 @@ export const save = mutation({
 export const remove = mutation({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const order = await ctx.db.get(args.orderId)
     if (!order) {
       throw new ConvexError({
@@ -617,7 +617,7 @@ export const updateStatus = mutation({
     status: orderStatus,
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const order = await ctx.db.get(args.orderId)
     if (!order) {
       throw new ConvexError({
@@ -652,7 +652,7 @@ export const process = mutation({
     orderId: v.id("orders"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const [order, character] = await Promise.all([
       ctx.db.get(args.orderId),
       ctx.db.get(args.characterId),
