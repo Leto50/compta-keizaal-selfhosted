@@ -65,11 +65,7 @@ import { getUserFacingErrorMessage } from "@/lib/errors"
 import { MAX_DYNAMIC_LINES, recipeFormSchema } from "@/lib/form-schemas"
 import { formatDecimalSeptims } from "@/lib/format"
 import { isProductCraftable } from "@/lib/product-categories"
-import {
-  getRecipeFamilies,
-  isRecipeFamily,
-  MAX_RECIPE_FAMILY_LENGTH,
-} from "@/lib/recipe-families"
+import { isRecipeFamily, MAX_RECIPE_FAMILY_LENGTH } from "@/lib/recipe-families"
 
 type Recipe = FunctionReturnType<typeof api.recipes.list>[number]
 
@@ -105,10 +101,7 @@ export function RecipeDialog({
   const [isArchiving, setIsArchiving] = useState(false)
   const [creatingFamily, setCreatingFamily] = useState(false)
   const savedFamilies = useQuery(api.recipes.listFamilies, open ? {} : "skip")
-  const families = getRecipeFamilies([
-    ...(savedFamilies ?? []),
-    ...(recipe ? [recipe.family] : []),
-  ])
+  const families = savedFamilies ?? []
   const ingredientProducts = useMemo(
     () => products.filter((product) => product.tracksStock),
     [products]
@@ -157,6 +150,7 @@ export function RecipeDialog({
       )
       try {
         await saveRecipe({
+          createFamily: creatingFamily,
           effect: value.effect.trim(),
           family: value.family,
           ingredients: value.ingredients.map((ingredient) => ({
@@ -441,8 +435,8 @@ export function RecipeDialog({
                     )}
                     {creatingFamily ? (
                       <FieldDescription id={`${fieldId}-family-description`}>
-                        La catégorie sera créée à l’enregistrement de la
-                        recette.
+                        La catégorie sera enregistrée avec la recette et restera
+                        disponible même sans recette.
                       </FieldDescription>
                     ) : null}
                     <Button

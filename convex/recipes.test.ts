@@ -38,6 +38,7 @@ describe("recipes", () => {
     const { ingredientId } = await seedRecipeProducts(backend)
     const ingredients = [{ productId: ingredientId, quantity: 1 }]
     const firstId = await member.mutation(api.recipes.save, {
+      createFamily: true,
       effect: "",
       family: "  RÉGÉNÉRATION   DE SANTÉ  ",
       ingredients,
@@ -56,6 +57,7 @@ describe("recipes", () => {
     await member.mutation(api.recipes.save, {
       effect: "",
       family: "Force",
+      createFamily: true,
       ingredients,
       name: "Potion de force",
     })

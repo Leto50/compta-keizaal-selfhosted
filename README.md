@@ -74,6 +74,12 @@ pnpm build
   la création d’un compte ou depuis « Gérer l’accès ».
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
+- Les catégories de recettes sont conservées dans un registre indépendant. Une
+  catégorie reste disponible sans recette ; son renommage met à jour les recettes
+  actives et archivées. Sa suppression est refusée tant qu’une recette l’utilise.
+  Le registre reprend automatiquement les catégories existantes lors de la première
+  modification d’une recette ou d’une catégorie. Les catégories supprimées ne sont
+  pas recréées automatiquement.
 - Une opération qui rendrait un stock négatif est refusée.
 - L’inscription publique est désactivée côté Better Auth.
 - Les comptes lecteurs et employés sont créés par un administrateur depuis

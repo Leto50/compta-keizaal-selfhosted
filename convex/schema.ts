@@ -196,6 +196,11 @@ export default defineSchema({
     .index("by_legacy_key", ["legacyKey"])
     .index("by_order", ["orderId"]),
 
+  recipeCategories: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+  }).index("by_normalized_name", ["normalizedName"]),
+
   recipes: defineTable({
     active: v.optional(v.boolean()),
     cost: v.optional(v.number()),

@@ -318,6 +318,15 @@ export const recipeFormSchema = z
     }
   })
 
+export const recipeCategoryFormSchema = z.object({
+  name: z
+    .string()
+    .refine(
+      isRecipeFamily,
+      "Saisissez une catégorie valide (100 caractères maximum)."
+    ),
+})
+
 const orderLineSchema = catalogLineSchema.extend({
   unitPrice: priceDraftSchema,
 })
