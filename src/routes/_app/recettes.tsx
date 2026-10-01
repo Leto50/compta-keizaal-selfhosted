@@ -21,6 +21,7 @@ import { PageSkeleton } from "@/components/page-skeleton"
 import { usePermissions } from "@/hooks/use-permissions"
 import { ProductDialog } from "@/components/product-dialog"
 import { RecipeArchivesDialog, RecipeDialog } from "@/components/recipe-dialog"
+import { RecipeCategoryManagerDialog } from "@/components/recipe-category-manager-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,19 +50,16 @@ import {
   formatSeptims,
   formatUnitPrice,
 } from "@/lib/format"
-import {
-  isRecipeFamily,
-  recipeFamilies,
-  type RecipeFamily,
-} from "@/lib/recipe-families"
+import { isRecipeFamily } from "@/lib/recipe-families"
 import { bundleMatchesSearch, recipeMatchesSearch } from "@/lib/recipe-catalog"
+import { normalizeCatalogName, normalizeName } from "../../../shared/text"
 
 type Recipe = FunctionReturnType<typeof api.recipes.list>[number]
 type Bundle = FunctionReturnType<typeof api.recipes.listBundles>[number]
 type CatalogView = "bundles" | "recipes"
 
 interface CatalogSearch {
-  family?: RecipeFamily
+  family?: string
   q?: string
   view: CatalogView
 }
@@ -71,10 +69,12 @@ function validateCatalogSearch(search: Record<string, unknown>): CatalogSearch {
     typeof search.q === "string" && search.q.trim()
       ? search.q.slice(0, 100)
       : undefined
+  const family =
+    typeof search.family === "string" && isRecipeFamily(search.family)
+      ? normalizeCatalogName(search.family)
+      : undefined
   return {
-    ...(typeof search.family === "string" && isRecipeFamily(search.family)
-      ? { family: search.family }
-      : {}),
+    ...(family ? { family } : {}),
     ...(q ? { q } : {}),
     view: search.view === "bundles" ? "bundles" : "recipes",
   }
@@ -86,6 +86,9 @@ export const Route = createFileRoute("/_app/recettes")({
   loader: async ({ context }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(convexQuery(api.recipes.list, {})),
+      context.queryClient.ensureQueryData(
+        convexQuery(api.recipes.listFamilies, {})
+      ),
       context.queryClient.ensureQueryData(
         convexQuery(api.recipes.listBundles, {})
       ),
@@ -107,6 +110,9 @@ function RecipesPage() {
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data: recipes } = useSuspenseQuery(convexQuery(api.recipes.list, {}))
+  const { data: savedFamilies } = useSuspenseQuery(
+    convexQuery(api.recipes.listFamilies, {})
+  )
   const { data: bundles } = useSuspenseQuery(
     convexQuery(api.recipes.listBundles, {})
   )
@@ -122,14 +128,17 @@ function RecipesPage() {
   const [productionProductId, setProductionProductId] =
     useState<Doc<"products">["_id"]>()
   const search = filters.q ?? ""
-  const family = filters.family ?? "all"
+  const requestedFamily = filters.family ?? "all"
   const view = filters.view
-  const families = recipeFamilies.filter((entry) =>
-    recipes.some((recipe) => recipe.family === entry)
-  )
+  const families = savedFamilies
+  const family =
+    families.find(
+      (entry) => normalizeName(entry) === normalizeName(requestedFamily)
+    ) ?? "all"
   const visibleRecipes = recipes.filter(
     (recipe) =>
-      (family === "all" || recipe.family === family) &&
+      (family === "all" ||
+        normalizeName(recipe.family) === normalizeName(family)) &&
       recipeMatchesSearch(recipe, search)
   )
   const visibleBundles = bundles.filter((bundle) =>
@@ -217,7 +226,7 @@ function RecipesPage() {
         {view === "recipes" ? (
           <Select
             onValueChange={(value) => {
-              if (value !== "all" && !isRecipeFamily(value)) return
+              if (value !== "all" && !families.includes(value)) return
               void navigate({
                 replace: true,
                 search: (previous) => ({
@@ -260,8 +269,22 @@ function RecipesPage() {
                 Recettes
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <RecipeArchivesDialog />
+              {canWrite ? (
+                <RecipeCategoryManagerDialog
+                  onCategoryChange={(previousName, nextName) => {
+                    void navigate({
+                      replace: true,
+                      search: (previous) =>
+                        normalizeName(previous.family ?? "") ===
+                        normalizeName(previousName)
+                          ? { ...previous, family: nextName }
+                          : previous,
+                    })
+                  }}
+                />
+              ) : null}
               {canWrite ? (
                 <RecipeDialog
                   linkedProductIds={linkedProductIds}

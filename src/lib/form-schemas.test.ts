@@ -128,6 +128,26 @@ describe("form schemas", () => {
     }
   })
 
+  it.each([
+    ["Régénération de santé", true],
+    ["Force", true],
+    ["", false],
+    ["  ", false],
+    ["all", false],
+    ["x".repeat(101), false],
+  ])("valide la catégorie de recette %s : %s", (family, valid) => {
+    const result = recipeFormSchema.safeParse({
+      effect: "",
+      family,
+      ingredients: [{ key: 0, productId: "ingredient", quantity: "1" }],
+      name: "Potion",
+      outputProductId: "new",
+    })
+    expect(result.success).toBe(valid)
+    if (!result.success)
+      expect(result.error.issues[0]?.path).toEqual(["family"])
+  })
+
   it("applique les règles propres au mode de production", () => {
     const result = operationFormSchema.safeParse({
       agreedTotal: "",

@@ -4,9 +4,14 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react"
-import { getFunctionName, type FunctionReference } from "convex/server"
+import {
+  getFunctionName,
+  type FunctionReference,
+  type FunctionReturnType,
+} from "convex/server"
 import { type ComponentType, type ReactNode } from "react"
 import type * as ReactQuery from "@tanstack/react-query"
 import { QueryClient } from "@tanstack/react-query"
@@ -26,6 +31,8 @@ import { api } from "../convex/_generated/api"
 import { type Doc } from "../convex/_generated/dataModel"
 import { asAuthenticatedUser, createTestBackend } from "../convex/test.helpers"
 import { AppShell } from "./components/app-shell"
+import { RecipeDialog } from "./components/recipe-dialog"
+import { RecipeCategoryManagerDialog } from "./components/recipe-category-manager-dialog"
 import { TooltipProvider } from "./components/ui/tooltip"
 import { Route as DashboardRoute } from "./routes/_app/index"
 import { Route as InventoryRoute } from "./routes/_app/inventaire"
@@ -38,16 +45,22 @@ import { Route as CharactersRoute } from "./routes/_app/personnages"
 
 const state = vi.hoisted<{
   data: Map<string, unknown>
+  mutations: Map<string, ReturnType<typeof vi.fn>>
   role: string | undefined
   search: Record<string, unknown>
 }>(() => ({
   data: new Map<string, unknown>(),
+  mutations: new Map<string, ReturnType<typeof vi.fn>>(),
   role: "reader",
   search: {},
 }))
 
 vi.mock("convex/react", () => ({
-  useMutation: () => vi.fn(),
+  useMutation: (reference: FunctionReference<"mutation">) => {
+    const name = getFunctionName(reference)
+    if (!state.mutations.has(name)) state.mutations.set(name, vi.fn())
+    return state.mutations.get(name)
+  },
   useQuery: (reference: FunctionReference<"query">, args?: unknown) => {
     if (args === "skip") return undefined
     const name = getFunctionName(reference)
@@ -165,6 +178,8 @@ beforeAll(async () => {
     api.products.selectable,
     api.products.listArchived,
     api.recipes.list,
+    api.recipes.listFamilies,
+    api.recipes.listCategories,
     api.recipes.listBundles,
     api.recipes.listArchived,
     api.bundles.listArchived,
@@ -196,11 +211,286 @@ beforeAll(async () => {
 beforeEach(() => {
   state.role = "reader"
   state.search = {}
+  state.mutations.clear()
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   }))
+})
+
+describe("catégories personnalisées de recettes", () => {
+  function editRecipe() {
+    const recipes = state.data.get("recipes:list") as FunctionReturnType<
+      typeof api.recipes.list
+    >
+    const products = state.data.get("products:selectable") as Doc<"products">[]
+    state.role = "user"
+    return render(
+      <RecipeDialog
+        open
+        products={products}
+        recipe={recipes[0]}
+        trigger={null}
+      />
+    )
+  }
+
+  it("permet de saisir une nouvelle catégorie et de l’enregistrer avec la recette", async () => {
+    editRecipe()
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle catégorie" }))
+    const input = screen.getByRole("textbox", { name: "Catégorie" })
+    expect(input.getAttribute("maxlength")).toBe("100")
+    expect(
+      screen.queryByText(/restera disponible même sans recette/)
+    ).not.toBeNull()
+    fireEvent.change(input, { target: { value: "Régénération de santé" } })
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }))
+    await waitFor(() =>
+      expect(state.mutations.get("recipes:save")).toHaveBeenCalledWith(
+        expect.objectContaining({
+          family: "Régénération de santé",
+          createFamily: true,
+        })
+      )
+    )
+  })
+
+  it("affiche une erreur et conserve la fenêtre si la nouvelle catégorie est vide", async () => {
+    editRecipe()
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle catégorie" }))
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }))
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("textbox", { name: "Catégorie" })
+          .getAttribute("aria-invalid")
+      ).toBe("true")
+    )
+    expect(state.mutations.get("recipes:save")).not.toHaveBeenCalled()
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+  })
+
+  it("revient au choix d’une catégorie existante", () => {
+    editRecipe()
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle catégorie" }))
+    fireEvent.change(screen.getByRole("textbox", { name: "Catégorie" }), {
+      target: { value: "Force" },
+    })
+    fireEvent.click(
+      screen.getByRole("button", { name: "Choisir une catégorie existante" })
+    )
+    expect(screen.queryByRole("textbox", { name: "Catégorie" })).toBeNull()
+    expect(
+      screen.getByRole("combobox", { name: "Catégorie" }).textContent
+    ).toBe("Choisir une catégorie…")
+  })
+
+  it.each([
+    ["Force", "Force"],
+    ["  RÉGÉNÉRATION DE SANTÉ  ", "Régénération de santé"],
+    ["all", undefined],
+    ["x".repeat(101), undefined],
+  ])("conserve le filtre partageable %s en %s", (family, expected) => {
+    const validateSearch = RecipesRoute.options.validateSearch as (
+      search: Record<string, unknown>
+    ) => Record<string, unknown>
+    expect(validateSearch({ family, q: "Potion", view: "recipes" })).toEqual({
+      ...(expected ? { family: expected } : {}),
+      q: "Potion",
+      view: "recipes",
+    })
+  })
+
+  it.each([
+    ["Force", "Force", "Potion de force", "Potion de régénération"],
+    [
+      "Regeneration",
+      "Régénération",
+      "Potion de régénération",
+      "Potion de force",
+    ],
+  ])(
+    "affiche et filtre la catégorie %s pour un lecteur",
+    (family, label, visible, hidden) => {
+      const recipes = state.data.get("recipes:list") as FunctionReturnType<
+        typeof api.recipes.list
+      >
+      const families = state.data.get("recipes:listFamilies")
+      state.data.set("recipes:listFamilies", ["Force", "Régénération"])
+      state.data.set("recipes:list", [
+        { ...recipes[0], family: "Force", name: "Potion de force" },
+        {
+          ...recipes[0],
+          _id: "regeneration" as Doc<"recipes">["_id"],
+          family: "Régénération",
+          name: "Potion de régénération",
+        },
+      ])
+      state.search = { family, view: "recipes" }
+      try {
+        render(page(RecipesRoute))
+        expect(screen.queryByText(visible)).not.toBeNull()
+        expect(screen.queryByText(hidden)).toBeNull()
+        expect(
+          screen.getByRole("combobox", { name: "Famille de recettes" })
+            .textContent
+        ).toBe(label)
+        expect(
+          screen.queryByRole("button", { name: "Nouvelle recette" })
+        ).toBeNull()
+      } finally {
+        state.data.set("recipes:list", recipes)
+        state.data.set("recipes:listFamilies", families)
+      }
+    }
+  )
+})
+
+describe("gestion des catégories de recettes", () => {
+  let originalCategories: unknown
+  beforeEach(() => {
+    originalCategories = state.data.get("recipes:listCategories")
+  })
+  afterEach(() => {
+    state.data.set("recipes:listCategories", originalCategories)
+  })
+  function manager(
+    recipeCount = 0,
+    archivedRecipeCount = 0,
+    onCategoryChange = vi.fn()
+  ) {
+    state.role = "user"
+    state.data.set("recipes:listCategories", [
+      { name: "Force", recipeCount, archivedRecipeCount },
+    ])
+    const view = render(
+      <RecipeCategoryManagerDialog onCategoryChange={onCategoryChange} />
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Catégories" }))
+    return { view, onCategoryChange }
+  }
+
+  it("crée une catégorie indépendamment d’une recette", async () => {
+    manager()
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Nouvelle catégorie" }),
+      { target: { value: "Régénération de santé" } }
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Créer" }))
+    await waitFor(() =>
+      expect(
+        state.mutations.get("recipes:createCategory")
+      ).toHaveBeenCalledWith({ name: "Régénération de santé" })
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLInputElement>("textbox", {
+          name: "Nouvelle catégorie",
+        }).value
+      ).toBe("")
+    )
+    expect(state.mutations.has("recipes:save")).toBe(false)
+  })
+
+  it("refuse une création vide et indique le champ à corriger", async () => {
+    manager()
+    fireEvent.click(screen.getByRole("button", { name: "Créer" }))
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("textbox", { name: "Nouvelle catégorie" })
+          .getAttribute("aria-invalid")
+      ).toBe("true")
+    )
+    expect(state.mutations.get("recipes:createCategory")).not.toHaveBeenCalled()
+  })
+
+  it("renomme une catégorie utilisée et actualise le filtre courant", async () => {
+    const { onCategoryChange } = manager(2, 1)
+    state.mutations
+      .get("recipes:renameCategory")!
+      .mockResolvedValue("Force accrue")
+    fireEvent.click(screen.getByRole("button", { name: "Renommer Force" }))
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Nouveau nom de Force" }),
+      { target: { value: "Force accrue" } }
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer le nom" }))
+    await waitFor(() =>
+      expect(
+        state.mutations.get("recipes:renameCategory")
+      ).toHaveBeenCalledWith({ family: "Force", name: "Force accrue" })
+    )
+    await waitFor(() =>
+      expect(onCategoryChange).toHaveBeenCalledWith("Force", "Force accrue")
+    )
+  })
+
+  it.each([
+    [1, 0],
+    [1, 1],
+  ])(
+    "bloque la suppression d’une catégorie utilisée : %s recette, %s archivée",
+    (recipeCount, archivedRecipeCount) => {
+      manager(recipeCount, archivedRecipeCount)
+      const remove = screen.getByRole<HTMLButtonElement>("button", {
+        name: "Supprimer Force",
+      })
+      expect(remove.disabled).toBe(true)
+      expect(remove.title).toContain("y compris archivées")
+      expect(
+        state.mutations.get("recipes:removeCategory")
+      ).not.toHaveBeenCalled()
+    }
+  )
+
+  it("demande une confirmation avant de supprimer une catégorie sans recette", async () => {
+    const { onCategoryChange } = manager()
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer Force" }))
+    expect(screen.queryByRole("alertdialog")).not.toBeNull()
+    expect(state.mutations.get("recipes:removeCategory")).not.toHaveBeenCalled()
+    fireEvent.click(
+      screen.getByRole("button", { name: "Supprimer la catégorie" })
+    )
+    await waitFor(() =>
+      expect(
+        state.mutations.get("recipes:removeCategory")
+      ).toHaveBeenCalledWith({ family: "Force" })
+    )
+    await waitFor(() => expect(onCategoryChange).toHaveBeenCalledWith("Force"))
+  })
+
+  it("conserve la saisie si le serveur refuse un nom en doublon", async () => {
+    manager()
+    state.mutations
+      .get("recipes:createCategory")!
+      .mockRejectedValue(new Error("Une catégorie portant ce nom existe déjà."))
+    const input = screen.getByRole<HTMLInputElement>("textbox", {
+      name: "Nouvelle catégorie",
+    })
+    fireEvent.change(input, { target: { value: "Force" } })
+    fireEvent.click(screen.getByRole("button", { name: "Créer" }))
+    await waitFor(() =>
+      expect(state.mutations.get("recipes:createCategory")).toHaveBeenCalled()
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLButtonElement>("button", { name: "Créer" })
+          .disabled
+      ).toBe(false)
+    )
+    expect(input.value).toBe("Force")
+  })
+
+  it("masque la gestion aux lecteurs et retire une fenêtre lors d’une rétrogradation", () => {
+    const { view } = manager()
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+    state.role = "reader"
+    view.rerender(<RecipeCategoryManagerDialog />)
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(screen.queryByRole("button", { name: "Catégories" })).toBeNull()
+  })
 })
 
 afterEach(() => {

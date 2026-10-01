@@ -14,7 +14,10 @@ import { rebuildJournalSummary } from "./lib/journalSummary"
 import { isLootOnlyLegacyProduct } from "./lib/products"
 import { markReadModelsReady } from "./lib/readModels"
 import { rebuildRecipeCostProjections } from "./lib/recipeCost"
-import { canonicalRecipeFamily } from "./lib/recipeFamilies"
+import {
+  canonicalRecipeFamily,
+  initializeRecipeCategoriesData,
+} from "./lib/recipeFamilies"
 import {
   canonicalProductName,
   convertLegacyOperationsData,
@@ -287,6 +290,7 @@ export const importWorkbook = mutation({
     const migration = await convertLegacyOperationsData(ctx)
     const recipeMigration = await repairRecipeReferencesData(ctx)
     const catalogNamesMigration = await normalizeCatalogNamesData(ctx)
+    await initializeRecipeCategoriesData(ctx)
     await rebuildRecipeCostProjections(ctx)
     await rebuildJournalSummary(ctx)
     await rebuildAccountWeekSummaries(ctx)
