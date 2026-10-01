@@ -7,7 +7,11 @@ import { assertWholeNumberRange } from "./lib/numbers"
 import { rebuildInventorySummaryIfReady } from "./lib/inventorySummary"
 import { isProductDeclaredCraftable } from "./lib/products"
 import { calculateRecipeCost } from "./lib/recipeCost"
-import { recipeFamily } from "./lib/recipeFamilies"
+import {
+  canonicalRecipeFamily,
+  getRecipeFamilies,
+  MAX_RECIPE_FAMILY_LENGTH,
+} from "../shared/recipe-families"
 import { normalizeCatalogName, normalizeName } from "./lib/text"
 
 const MAX_EFFECT_LENGTH = 500
@@ -69,6 +73,15 @@ export const list = query({
     return withIngredients.sort((left, right) =>
       left.name.localeCompare(right.name, "fr")
     )
+  },
+})
+
+export const listFamilies = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireUser(ctx)
+    const recipes = await ctx.db.query("recipes").collect()
+    return getRecipeFamilies(recipes.map((recipe) => recipe.family))
   },
 })
 
@@ -160,7 +173,7 @@ export const listArchived = query({
 export const save = mutation({
   args: {
     effect: v.string(),
-    family: recipeFamily,
+    family: v.string(),
     ingredients: v.array(
       v.object({
         productId: v.id("products"),
@@ -174,7 +187,13 @@ export const save = mutation({
   handler: async (ctx, args) => {
     const user = await requireWriter(ctx)
     const name = normalizeCatalogName(args.name)
-    const family = args.family
+    const requestedFamily = canonicalRecipeFamily(args.family)
+    if (!requestedFamily) {
+      throw new ConvexError({
+        code: "INVALID_INPUT",
+        message: `Choisissez ou saisissez une catégorie valide (${MAX_RECIPE_FAMILY_LENGTH} caractères maximum).`,
+      })
+    }
     const effect = args.effect.trim()
     if (!name || name.length > MAX_NAME_LENGTH) {
       throw new ConvexError({
@@ -207,6 +226,10 @@ export const save = mutation({
 
     const normalizedName = normalizeName(name)
     const recipes = await ctx.db.query("recipes").collect()
+    const family =
+      getRecipeFamilies(recipes.map((recipe) => recipe.family)).find(
+        (entry) => normalizeName(entry) === normalizeName(requestedFamily)
+      ) ?? requestedFamily
     if (
       recipes.some(
         (recipe) =>

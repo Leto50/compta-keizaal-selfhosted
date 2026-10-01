@@ -328,6 +328,10 @@ describe("migrations.normalizeRecipeFamilies", () => {
         family: "Vigueur accru",
         name: "Vigueur",
       }),
+      await ctx.db.insert("recipes", {
+        family: "Régénération de santé",
+        name: "Régénération",
+      }),
     ])
 
     const result = await backend.mutation(
@@ -342,6 +346,7 @@ describe("migrations.normalizeRecipeFamilies", () => {
     expect(recipes.map((recipe) => recipe?.family)).toEqual([
       "Résistance magique",
       "Vigueur améliorée",
+      "Régénération de santé",
     ])
   })
 })

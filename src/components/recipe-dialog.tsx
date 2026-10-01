@@ -40,7 +40,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
@@ -61,9 +66,9 @@ import { MAX_DYNAMIC_LINES, recipeFormSchema } from "@/lib/form-schemas"
 import { formatDecimalSeptims } from "@/lib/format"
 import { isProductCraftable } from "@/lib/product-categories"
 import {
+  getRecipeFamilies,
   isRecipeFamily,
-  recipeFamilies,
-  type RecipeFamily,
+  MAX_RECIPE_FAMILY_LENGTH,
 } from "@/lib/recipe-families"
 
 type Recipe = FunctionReturnType<typeof api.recipes.list>[number]
@@ -98,6 +103,12 @@ export function RecipeDialog({
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
   const [isArchiving, setIsArchiving] = useState(false)
+  const [creatingFamily, setCreatingFamily] = useState(false)
+  const savedFamilies = useQuery(api.recipes.listFamilies, open ? {} : "skip")
+  const families = getRecipeFamilies([
+    ...(savedFamilies ?? []),
+    ...(recipe ? [recipe.family] : []),
+  ])
   const ingredientProducts = useMemo(
     () => products.filter((product) => product.tracksStock),
     [products]
@@ -123,10 +134,7 @@ export function RecipeDialog({
   function recipeValues() {
     return {
       effect: recipe?.effect ?? "",
-      family:
-        recipe && isRecipeFamily(recipe.family)
-          ? recipe.family
-          : ("" as RecipeFamily | ""),
+      family: recipe?.family ?? "",
       ingredients: recipe?.ingredients.length
         ? recipe.ingredients.map((ingredient, index) => ({
             key: index,
@@ -216,6 +224,7 @@ export function RecipeDialog({
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen && !open) {
       form.reset(recipeValues())
+      setCreatingFamily(false)
       nextLineKey.current = Math.max(1, recipe?.ingredients.length ?? 0)
     }
     if (controlledOpen === undefined) setInternalOpen(nextOpen)
@@ -388,29 +397,69 @@ export function RecipeDialog({
                     <FieldLabel htmlFor={`${fieldId}-family`}>
                       Catégorie
                     </FieldLabel>
-                    <Select
-                      name={field.name}
-                      onValueChange={(value) => {
-                        if (isRecipeFamily(value)) field.handleChange(value)
-                      }}
-                      value={field.state.value}
-                    >
-                      <SelectTrigger
+                    {creatingFamily ? (
+                      <Input
+                        aria-describedby={`${fieldId}-family-description`}
                         aria-invalid={invalid}
-                        className="w-full"
+                        autoComplete="off"
+                        autoFocus
                         id={`${fieldId}-family`}
+                        maxLength={MAX_RECIPE_FAMILY_LENGTH}
+                        name={field.name}
                         onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        placeholder="Régénération, Force…"
+                        value={field.state.value}
+                      />
+                    ) : (
+                      <Select
+                        name={field.name}
+                        onValueChange={(value) => {
+                          if (families.includes(value))
+                            field.handleChange(value)
+                        }}
+                        value={field.state.value}
                       >
-                        <SelectValue placeholder="Choisir une catégorie…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {recipeFamilies.map((entry) => (
-                          <SelectItem key={entry} value={entry}>
-                            {entry}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectTrigger
+                          aria-invalid={invalid}
+                          className="w-full"
+                          id={`${fieldId}-family`}
+                          onBlur={field.handleBlur}
+                        >
+                          <SelectValue placeholder="Choisir une catégorie…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {families.map((entry) => (
+                            <SelectItem key={entry} value={entry}>
+                              {entry}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {creatingFamily ? (
+                      <FieldDescription id={`${fieldId}-family-description`}>
+                        La catégorie sera créée à l’enregistrement de la
+                        recette.
+                      </FieldDescription>
+                    ) : null}
+                    <Button
+                      className="w-fit px-0"
+                      onClick={() => {
+                        setCreatingFamily((current) => !current)
+                        field.handleChange("")
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="link"
+                    >
+                      {creatingFamily ? null : <Plus aria-hidden="true" />}
+                      {creatingFamily
+                        ? "Choisir une catégorie existante"
+                        : "Nouvelle catégorie"}
+                    </Button>
                     {invalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : null}

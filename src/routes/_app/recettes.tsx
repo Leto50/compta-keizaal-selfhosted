@@ -49,19 +49,16 @@ import {
   formatSeptims,
   formatUnitPrice,
 } from "@/lib/format"
-import {
-  isRecipeFamily,
-  recipeFamilies,
-  type RecipeFamily,
-} from "@/lib/recipe-families"
+import { canonicalRecipeFamily, getRecipeFamilies } from "@/lib/recipe-families"
 import { bundleMatchesSearch, recipeMatchesSearch } from "@/lib/recipe-catalog"
+import { normalizeName } from "../../../shared/text"
 
 type Recipe = FunctionReturnType<typeof api.recipes.list>[number]
 type Bundle = FunctionReturnType<typeof api.recipes.listBundles>[number]
 type CatalogView = "bundles" | "recipes"
 
 interface CatalogSearch {
-  family?: RecipeFamily
+  family?: string
   q?: string
   view: CatalogView
 }
@@ -71,10 +68,12 @@ function validateCatalogSearch(search: Record<string, unknown>): CatalogSearch {
     typeof search.q === "string" && search.q.trim()
       ? search.q.slice(0, 100)
       : undefined
+  const family =
+    typeof search.family === "string"
+      ? canonicalRecipeFamily(search.family)
+      : undefined
   return {
-    ...(typeof search.family === "string" && isRecipeFamily(search.family)
-      ? { family: search.family }
-      : {}),
+    ...(family ? { family } : {}),
     ...(q ? { q } : {}),
     view: search.view === "bundles" ? "bundles" : "recipes",
   }
@@ -122,14 +121,29 @@ function RecipesPage() {
   const [productionProductId, setProductionProductId] =
     useState<Doc<"products">["_id"]>()
   const search = filters.q ?? ""
-  const family = filters.family ?? "all"
+  const requestedFamily = filters.family ?? "all"
   const view = filters.view
-  const families = recipeFamilies.filter((entry) =>
-    recipes.some((recipe) => recipe.family === entry)
+  const activeFamilies = recipes.map(
+    (recipe) => canonicalRecipeFamily(recipe.family) ?? recipe.family
   )
+  const activeFamilyKeys = new Set(activeFamilies.map(normalizeName))
+  const families = getRecipeFamilies([
+    ...activeFamilies,
+    ...(filters.family ? [filters.family] : []),
+  ]).filter(
+    (entry) =>
+      activeFamilyKeys.has(normalizeName(entry)) ||
+      normalizeName(entry) === normalizeName(requestedFamily)
+  )
+  const family =
+    families.find(
+      (entry) => normalizeName(entry) === normalizeName(requestedFamily)
+    ) ?? requestedFamily
   const visibleRecipes = recipes.filter(
     (recipe) =>
-      (family === "all" || recipe.family === family) &&
+      (family === "all" ||
+        normalizeName(canonicalRecipeFamily(recipe.family) ?? recipe.family) ===
+          normalizeName(family)) &&
       recipeMatchesSearch(recipe, search)
   )
   const visibleBundles = bundles.filter((bundle) =>
@@ -217,7 +231,7 @@ function RecipesPage() {
         {view === "recipes" ? (
           <Select
             onValueChange={(value) => {
-              if (value !== "all" && !isRecipeFamily(value)) return
+              if (value !== "all" && !families.includes(value)) return
               void navigate({
                 replace: true,
                 search: (previous) => ({
