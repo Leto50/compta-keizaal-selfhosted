@@ -1,5 +1,6 @@
 export type SortDirection = "asc" | "desc"
-export type InventorySortKey = "name" | "price" | "status" | "stock"
+export type InventorySortKey =
+  "name" | "purchasePrice" | "salePrice" | "status" | "stock"
 export type ActorSortKey =
   "incoming" | "name" | "net" | "operations" | "outgoing" | "salary"
 
@@ -79,10 +80,10 @@ export function sortInventoryEntries<T extends SortableInventoryEntry>(
           right.entry.tracksStock ? right.entry.currentStock : undefined,
           direction
         )
-      } else if (key === "price") {
+      } else if (key === "purchasePrice" || key === "salePrice") {
         comparison = compareOptionalNumbers(
-          left.entry.salePrice ?? left.entry.purchasePrice,
-          right.entry.salePrice ?? right.entry.purchasePrice,
+          left.entry[key],
+          right.entry[key],
           direction
         )
       } else {

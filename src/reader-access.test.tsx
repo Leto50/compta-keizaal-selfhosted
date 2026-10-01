@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react"
 import { getFunctionName, type FunctionReference } from "convex/server"
 import { type ComponentType, type ReactNode } from "react"
 import type * as ReactQuery from "@tanstack/react-query"
@@ -17,6 +23,7 @@ import {
 } from "vitest"
 
 import { api } from "../convex/_generated/api"
+import { type Doc } from "../convex/_generated/dataModel"
 import { asAuthenticatedUser, createTestBackend } from "../convex/test.helpers"
 import { AppShell } from "./components/app-shell"
 import { TooltipProvider } from "./components/ui/tooltip"
@@ -224,6 +231,20 @@ describe("interface lecteur", () => {
   it("affiche l’inventaire avec ses filtres et sans modification", () => {
     render(page(InventoryRoute))
     expect(screen.queryByText("Blé test")).not.toBeNull()
+    const headers = screen.getAllByRole("columnheader")
+    expect(headers.map((header) => header.textContent)).toEqual([
+      "Référence",
+      "Catégorie",
+      "Stock",
+      "Seuil",
+      "Prix d’achat",
+      "Prix de vente",
+      "État",
+    ])
+    const row = screen.getByRole("row", { name: /Blé test/ })
+    const cells = within(row).getAllByRole("cell")
+    expect(cells[4]?.textContent).toBe("Prix d’achat1 septim l’unité")
+    expect(cells[5]?.textContent).toBe("Prix de vente2 septims l’unité")
     expect(
       screen.queryByRole("textbox", { name: "Rechercher un produit" }) ??
         screen.queryByRole("searchbox", { name: "Rechercher un produit" })
@@ -234,6 +255,79 @@ describe("interface lecteur", () => {
     expect(
       screen.queryByRole("button", { name: /Modifier|Ajouter|Archiver|Écrire/ })
     ).toBeNull()
+  })
+
+  it.each([
+    {
+      purchasePrice: undefined,
+      salePrice: 2,
+      purchase: "—",
+      sale: "2 septims l’unité",
+    },
+    {
+      purchasePrice: 1,
+      salePrice: undefined,
+      purchase: "1 septim l’unité",
+      sale: "—",
+    },
+    {
+      purchasePrice: undefined,
+      salePrice: undefined,
+      purchase: "—",
+      sale: "—",
+    },
+    {
+      purchasePrice: 0,
+      salePrice: 0,
+      purchase: "0 septims l’unité",
+      sale: "0 septims l’unité",
+    },
+    {
+      purchasePrice: 1 / 3,
+      salePrice: 2 / 3,
+      purchase: "1 septim pour 3",
+      sale: "2 septims pour 3",
+    },
+  ])(
+    "affiche séparément les tarifs d’achat $purchasePrice et de vente $salePrice",
+    ({ purchasePrice, salePrice, purchase, sale }) => {
+      const products = state.data.get("products:list") as Doc<"products">[]
+      state.data.set("products:list", [
+        { ...products[0], purchasePrice, salePrice },
+      ])
+      try {
+        render(page(InventoryRoute))
+        const cells = within(
+          screen.getByRole("row", { name: /Blé test/ })
+        ).getAllByRole("cell")
+        expect(cells[4]?.textContent).toBe(`Prix d’achat${purchase}`)
+        expect(cells[5]?.textContent).toBe(`Prix de vente${sale}`)
+      } finally {
+        state.data.set("products:list", products)
+      }
+    }
+  )
+
+  it.each([
+    ["purchasePrice-asc", "purchasePrice-asc"],
+    ["purchasePrice-desc", "purchasePrice-desc"],
+    ["salePrice-asc", "salePrice-asc"],
+    ["salePrice-desc", "salePrice-desc"],
+    ["price-asc", "salePrice-asc"],
+    ["price-desc", "salePrice-desc"],
+    ["invalid-desc", undefined],
+  ])("valide le tri d’inventaire %s en %s", (sort, expected) => {
+    const validateSearch = InventoryRoute.options.validateSearch as (
+      search: Record<string, unknown>
+    ) => Record<string, unknown>
+    expect(
+      validateSearch({ sort, category: "ingredient", q: "Blé", stock: "low" })
+    ).toEqual({
+      category: "ingredient",
+      q: "Blé",
+      stock: "low",
+      ...(expected ? { sort: expected } : {}),
+    })
   })
 
   it("consulte les recettes et les ingrédients sans actions de production ou d’édition", () => {
