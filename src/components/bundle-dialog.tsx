@@ -1,5 +1,6 @@
 import { useForm, useStore } from "@tanstack/react-form"
 import { useMutation, useQuery } from "convex/react"
+import { usePermissions } from "@/hooks/use-permissions"
 import { type FunctionReturnType } from "convex/server"
 import {
   Archive,
@@ -424,6 +425,7 @@ export function BundleDialog({
 }
 
 export function BundleArchivesDialog() {
+  const { canWrite } = usePermissions()
   const archivedBundles = useQuery(api.bundles.listArchived)
   const setBundleActive = useMutation(api.bundles.setActive)
   const [restoringId, setRestoringId] = useState<string>()
@@ -459,7 +461,9 @@ export function BundleArchivesDialog() {
             Lots archivés
           </DialogTitle>
           <DialogDescription>
-            Réactivez un lot pour le proposer à nouveau lors des ventes.
+            {canWrite
+              ? "Réactivez un lot pour le proposer à nouveau lors des ventes."
+              : "Les lots retirés de la vente."}
           </DialogDescription>
         </DialogHeader>
 
@@ -493,25 +497,27 @@ export function BundleArchivesDialog() {
                         : formatSeptims(bundle.price)}
                     </p>
                   </div>
-                  <Button
-                    disabled={restoringId !== undefined}
-                    onClick={() => {
-                      void restoreBundle(bundle)
-                    }}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {restoringId === bundle._id ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : (
-                      <ArchiveRestore aria-hidden="true" />
-                    )}
-                    Réactiver
-                  </Button>
+                  {canWrite ? (
+                    <Button
+                      disabled={restoringId !== undefined}
+                      onClick={() => {
+                        void restoreBundle(bundle)
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {restoringId === bundle._id ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" />
+                      )}
+                      Réactiver
+                    </Button>
+                  ) : null}
                 </div>
               ))}
             </div>

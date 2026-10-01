@@ -28,6 +28,7 @@ import { OrderDialog } from "@/components/order-dialog"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
+import { usePermissions } from "@/hooks/use-permissions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
@@ -232,6 +233,7 @@ const operationToneClasses: Readonly<
 }
 
 function JournalPage() {
+  const { canWrite } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const filterKey = JSON.stringify(filters)
@@ -260,9 +262,11 @@ function JournalPage() {
   const isFetchingPage = livePage === undefined
   const transactions = page?.page ?? []
   const hasFilters = Object.keys(filters).length > 0
-  const showActions = transactions.some(
-    (transaction) => transaction.canManage || transaction.canDelete
-  )
+  const showActions =
+    canWrite &&
+    transactions.some(
+      (transaction) => transaction.canManage || transaction.canDelete
+    )
 
   function showPreviousPage() {
     const previousCursor = activePagination.previousCursors.at(-1)
@@ -313,15 +317,17 @@ function JournalPage() {
     <div className="animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
       <PageHeader
         action={
-          <Button
-            onClick={() =>
-              setEditor({ initialKind: "exchange", type: "operation" })
-            }
-            size="lg"
-          >
-            <Plus aria-hidden="true" />
-            Nouvelle transaction
-          </Button>
+          canWrite ? (
+            <Button
+              onClick={() =>
+                setEditor({ initialKind: "exchange", type: "operation" })
+              }
+              size="lg"
+            >
+              <Plus aria-hidden="true" />
+              Nouvelle transaction
+            </Button>
+          ) : null
         }
         eyebrow="Registre financier"
         title="Transactions"
@@ -556,7 +562,7 @@ function JournalPage() {
         </Alert>
       )}
 
-      {editor ? (
+      {canWrite && editor ? (
         <ActivityEditor onClose={() => setEditor(null)} request={editor} />
       ) : null}
     </div>

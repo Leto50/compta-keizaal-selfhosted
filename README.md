@@ -68,8 +68,13 @@ pnpm build
 - Toutes les requêtes et mutations applicatives exigent une session valide.
 - La configuration des personnages, paramètres et accès est réservée aux
   administrateurs.
+- Le rôle « Lecteur » permet de consulter les données métier et les archives,
+  sans accès à l’administration. Toute modification est refusée côté serveur, y compris
+  par un appel direct à l’API. Un administrateur peut attribuer ce rôle lors de
+  la création d’un compte ou depuis « Gérer l’accès ».
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
 - Une opération qui rendrait un stock négatif est refusée.
 - L’inscription publique est désactivée côté Better Auth.
-- Les comptes employés sont créés par un administrateur depuis l’application.
+- Les comptes lecteurs et employés sont créés par un administrateur depuis
+  l’application.

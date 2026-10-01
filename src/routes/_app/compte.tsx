@@ -43,8 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { api } from "../../../convex/_generated/api"
-import { useHydrated } from "@/hooks/use-hydrated"
-import { authClient } from "@/lib/auth-client"
+import { usePermissions } from "@/hooks/use-permissions"
 import { formatDecimalSeptims, formatNumber, formatSeptims } from "@/lib/format"
 import {
   sortActorEntries,
@@ -114,13 +113,10 @@ export const Route = createFileRoute("/_app/compte")({
 
 function AccountPage() {
   const { queryArgs } = Route.useLoaderData()
-  const { data: session } = authClient.useSession()
-  const isHydrated = useHydrated()
+  const { isAdmin } = usePermissions()
   const { data } = useSuspenseQuery(
     convexQuery(api.accounts.overview, queryArgs)
   )
-  const isAdmin =
-    isHydrated && (session?.user.role?.split(",").includes("admin") ?? false)
   const currentWeek = data.weeks[0]
   const resultAfterCharges = (currentWeek?.net ?? 0) - data.charges.total
   const chancelleryPayment = data.charges.census + data.charges.tax

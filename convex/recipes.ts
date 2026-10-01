@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values"
 
 import { type Doc, type Id } from "./_generated/dataModel"
 import { mutation, query, type QueryCtx } from "./_generated/server"
-import { requireUser } from "./lib/auth"
+import { requireUser, requireWriter } from "./lib/auth"
 import { assertWholeNumberRange } from "./lib/numbers"
 import { rebuildInventorySummaryIfReady } from "./lib/inventorySummary"
 import { isProductDeclaredCraftable } from "./lib/products"
@@ -172,7 +172,7 @@ export const save = mutation({
     recipeId: v.optional(v.id("recipes")),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const name = normalizeCatalogName(args.name)
     const family = args.family
     const effect = args.effect.trim()
@@ -429,7 +429,7 @@ export const setActive = mutation({
     recipeId: v.id("recipes"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const recipe = await ctx.db.get(args.recipeId)
     if (!recipe) {
       throw new ConvexError({

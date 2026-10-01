@@ -13,6 +13,7 @@ import { useState } from "react"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
+import { usePermissions } from "@/hooks/use-permissions"
 import {
   ProductArchivesDialog,
   ProductDialog,
@@ -149,6 +150,7 @@ export const Route = createFileRoute("/_app/inventaire")({
 })
 
 function InventoryPage() {
+  const { canWrite } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data: products } = useSuspenseQuery(
@@ -226,7 +228,9 @@ function InventoryPage() {
         action={
           <div className="flex flex-wrap justify-end gap-2">
             <ProductArchivesDialog />
-            <ProductDialog onWriteRecipe={setRecipeProductId} />
+            {canWrite ? (
+              <ProductDialog onWriteRecipe={setRecipeProductId} />
+            ) : null}
           </div>
         }
         eyebrow="Gestion des stocks"
@@ -375,9 +379,11 @@ function InventoryPage() {
                     label="État"
                     onSort={() => handleSort("status")}
                   />
-                  <TableHead className="w-10">
-                    <span className="sr-only">Modifier</span>
-                  </TableHead>
+                  {canWrite ? (
+                    <TableHead className="w-10">
+                      <span className="sr-only">Modifier</span>
+                    </TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody className="max-md:grid max-md:gap-3">
@@ -403,7 +409,7 @@ function InventoryPage() {
           </AlertDescription>
         </Alert>
       )}
-      {recipeProduct ? (
+      {canWrite && recipeProduct ? (
         <RecipeDialog
           initialProduct={recipeProduct}
           linkedProductIds={linkedProductIds}
@@ -464,8 +470,9 @@ function InventoryRow({
   onWriteRecipe: (productId: Id<"products">) => void
   product: Doc<"products">
 }>) {
+  const { canWrite } = usePermissions()
   const canWriteRecipe =
-    isProductCraftable(product, hasAnyRecipe) && !hasAnyRecipe
+    canWrite && isProductCraftable(product, hasAnyRecipe) && !hasAnyRecipe
 
   return (
     <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-3 max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
@@ -530,23 +537,25 @@ function InventoryRow({
       <TableCell className="pr-4 text-right max-md:col-start-3 max-md:row-start-1 max-md:p-0 max-md:pr-9">
         <ProductState product={product} />
       </TableCell>
-      <TableCell className="max-md:absolute max-md:top-2.5 max-md:right-2 max-md:p-0">
-        <ProductDialog
-          canWriteRecipe={canWriteRecipe}
-          hasRecipe={hasAnyRecipe}
-          onWriteRecipe={onWriteRecipe}
-          product={product}
-          trigger={
-            <Button
-              aria-label={`Modifier ${product.name}`}
-              size="icon"
-              variant="ghost"
-            >
-              <Pencil aria-hidden="true" />
-            </Button>
-          }
-        />
-      </TableCell>
+      {canWrite ? (
+        <TableCell className="max-md:absolute max-md:top-2.5 max-md:right-2 max-md:p-0">
+          <ProductDialog
+            canWriteRecipe={canWriteRecipe}
+            hasRecipe={hasAnyRecipe}
+            onWriteRecipe={onWriteRecipe}
+            product={product}
+            trigger={
+              <Button
+                aria-label={`Modifier ${product.name}`}
+                size="icon"
+                variant="ghost"
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+            }
+          />
+        </TableCell>
+      ) : null}
     </TableRow>
   )
 }

@@ -17,6 +17,7 @@ import { type ReactNode } from "react"
 import { ShopMark } from "@/components/shop-mark"
 import { Button } from "@/components/ui/button"
 import { useHydrated } from "@/hooks/use-hydrated"
+import { usePermissions } from "@/hooks/use-permissions"
 import {
   Sidebar,
   SidebarContent,
@@ -117,13 +118,12 @@ function Brand() {
 }
 
 function Administration() {
-  const { data: session } = authClient.useSession()
+  const { isAdmin } = usePermissions()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
   const { setOpenMobile } = useSidebar()
   const isHydrated = useHydrated()
-  const isAdmin = session?.user.role?.split(",").includes("admin") ?? false
 
   if (!isHydrated || !isAdmin) return null
 
@@ -169,6 +169,7 @@ function Administration() {
 function SignOutButton() {
   const { data: session } = authClient.useSession()
   const isHydrated = useHydrated()
+  const { isReader } = usePermissions()
 
   async function handleSignOut() {
     await authClient.signOut()
@@ -180,6 +181,11 @@ function SignOutButton() {
       <p className="truncate px-2 text-xs text-sidebar-foreground/65 group-data-[collapsible=icon]:hidden">
         {isHydrated ? (session?.user.name ?? "Employé") : "Employé"}
       </p>
+      {isReader ? (
+        <p className="px-2 text-xs text-sidebar-foreground/65 group-data-[collapsible=icon]:hidden">
+          Lecteur · lecture seule
+        </p>
+      ) : null}
       <Button
         className="w-full justify-start text-sidebar-foreground/80 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         onClick={handleSignOut}

@@ -1,0 +1,387 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { getFunctionName, type FunctionReference } from "convex/server"
+import { type ComponentType, type ReactNode } from "react"
+import type * as ReactQuery from "@tanstack/react-query"
+import { QueryClient } from "@tanstack/react-query"
+import { convexQuery } from "@convex-dev/react-query"
+import type * as ReactRouter from "@tanstack/react-router"
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
+
+import { api } from "../convex/_generated/api"
+import { asAuthenticatedUser, createTestBackend } from "../convex/test.helpers"
+import { AppShell } from "./components/app-shell"
+import { TooltipProvider } from "./components/ui/tooltip"
+import { Route as DashboardRoute } from "./routes/_app/index"
+import { Route as InventoryRoute } from "./routes/_app/inventaire"
+import { Route as JournalRoute } from "./routes/_app/journal"
+import { Route as OrdersRoute } from "./routes/_app/commandes"
+import { Route as RecipesRoute } from "./routes/_app/recettes"
+import { Route as AccountRoute } from "./routes/_app/compte"
+import { Route as AdministrationRoute } from "./routes/_app/administration"
+import { Route as CharactersRoute } from "./routes/_app/personnages"
+
+const state = vi.hoisted<{
+  data: Map<string, unknown>
+  role: string | undefined
+  search: Record<string, unknown>
+}>(() => ({
+  data: new Map<string, unknown>(),
+  role: "reader",
+  search: {},
+}))
+
+vi.mock("convex/react", () => ({
+  useMutation: () => vi.fn(),
+  useQuery: (reference: FunctionReference<"query">, args?: unknown) => {
+    if (args === "skip") return undefined
+    const name = getFunctionName(reference)
+    if (name === "auth:getCurrentUser") {
+      return state.role ? { role: state.role } : undefined
+    }
+    return state.data.get(name)
+  },
+}))
+
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof ReactQuery>()),
+  useSuspenseQuery: ({ queryKey }: { queryKey: [string, string] }) => ({
+    data: state.data.get(queryKey[1]),
+  }),
+}))
+
+vi.mock("@tanstack/react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof ReactRouter>()),
+  createFileRoute: () => (options: unknown) => ({
+    options,
+    useLoaderData: () => ({ queryArgs: {} }),
+    useNavigate: () => vi.fn(),
+    useSearch: () => state.search,
+  }),
+  Link: ({
+    to,
+    children,
+    search: _search,
+    ...props
+  }: {
+    to: string
+    children: ReactNode
+    search?: unknown
+  }) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
+  useRouterState: () => "/inventaire",
+}))
+
+vi.mock("@/lib/auth-client", () => ({
+  authClient: {
+    useSession: () => ({
+      data: { user: { id: "reader", name: "Lecteur test", role: state.role } },
+      isPending: false,
+    }),
+  },
+}))
+
+beforeAll(async () => {
+  const backend = createTestBackend()
+  const employee = await asAuthenticatedUser(backend)
+  const reader = await asAuthenticatedUser(backend, "reader")
+  const productId = await employee.mutation(api.products.save, {
+    active: true,
+    category: "ingredient",
+    minimumStock: 0,
+    name: "Blé test",
+    purchasePrice: 1,
+    salePrice: 2,
+    targetStock: 10,
+  })
+  await employee.mutation(api.recipes.save, {
+    effect: "Restaure la santé",
+    family: "Utilitaire",
+    ingredients: [{ productId, quantity: 1 }],
+    name: "Soin test",
+  })
+  await employee.mutation(api.bundles.save, {
+    items: [{ productId, quantity: 2 }],
+    name: "Lot test",
+    price: 4,
+  })
+  await backend.run(async (ctx) => {
+    await ctx.db.insert("products", {
+      active: false,
+      category: "ingredient",
+      currentStock: 0,
+      minimumStock: 0,
+      name: "Ingrédient archivé",
+      normalizedName: "ingredient archive",
+      tracksStock: true,
+    })
+    await ctx.db.insert("recipes", {
+      active: false,
+      family: "Utilitaire",
+      name: "Recette archivée",
+    })
+    await ctx.db.insert("bundles", { active: false, name: "Lot archivé" })
+  })
+  const characterId = await backend.run(async (ctx) =>
+    ctx.db.insert("characters", { active: true, name: "Personnage test" })
+  )
+  await employee.mutation(api.transactions.recordTrade, {
+    characterId,
+    kind: "sale",
+    lines: [{ kind: "product", productId, quantity: 1 }],
+    occurredAt: Date.now(),
+  })
+  await employee.mutation(api.orders.save, {
+    contactName: "Client test",
+    dueAt: null,
+    kind: "client",
+    lines: [{ productId, quantity: 1, unitPrice: 2 }],
+    notes: "À consulter",
+    status: "open",
+    total: 2,
+  })
+  const queries = [
+    api.dashboard.overview,
+    api.accounts.overview,
+    api.products.list,
+    api.products.selectable,
+    api.products.listArchived,
+    api.recipes.list,
+    api.recipes.listBundles,
+    api.recipes.listArchived,
+    api.bundles.listArchived,
+    api.recipes.listLinkedProductIds,
+    api.recipes.listActiveLinkedProductIds,
+    api.characters.list,
+    api.contacts.list,
+    api.orders.listAttention,
+  ] as const
+  for (const reference of queries)
+    state.data.set(
+      getFunctionName(reference),
+      await reader.query(reference, {})
+    )
+  state.data.set(
+    "orders:listHistoryPage",
+    await reader.query(api.orders.listHistoryPage, {
+      paginationOpts: { cursor: null, numItems: 30 },
+    })
+  )
+  state.data.set(
+    "transactions:listPage",
+    await reader.query(api.transactions.listPage, {
+      paginationOpts: { cursor: null, numItems: 30 },
+    })
+  )
+})
+
+beforeEach(() => {
+  state.role = "reader"
+  state.search = {}
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }))
+})
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+
+function page(route: { options: { component?: ComponentType } }) {
+  const Component = route.options.component!
+  return <Component />
+}
+
+describe("interface lecteur", () => {
+  it("conserve la navigation métier et masque l’administration", () => {
+    render(
+      <TooltipProvider>
+        <AppShell>
+          <p>Contenu métier</p>
+        </AppShell>
+      </TooltipProvider>
+    )
+    expect(screen.queryByRole("link", { name: "Inventaire" })).not.toBeNull()
+    expect(screen.queryByRole("link", { name: "Accès & audit" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Personnages" })).toBeNull()
+    expect(screen.queryByText("Lecteur · lecture seule")).not.toBeNull()
+  })
+
+  it("affiche l’inventaire avec ses filtres et sans modification", () => {
+    render(page(InventoryRoute))
+    expect(screen.queryByText("Blé test")).not.toBeNull()
+    expect(
+      screen.queryByRole("textbox", { name: "Rechercher un produit" }) ??
+        screen.queryByRole("searchbox", { name: "Rechercher un produit" })
+    ).not.toBeNull()
+    expect(
+      screen.queryByRole("button", { name: "Stocks faibles" })
+    ).not.toBeNull()
+    expect(
+      screen.queryByRole("button", { name: /Modifier|Ajouter|Archiver|Écrire/ })
+    ).toBeNull()
+  })
+
+  it("consulte les recettes et les ingrédients sans actions de production ou d’édition", () => {
+    state.search = { view: "recipes" }
+    render(page(RecipesRoute))
+    expect(screen.queryByText("Soin test")).not.toBeNull()
+    expect(screen.queryByText("Blé test")).not.toBeNull()
+    expect(
+      screen.queryByRole("link", { name: "Voir dans l’inventaire" })
+    ).not.toBeNull()
+    expect(
+      screen.queryByRole("button", {
+        name: /Produire|Modifier|Nouvelle|Réactiver/,
+      })
+    ).toBeNull()
+  })
+
+  it("consulte les lots sans édition", () => {
+    state.search = { view: "bundles" }
+    render(page(RecipesRoute))
+    expect(screen.queryByText("Lot test")).not.toBeNull()
+    expect(
+      screen.queryByRole("button", { name: /Modifier|Nouveau|Réactiver/ })
+    ).toBeNull()
+  })
+
+  it.each([
+    {
+      label: "références",
+      route: InventoryRoute,
+      view: undefined,
+      name: "Ingrédient archivé",
+    },
+    {
+      label: "recettes",
+      route: RecipesRoute,
+      view: "recipes",
+      name: "Recette archivée",
+    },
+    {
+      label: "lots",
+      route: RecipesRoute,
+      view: "bundles",
+      name: "Lot archivé",
+    },
+  ])(
+    "consulte les archives des $label sans pouvoir réactiver les entrées",
+    ({ route, view, name }) => {
+      state.search = view ? { view } : {}
+      render(page(route))
+      fireEvent.click(screen.getByRole("button", { name: "Archives" }))
+      expect(screen.queryByText(name)).not.toBeNull()
+      expect(screen.queryByRole("button", { name: "Réactiver" })).toBeNull()
+    }
+  )
+
+  it("consulte le journal sans nouvelle transaction ni gestion", () => {
+    render(page(JournalRoute))
+    expect(
+      screen.queryByRole("heading", { name: "Transactions" })
+    ).not.toBeNull()
+    expect(screen.queryByText("Blé test")).not.toBeNull()
+    expect(
+      screen.queryByRole("button", {
+        name: /Nouvelle transaction|Gérer|Supprimer/,
+      })
+    ).toBeNull()
+  })
+
+  it("consulte les commandes avec un statut affiché sans pouvoir le changer", () => {
+    state.search = { view: "client" }
+    render(page(OrdersRoute))
+    expect(screen.queryByText("Client test")).not.toBeNull()
+    expect(screen.queryByText("À consulter")).not.toBeNull()
+    expect(
+      screen.queryByRole("combobox", { name: /État de la commande/ })
+    ).toBeNull()
+    expect(
+      screen.queryByRole("button", {
+        name: /Modifier|Réceptionner|paiement|commande|contact|Renouveler/,
+      })
+    ).toBeNull()
+  })
+
+  it("consulte le tableau de bord et le compte sans réglages ni actions rapides", () => {
+    const view = render(page(DashboardRoute))
+    expect(
+      screen.queryByRole("heading", { name: "La boutique aujourd’hui" })
+    ).not.toBeNull()
+    expect(screen.queryByText("Actions rapides")).toBeNull()
+    view.unmount()
+    render(page(AccountRoute))
+    expect(screen.queryByRole("heading", { name: "Compte" })).not.toBeNull()
+    expect(
+      screen.queryByRole("button", { name: /Paramètres|Configurer/ })
+    ).toBeNull()
+  })
+
+  it("retire une fenêtre d’écriture lors d’une rétrogradation et attend le rôle avant d’autoriser l’écriture", () => {
+    state.role = "user"
+    const view = render(page(InventoryRoute))
+    fireEvent.click(screen.getByRole("button", { name: "Modifier Blé test" }))
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+    state.role = "reader"
+    view.rerender(page(InventoryRoute))
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(
+      screen.queryByRole("button", { name: "Modifier Blé test" })
+    ).toBeNull()
+    state.role = undefined
+    view.rerender(page(InventoryRoute))
+    expect(
+      screen.queryByRole("button", { name: "Modifier Blé test" })
+    ).toBeNull()
+  })
+
+  it.each([AdministrationRoute, CharactersRoute])(
+    "redirige un lecteur même si le cache de navigation contient encore le rôle admin",
+    async (route) => {
+      const guard = route.options.beforeLoad as unknown as (options: {
+        context: {
+          queryClient: ReactQuery.QueryClient
+        }
+      }) => Promise<unknown>
+      let currentRole = "reader"
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { queryFn: async () => ({ role: currentRole }) },
+        },
+      })
+      queryClient.setQueryData(
+        convexQuery(api.auth.getCurrentUser, {}).queryKey,
+        {
+          role: "admin",
+        }
+      )
+      const options = {
+        context: { queryClient },
+      }
+      await expect(guard(options)).rejects.toMatchObject({
+        options: { to: "/" },
+      })
+      currentRole = "admin"
+      queryClient.setQueryData(
+        convexQuery(api.auth.getCurrentUser, {}).queryKey,
+        { role: "reader" }
+      )
+      await expect(guard(options)).resolves.toBeUndefined()
+    }
+  )
+})

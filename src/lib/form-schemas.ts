@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { accountRoles } from "../../shared/account-roles"
 
 import { parseDateValue } from "./date-values"
 import { priceDraftToValue } from "./prices"
@@ -167,7 +168,7 @@ export const accountFormSchema = z.object({
     .string()
     .min(12, "Le mot de passe doit contenir au moins 12 caractères.")
     .max(128, "Le mot de passe ne peut pas dépasser 128 caractères."),
-  role: z.enum(["admin", "user"]),
+  role: z.enum(accountRoles),
 })
 
 export const passwordResetFormSchema = z

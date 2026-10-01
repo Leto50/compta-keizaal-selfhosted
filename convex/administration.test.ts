@@ -4,27 +4,31 @@ import { api } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
 
 describe("administration", () => {
-  it("réserve les comptes et l’audit aux administrateurs", async () => {
-    const backend = createTestBackend()
-    const employee = await asAuthenticatedUser(backend)
+  it.each(["user", "reader"] as const)(
+    "réserve les comptes et l’audit aux administrateurs pour le rôle %s",
+    async (role) => {
+      const backend = createTestBackend()
+      const employee = await asAuthenticatedUser(backend, role)
 
-    await expect(
-      employee.query(api.administration.listAccounts, {})
-    ).rejects.toThrowError("réservée aux administrateurs")
-    await expect(
-      employee.query(api.administration.listAuditPage, {
-        paginationOpts: { cursor: null, numItems: 30 },
-      })
-    ).rejects.toThrowError("réservée aux administrateurs")
-  })
+      await expect(
+        employee.query(api.administration.listAccounts, {})
+      ).rejects.toThrowError("réservée aux administrateurs")
+      await expect(
+        employee.query(api.administration.listAuditPage, {
+          paginationOpts: { cursor: null, numItems: 30 },
+        })
+      ).rejects.toThrowError("réservée aux administrateurs")
+    }
+  )
 
   it("liste le rôle, l’état et les dates des comptes", async () => {
     const backend = createTestBackend()
     const admin = await asAuthenticatedUser(backend, "admin")
+    await asAuthenticatedUser(backend, "reader")
 
     const accounts = await admin.query(api.administration.listAccounts, {})
 
-    expect(accounts).toHaveLength(1)
+    expect(accounts).toHaveLength(2)
     expect(accounts[0]).toMatchObject({
       banned: false,
       identifier: "admin",
@@ -33,6 +37,7 @@ describe("administration", () => {
     })
     expect(accounts[0]?.createdAt).toEqual(expect.any(Number))
     expect(accounts[0]?.updatedAt).toEqual(expect.any(Number))
+    expect(accounts[1]).toMatchObject({ identifier: "reader", role: "reader" })
   })
 
   it("pagine l’audit du plus récent au plus ancien et résout son auteur", async () => {

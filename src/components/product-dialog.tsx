@@ -1,5 +1,6 @@
 import { useForm, useStore } from "@tanstack/react-form"
 import { useMutation, useQuery } from "convex/react"
+import { usePermissions } from "@/hooks/use-permissions"
 import {
   Archive,
   ArchiveRestore,
@@ -496,6 +497,7 @@ export function ProductDialog({
 }
 
 export function ProductArchivesDialog() {
+  const { canWrite } = usePermissions()
   const archivedProducts = useQuery(api.products.listArchived)
   const setProductActive = useMutation(api.products.setActive)
   const [restoringId, setRestoringId] = useState<string>()
@@ -534,7 +536,9 @@ export function ProductArchivesDialog() {
             Références archivées
           </DialogTitle>
           <DialogDescription>
-            Réactivez une référence pour la rendre à nouveau disponible.
+            {canWrite
+              ? "Réactivez une référence pour la rendre à nouveau disponible."
+              : "Les références retirées du catalogue de la boutique."}
           </DialogDescription>
         </DialogHeader>
 
@@ -566,25 +570,27 @@ export function ProductArchivesDialog() {
                       {categoryLabels[product.category]}
                     </p>
                   </div>
-                  <Button
-                    disabled={restoringId !== undefined}
-                    onClick={() => {
-                      void restoreProduct(product)
-                    }}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {restoringId === product._id ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : (
-                      <ArchiveRestore aria-hidden="true" />
-                    )}
-                    Réactiver
-                  </Button>
+                  {canWrite ? (
+                    <Button
+                      disabled={restoringId !== undefined}
+                      onClick={() => {
+                        void restoreProduct(product)
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {restoringId === product._id ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" />
+                      )}
+                      Réactiver
+                    </Button>
+                  ) : null}
                 </div>
               ))}
             </div>

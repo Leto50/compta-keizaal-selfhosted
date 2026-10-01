@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values"
 
 import { type Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
-import { requireUser } from "./lib/auth"
+import { requireUser, requireWriter } from "./lib/auth"
 import {
   applyInventoryProductChanges,
   rebuildInventorySummaryIfReady,
@@ -87,7 +87,7 @@ export const setActive = mutation({
     productId: v.id("products"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const product = await ctx.db.get(args.productId)
     if (!product) {
       throw new ConvexError({
@@ -124,7 +124,7 @@ export const save = mutation({
     targetStock: v.number(),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const name = normalizeCatalogName(args.name)
     if (!name || name.length > MAX_NAME_LENGTH) {
       throw new ConvexError({

@@ -19,6 +19,7 @@ import { OperationDialog } from "@/components/operation-dialog"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
+import { usePermissions } from "@/hooks/use-permissions"
 import {
   Alert,
   AlertAction,
@@ -76,6 +77,7 @@ export const Route = createFileRoute("/_app/")({
 })
 
 function DashboardPage() {
+  const { canWrite } = usePermissions()
   const { queryArgs } = Route.useLoaderData()
   const { data } = useSuspenseQuery(
     convexQuery(api.dashboard.overview, queryArgs)
@@ -84,44 +86,45 @@ function DashboardPage() {
   return (
     <div className="animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
       <PageHeader eyebrow="Registre du jour" title="La boutique aujourd’hui">
-        Enregistrez une transaction ou une production, puis voyez immédiatement
-        ce qui demande votre attention.
+        Consultez l’activité de la boutique et ce qui demande votre attention.
       </PageHeader>
 
-      <Card className="mt-6 border border-[#5b462b]/35 bg-[#f8edd5]/55 shadow-[0_10px_28px_rgba(70,48,25,0.06)] ring-0">
-        <CardHeader className="border-b border-border/65">
-          <CardTitle className="font-display text-lg font-[580] text-[#34291e]">
-            Actions rapides
-          </CardTitle>
-          <CardDescription>Que voulez-vous enregistrer ?</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-2 sm:grid-cols-2">
-          <DashboardOperationDialog
-            trigger={
-              <Button
-                className="h-20 w-full flex-col gap-1.5 px-3 text-center text-sm whitespace-normal shadow-sm"
-                size="lg"
-              >
-                <ArrowLeftRight aria-hidden="true" className="size-5" />
-                Enregistrer un échange
-              </Button>
-            }
-          />
-          <DashboardOperationDialog
-            initialKind="production"
-            trigger={
-              <Button
-                className="h-20 w-full flex-col gap-1.5 border-[#6a5436]/40 bg-background/35 px-3 text-center text-sm whitespace-normal"
-                size="lg"
-                variant="outline"
-              >
-                <Hammer aria-hidden="true" className="size-5" />
-                Enregistrer une production
-              </Button>
-            }
-          />
-        </CardContent>
-      </Card>
+      {canWrite ? (
+        <Card className="mt-6 border border-[#5b462b]/35 bg-[#f8edd5]/55 shadow-[0_10px_28px_rgba(70,48,25,0.06)] ring-0">
+          <CardHeader className="border-b border-border/65">
+            <CardTitle className="font-display text-lg font-[580] text-[#34291e]">
+              Actions rapides
+            </CardTitle>
+            <CardDescription>Que voulez-vous enregistrer ?</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            <DashboardOperationDialog
+              trigger={
+                <Button
+                  className="h-20 w-full flex-col gap-1.5 px-3 text-center text-sm whitespace-normal shadow-sm"
+                  size="lg"
+                >
+                  <ArrowLeftRight aria-hidden="true" className="size-5" />
+                  Enregistrer un échange
+                </Button>
+              }
+            />
+            <DashboardOperationDialog
+              initialKind="production"
+              trigger={
+                <Button
+                  className="h-20 w-full flex-col gap-1.5 border-[#6a5436]/40 bg-background/35 px-3 text-center text-sm whitespace-normal"
+                  size="lg"
+                  variant="outline"
+                >
+                  <Hammer aria-hidden="true" className="size-5" />
+                  Enregistrer une production
+                </Button>
+              }
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section
         aria-label="Priorités de la boutique"

@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values"
 
 import { mutation, query, type MutationCtx } from "./_generated/server"
-import { requireUser } from "./lib/auth"
+import { requireUser, requireWriter } from "./lib/auth"
 import { contactIsActive } from "./lib/contacts"
 import { normalizeName } from "./lib/text"
 
@@ -60,7 +60,7 @@ export const rename = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const contact = await ctx.db.get(args.contactId)
     if (!contact) {
       throw new ConvexError({
@@ -103,7 +103,7 @@ export const setActive = mutation({
     contactId: v.id("contacts"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const user = await requireWriter(ctx)
     const contact = await ctx.db.get(args.contactId)
     if (!contact) {
       throw new ConvexError({

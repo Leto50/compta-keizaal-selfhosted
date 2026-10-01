@@ -16,6 +16,8 @@ import { internalMutation, query } from "./_generated/server"
 import authConfig from "./auth.config"
 import authSchema from "./betterAuth/schema"
 import { wouldRemoveLastActiveAdmin } from "./lib/accountSecurity"
+import { isAccountRole } from "../shared/account-roles"
+import { authRoles } from "../shared/auth-permissions"
 import {
   internalAccountEmail,
   isAccountIdentifier,
@@ -155,9 +157,9 @@ export const createAuthOptions = (convexCtx: GenericCtx<DataModel>) =>
               "Le mot de passe doit contenir entre 12 et 128 caractères.",
           })
         }
-        if (role !== "admin" && role !== "user") {
+        if (!isAccountRole(role)) {
           throw new APIError("BAD_REQUEST", {
-            message: "Le rôle doit être employé ou administrateur.",
+            message: "Le rôle doit être lecteur, employé ou administrateur.",
           })
         }
         if (
@@ -201,7 +203,7 @@ export const createAuthOptions = (convexCtx: GenericCtx<DataModel>) =>
         usernameNormalization: normalizeAccountIdentifier,
         usernameValidator: isAccountIdentifier,
       }),
-      admin(),
+      admin({ roles: authRoles }),
     ],
     telemetry: {
       enabled: false,
