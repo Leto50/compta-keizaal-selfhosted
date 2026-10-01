@@ -31,9 +31,56 @@ describe("sortInventoryEntries", () => {
       sortInventoryEntries(entries, "stock", "desc").map((entry) => entry.name)
     ).toEqual(["Potion", "Bière", "Service"])
     expect(
-      sortInventoryEntries(entries, "price", "asc").map((entry) => entry.name)
+      sortInventoryEntries(entries, "salePrice", "asc").map(
+        (entry) => entry.name
+      )
     ).toEqual(["Bière", "Potion", "Service"])
   })
+
+  it.each([
+    {
+      key: "purchasePrice" as const,
+      direction: "asc" as const,
+      names: ["Achat seul", "Potion", "Ingrédient", "Sans prix", "Vente seule"],
+    },
+    {
+      key: "purchasePrice" as const,
+      direction: "desc" as const,
+      names: ["Ingrédient", "Potion", "Achat seul", "Sans prix", "Vente seule"],
+    },
+    {
+      key: "salePrice" as const,
+      direction: "asc" as const,
+      names: ["Vente seule", "Ingrédient", "Potion", "Achat seul", "Sans prix"],
+    },
+    {
+      key: "salePrice" as const,
+      direction: "desc" as const,
+      names: ["Potion", "Ingrédient", "Vente seule", "Achat seul", "Sans prix"],
+    },
+  ])(
+    "trie $key en ordre $direction sans utiliser l’autre tarif",
+    ({ key, direction, names }) => {
+      const products = [
+        { name: "Ingrédient", purchasePrice: 5, salePrice: 1 },
+        { name: "Potion", purchasePrice: 1, salePrice: 5 },
+        { name: "Achat seul", purchasePrice: 0 },
+        { name: "Vente seule", salePrice: 0 },
+        { name: "Sans prix" },
+      ].map((product) => ({
+        ...product,
+        currentStock: 0,
+        minimumStock: 0,
+        tracksStock: true,
+      }))
+
+      expect(
+        sortInventoryEntries(products, key, direction).map(
+          (product) => product.name
+        )
+      ).toEqual(names)
+    }
+  )
 
   it("place les stocks faibles en premier dans le tri d’état", () => {
     expect(

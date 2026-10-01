@@ -62,8 +62,10 @@ type StockFilter = "low"
 type InventorySortOption =
   | "name-asc"
   | "name-desc"
-  | "price-asc"
-  | "price-desc"
+  | "purchasePrice-asc"
+  | "purchasePrice-desc"
+  | "salePrice-asc"
+  | "salePrice-desc"
   | "status-asc"
   | "status-desc"
   | "stock-asc"
@@ -94,8 +96,10 @@ const inventorySortOptions: readonly {
   { label: "Nom · Z à A", value: "name-desc" },
   { label: "Stock · plus élevé", value: "stock-desc" },
   { label: "Stock · plus faible", value: "stock-asc" },
-  { label: "Prix · plus élevé", value: "price-desc" },
-  { label: "Prix · plus faible", value: "price-asc" },
+  { label: "Prix d’achat · plus élevé", value: "purchasePrice-desc" },
+  { label: "Prix d’achat · plus faible", value: "purchasePrice-asc" },
+  { label: "Prix de vente · plus élevé", value: "salePrice-desc" },
+  { label: "Prix de vente · plus faible", value: "salePrice-asc" },
   { label: "État · à surveiller", value: "status-asc" },
   { label: "État · disponible", value: "status-desc" },
 ]
@@ -119,9 +123,15 @@ function validateInventorySearch(
     typeof search.q === "string" && search.q.trim()
       ? search.q.slice(0, 100)
       : undefined
+  const requestedSort =
+    search.sort === "price-asc"
+      ? "salePrice-asc"
+      : search.sort === "price-desc"
+        ? "salePrice-desc"
+        : search.sort
   const sort =
-    typeof search.sort === "string" && isInventorySortOption(search.sort)
-      ? search.sort
+    typeof requestedSort === "string" && isInventorySortOption(requestedSort)
+      ? requestedSort
       : undefined
   return {
     ...(category && category !== "all" ? { category } : {}),
@@ -365,12 +375,20 @@ function InventoryPage() {
                   />
                   <TableHead className="text-right">Seuil</TableHead>
                   <SortableTableHead
-                    active={sortKey === "price"}
+                    active={sortKey === "purchasePrice"}
                     className="text-right"
                     direction={sortDirection}
                     inactiveDirection="desc"
-                    label="Prix"
-                    onSort={() => handleSort("price")}
+                    label="Prix d’achat"
+                    onSort={() => handleSort("purchasePrice")}
+                  />
+                  <SortableTableHead
+                    active={sortKey === "salePrice"}
+                    className="text-right"
+                    direction={sortDirection}
+                    inactiveDirection="desc"
+                    label="Prix de vente"
+                    onSort={() => handleSort("salePrice")}
                   />
                   <SortableTableHead
                     active={sortKey === "status"}
@@ -454,8 +472,7 @@ function ProductState({ product }: Readonly<{ product: Doc<"products"> }>) {
   )
 }
 
-function productPrice(product: Doc<"products">): string {
-  const price = product.salePrice ?? product.purchasePrice
+function productPrice(price: number | undefined): string {
   return price === undefined ? "—" : formatUnitPrice(price)
 }
 
@@ -475,8 +492,8 @@ function InventoryRow({
     canWrite && isProductCraftable(product, hasAnyRecipe) && !hasAnyRecipe
 
   return (
-    <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-3 max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
-      <TableCell className="max-w-80 pl-4 font-semibold max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:font-display max-md:text-base">
+    <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-6 max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
+      <TableCell className="max-w-80 pl-4 font-semibold max-md:col-span-4 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:font-display max-md:text-base">
         <div className="flex min-w-0 items-center max-md:flex-wrap">
           <span className="truncate">{product.name}</span>
           {hasRecipe ? (
@@ -497,7 +514,7 @@ function InventoryRow({
           ) : null}
         </div>
       </TableCell>
-      <TableCell className="text-muted-foreground max-md:col-span-2 max-md:col-start-1 max-md:row-start-2 max-md:flex max-md:items-center max-md:gap-2 max-md:p-0">
+      <TableCell className="text-muted-foreground max-md:col-span-4 max-md:col-start-1 max-md:row-start-2 max-md:flex max-md:items-center max-md:gap-2 max-md:p-0">
         <span className="max-md:hidden">
           {categoryLabels[product.category]}
         </span>
@@ -516,25 +533,31 @@ function InventoryRow({
           </Button>
         ) : null}
       </TableCell>
-      <TableCell className="text-right font-display text-base max-md:col-start-1 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:text-lg">
+      <TableCell className="text-right font-display text-base max-md:col-span-3 max-md:col-start-1 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:text-lg">
         <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
           Stock
         </span>
         {product.tracksStock ? formatNumber(product.currentStock) : "—"}
       </TableCell>
-      <TableCell className="text-right text-muted-foreground max-md:col-start-2 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-display max-md:text-lg max-md:text-foreground">
+      <TableCell className="text-right text-muted-foreground max-md:col-span-3 max-md:col-start-4 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-display max-md:text-lg max-md:text-foreground">
         <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
           Seuil
         </span>
         {product.tracksStock ? formatNumber(product.minimumStock) : "—"}
       </TableCell>
-      <TableCell className="text-right max-md:col-start-3 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold">
+      <TableCell className="text-right max-md:col-span-3 max-md:col-start-1 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
         <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
-          Prix
+          Prix d’achat
         </span>
-        {productPrice(product)}
+        {productPrice(product.purchasePrice)}
       </TableCell>
-      <TableCell className="pr-4 text-right max-md:col-start-3 max-md:row-start-1 max-md:p-0 max-md:pr-9">
+      <TableCell className="text-right max-md:col-span-3 max-md:col-start-4 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
+        <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
+          Prix de vente
+        </span>
+        {productPrice(product.salePrice)}
+      </TableCell>
+      <TableCell className="pr-4 text-right max-md:col-span-2 max-md:col-start-5 max-md:row-start-1 max-md:p-0 max-md:pr-9">
         <ProductState product={product} />
       </TableCell>
       {canWrite ? (
