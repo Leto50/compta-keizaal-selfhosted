@@ -45,6 +45,24 @@ Le rendu serveur peut utiliser `CONVEX_INTERNAL_URL` et
 `CONVEX_INTERNAL_SITE_URL` pour joindre Convex sur le réseau privé de la
 plateforme de déploiement.
 
+Le workflow de production utilise `.env` pour L’eau d’Roche et `.env.site2` pour
+La Fiole du Voyageur. L’origine publique de La Fiole du Voyageur est passée
+explicitement à `deploy_convex`, qui l’enregistre dans l’environnement de ses
+fonctions Convex avant de les déployer :
+
+```env
+SITE_URL=https://fiole-voyageur.parvos.fyi
+```
+
+Cette valeur doit être enregistrée dans l’environnement des **fonctions Convex**.
+La passer au conteneur web ou au CLI ne suffit pas. Le troisième argument
+facultatif de `deploy_convex` permet de la synchroniser avec `convex env set SITE_URL`
+sur le backend correspondant. Sans cet argument, l’origine configurée est conservée.
+Pour corriger une instance déjà déployée, modifier `SITE_URL` dans les variables
+d’environnement du tableau de bord Convex de cette instance. Une valeur absente
+ou différente de l’origine du navigateur provoque un refus `403 INVALID_ORIGIN`
+sur les requêtes d’authentification avec une session.
+
 ## Vérification
 
 ```bash
