@@ -64,7 +64,9 @@ export function AccountDialog({
         })
         if (result.error) {
           toast.error(
-            "Impossible de créer le compte. Vérifiez l’identifiant et le mot de passe."
+            result.error.code === "INVALID_ORIGIN"
+              ? "La configuration d’accès de cette boutique doit être corrigée avant de créer des comptes."
+              : "Impossible de créer le compte. Vérifiez l’identifiant et le mot de passe."
           )
           return
         }

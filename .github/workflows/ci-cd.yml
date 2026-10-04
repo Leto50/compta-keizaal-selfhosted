@@ -114,6 +114,7 @@ jobs:
           deploy_convex() {
             local project="$1"
             local env_file="$2"
+            local site_url="${3:-}"
             local modules_volume="${project}-node-modules"
             local store_volume="${project}-pnpm-store"
             local backend_id=""
@@ -136,14 +137,19 @@ jobs:
               --network "$network" \
               --env-file "$env_file" \
               -e CONVEX_SELF_HOSTED_URL=http://backend:3210 \
+              -e "DEPLOY_SITE_URL=$site_url" \
               -v "$PWD:/app" \
               -v "$modules_volume:/app/node_modules" \
               -v "$store_volume:/pnpm/store" \
               -w /app \
               node:22-alpine \
               sh -lc '
-                corepack enable &&
-                pnpm install --frozen-lockfile --store-dir /pnpm/store &&
+                set -eu
+                corepack enable
+                pnpm install --frozen-lockfile --store-dir /pnpm/store
+                if [ -n "$DEPLOY_SITE_URL" ]; then
+                  pnpm exec convex env set SITE_URL "$DEPLOY_SITE_URL"
+                fi
                 pnpm exec convex deploy --codegen disable
               '
           }
@@ -170,7 +176,7 @@ jobs:
 
           # Mettre à jour les fonctions avant les frontends qui les utilisent.
           deploy_convex eau-roche .env
-          deploy_convex fiole-voyageur .env.site2
+          deploy_convex fiole-voyageur .env.site2 https://fiole-voyageur.parvos.fyi
 
           deploy_web eau-roche .env
           deploy_web fiole-voyageur .env.site2
