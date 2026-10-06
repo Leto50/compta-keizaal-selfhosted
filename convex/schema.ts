@@ -17,6 +17,8 @@ export const readerAccessValidator = v.object({
   ),
   showPrices: v.boolean(),
   showStock: v.boolean(),
+  showPurchasePrices: v.optional(v.boolean()),
+  showSalePrices: v.optional(v.boolean()),
   productIds: v.optional(v.array(v.id("products"))),
   operationKinds: v.array(
     v.union(...readerOperationKinds.map((kind) => v.literal(kind)))

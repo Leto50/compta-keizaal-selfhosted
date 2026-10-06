@@ -162,7 +162,8 @@ export const Route = createFileRoute("/_app/inventaire")({
 })
 
 function InventoryPage() {
-  const { canWrite, showStock, showPrices } = usePermissions()
+  const { canWrite, showStock, showPurchasePrices, showSalePrices } =
+    usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data: products } = useSuspenseQuery(
@@ -180,7 +181,8 @@ function InventoryPage() {
   const requestedSort = filters.sort ?? "name-asc"
   const sortOption =
     (!showStock && /^(stock|status)/.test(requestedSort)) ||
-    (!showPrices && requestedSort.includes("Price"))
+    (!showPurchasePrices && requestedSort.startsWith("purchasePrice")) ||
+    (!showSalePrices && requestedSort.startsWith("salePrice"))
       ? "name-asc"
       : requestedSort
   const [sortKey, sortDirection] = sortOption.split("-") as [
@@ -347,7 +349,9 @@ function InventoryPage() {
                 .filter(
                   (option) =>
                     (showStock || !/^(stock|status)/.test(option.value)) &&
-                    (showPrices || !option.value.includes("Price"))
+                    (showPurchasePrices ||
+                      !option.value.startsWith("purchasePrice")) &&
+                    (showSalePrices || !option.value.startsWith("salePrice"))
                 )
                 .map((option) => (
                   <SelectItem key={option.value} value={option.value}>
@@ -504,7 +508,8 @@ function InventoryRow({
   onWriteRecipe: (productId: Id<"products">) => void
   product: Doc<"products">
 }>) {
-  const { canWrite, showPrices, showStock } = usePermissions()
+  const { canWrite, showPurchasePrices, showSalePrices, showStock } =
+    usePermissions()
   const canWriteRecipe =
     canWrite && isProductCraftable(product, hasAnyRecipe) && !hasAnyRecipe
 
@@ -574,13 +579,13 @@ function InventoryRow({
         <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
           Prix d’achat
         </span>
-        {showPrices ? productPrice(product.purchasePrice) : "Masqué"}
+        {showPurchasePrices ? productPrice(product.purchasePrice) : "Masqué"}
       </TableCell>
       <TableCell className="text-right max-md:col-span-3 max-md:col-start-4 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
         <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
           Prix de vente
         </span>
-        {showPrices ? productPrice(product.salePrice) : "Masqué"}
+        {showSalePrices ? productPrice(product.salePrice) : "Masqué"}
       </TableCell>
       <TableCell className="pr-4 text-right max-md:col-span-2 max-md:col-start-5 max-md:row-start-1 max-md:p-0 max-md:pr-9">
         <ProductState product={product} />

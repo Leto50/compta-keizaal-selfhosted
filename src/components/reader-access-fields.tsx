@@ -75,6 +75,28 @@ export function ReaderAccessFields({
           label="Voir les stocks et les seuils"
           onChange={(showStock) => onChange({ ...value, showStock })}
         />
+        {value.showPrices ? (
+          <>
+            <Check
+              checked={value.showPurchasePrices !== false}
+              label="Voir les prix d’achat et les coûts de fabrication"
+              onChange={(showPurchasePrices) =>
+                onChange({ ...value, showPurchasePrices })
+              }
+            />
+            <Check
+              checked={value.showSalePrices !== false}
+              label="Voir les prix de vente"
+              onChange={(showSalePrices) =>
+                onChange({ ...value, showSalePrices })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Masquer un type de prix masque aussi les montants des opérations
+              et les totaux financiers.
+            </p>
+          </>
+        ) : null}
       </div>
       <div className="grid gap-2 border-t border-border/60 pt-3">
         <p className="text-sm font-semibold">Produits visibles</p>

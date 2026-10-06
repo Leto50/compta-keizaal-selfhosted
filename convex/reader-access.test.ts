@@ -219,6 +219,48 @@ async function fixture() {
 }
 
 describe("droits détaillés des lecteurs", () => {
+  it.each([
+    {
+      showPurchasePrices: false,
+      showSalePrices: true,
+      purchasePrice: 0,
+      salePrice: 8765,
+      cost: 0,
+    },
+    {
+      showPurchasePrices: true,
+      showSalePrices: false,
+      purchasePrice: 4567,
+      salePrice: 0,
+      cost: 4567,
+    },
+  ])(
+    "sépare les prix d’achat et de vente et masque les montants dérivés ($showPurchasePrices/$showSalePrices)",
+    async (expected) => {
+      const { admin, reader, userId, access } = await fixture()
+      await admin.mutation(api.administration.saveAccountAccess, {
+        userId,
+        role: "reader",
+        access: {
+          ...access,
+          showPrices: true,
+          showPurchasePrices: expected.showPurchasePrices,
+          showSalePrices: expected.showSalePrices,
+        },
+      })
+      expect((await reader.query(api.products.list, {}))[0]).toMatchObject({
+        purchasePrice: expected.purchasePrice,
+        salePrice: expected.salePrice,
+      })
+      expect((await reader.query(api.recipes.list, {}))[0]?.cost).toBe(
+        expected.cost
+      )
+      expect((await reader.query(api.transactions.list, {}))[0]?.total).toBe(0)
+      expect(
+        (await reader.query(api.accounts.overview, {})).journalBalance
+      ).toBe(0)
+    }
+  )
   it("applique aussi la sélection des produits et le masquage aux archives", async () => {
     const { backend, reader, ids } = await fixture()
     await backend.run(async (ctx) => {

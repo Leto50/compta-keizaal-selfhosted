@@ -32,6 +32,8 @@ export interface ReaderAccess {
   sections: ReaderSection[]
   showPrices: boolean
   showStock: boolean
+  showPurchasePrices?: boolean
+  showSalePrices?: boolean
   productIds?: string[]
   operationKinds: ReaderOperationKind[]
 }
@@ -39,6 +41,8 @@ export const defaultReaderAccess: ReaderAccess = {
   sections: [...readerSections],
   showPrices: true,
   showStock: true,
+  showPurchasePrices: true,
+  showSalePrices: true,
   operationKinds: [...readerOperationKinds],
 }
 export function canReadSection(
@@ -128,14 +132,23 @@ export function redactReaderData<T>(value: T, access: ReaderAccess | null): T {
   if (value === null || typeof value !== "object") return value
   return Object.fromEntries(
     Object.entries(value).map(([key, entry]: [string, unknown]) => {
+      const purchaseHidden =
+        !access.showPrices || access.showPurchasePrices === false
+      const saleHidden = !access.showPrices || access.showSalePrices === false
+      const hidePrice =
+        key === "purchasePrice" || key === "cost"
+          ? purchaseHidden
+          : key === "salePrice" || key === "price"
+            ? saleHidden
+            : purchaseHidden || saleHidden
       if (
-        (!access.showPrices && priceFields.has(key)) ||
+        (hidePrice && priceFields.has(key)) ||
         (!access.showStock && stockFields.has(key))
       )
         return [key, typeof entry === "number" ? 0 : entry]
       if (
         (!access.showStock && (key === "lowStock" || key === "stockDeltas")) ||
-        (!access.showPrices && key === "missingCostReferences")
+        (purchaseHidden && key === "missingCostReferences")
       )
         return [key, []]
       return [key, redactReaderData(entry, access)]

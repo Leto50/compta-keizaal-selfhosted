@@ -29,6 +29,8 @@ export async function readReaderAccess(
     sections: stored.sections,
     showPrices: stored.showPrices,
     showStock: stored.showStock,
+    showPurchasePrices: stored.showPurchasePrices ?? true,
+    showSalePrices: stored.showSalePrices ?? true,
     operationKinds: stored.operationKinds,
     ...(stored.productIds === undefined
       ? {}

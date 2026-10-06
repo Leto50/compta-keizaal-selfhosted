@@ -681,7 +681,7 @@ export function RecipeDialog({
 }
 
 export function RecipeArchivesDialog() {
-  const { formatDecimalSeptims } = useVisibleAmounts()
+  const { formatCost: formatDecimalSeptims } = useVisibleAmounts()
   const { canWrite } = usePermissions()
   const archivedRecipes = useQuery(api.recipes.listArchived)
   const setRecipeActive = useMutation(api.recipes.setActive)

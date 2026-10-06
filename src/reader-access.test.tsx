@@ -397,6 +397,15 @@ describe("réglage du nom du site", () => {
 })
 
 describe("interface lecteur", () => {
+  it("montre les prix de vente en conservant les prix d’achat masqués", () => {
+    state.access = { ...defaultReaderAccess, showPurchasePrices: false }
+    render(page(InventoryRoute))
+    const cells = within(
+      screen.getByRole("row", { name: /Blé test/ })
+    ).getAllByRole("cell")
+    expect(cells[4]?.textContent).toBe("Prix d’achatMasqué")
+    expect(cells[5]?.textContent).toBe("Prix de vente2 septims l’unité")
+  })
   it.each([
     InventoryRoute,
     JournalRoute,

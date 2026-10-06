@@ -146,6 +146,8 @@ async function storeReaderAccess(
       access.productIds === undefined
         ? undefined
         : [...new Set(access.productIds)],
+    showPurchasePrices: access.showPurchasePrices,
+    showSalePrices: access.showSalePrices,
     userId,
     updatedBy,
     updatedAt: Date.now(),

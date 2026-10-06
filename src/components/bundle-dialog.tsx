@@ -425,7 +425,7 @@ export function BundleDialog({
 }
 
 export function BundleArchivesDialog() {
-  const { formatSeptims } = useVisibleAmounts()
+  const { formatSaleAmount: formatSeptims } = useVisibleAmounts()
   const { canWrite } = usePermissions()
   const archivedBundles = useQuery(api.bundles.listArchived)
   const setBundleActive = useMutation(api.bundles.setActive)

@@ -390,7 +390,8 @@ function RecipeEntry({
   products: readonly Doc<"products">[]
   recipe: Recipe
 }>) {
-  const { formatDecimalSeptims, formatUnitPrice } = useVisibleAmounts()
+  const { formatCost: formatDecimalSeptims, formatSalePrice: formatUnitPrice } =
+    useVisibleAmounts()
   const { canWrite, canRead } = usePermissions()
   const outputProduct = recipe.productId
     ? products.find((product) => product._id === recipe.productId)
@@ -537,7 +538,8 @@ function BundleEntry({
   products: readonly Doc<"products">[]
   recipes: readonly Recipe[]
 }>) {
-  const { formatDecimalSeptims, formatSeptims } = useVisibleAmounts()
+  const { formatCost: formatDecimalSeptims, formatSaleAmount: formatSeptims } =
+    useVisibleAmounts()
   const { canWrite } = usePermissions()
   const cost = calculateBundleCost(bundle.items, products, recipes)
 

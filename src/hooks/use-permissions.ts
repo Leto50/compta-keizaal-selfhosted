@@ -6,6 +6,14 @@ import { canReadSection, type ReaderSection } from "../../shared/reader-access"
 
 export function usePermissions() {
   const user = useQuery(api.auth.getCurrentUser, {})
+  const writer = canWrite(user?.role)
+  const readerPrices =
+    hasAccountRole(user?.role, "reader") &&
+    user?.readerAccess?.showPrices !== false
+  const showPurchasePrices =
+    writer || (readerPrices && user?.readerAccess?.showPurchasePrices !== false)
+  const showSalePrices =
+    writer || (readerPrices && user?.readerAccess?.showSalePrices !== false)
   return {
     canWrite: canWrite(user?.role),
     isAdmin: hasAccountRole(user?.role, "admin"),
@@ -13,10 +21,9 @@ export function usePermissions() {
     isPending: user === undefined,
     canRead: (section: ReaderSection) =>
       canReadSection(user?.role, user?.readerAccess, section),
-    showPrices:
-      canWrite(user?.role) ||
-      (hasAccountRole(user?.role, "reader") &&
-        user?.readerAccess?.showPrices !== false),
+    showPrices: showPurchasePrices && showSalePrices,
+    showPurchasePrices,
+    showSalePrices,
     showStock:
       canWrite(user?.role) ||
       (hasAccountRole(user?.role, "reader") &&
