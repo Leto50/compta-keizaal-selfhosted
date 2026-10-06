@@ -131,6 +131,18 @@ async function fixture() {
       name: "Recette secrète",
       family: "Utilitaire",
     })
+    const unlinkedRecipe = await ctx.db.insert("recipes", {
+      active: true,
+      name: "Recette non reliée secrète",
+      family: "Utilitaire",
+    })
+    await ctx.db.insert("recipeIngredients", {
+      recipeId: unlinkedRecipe,
+      productId: a,
+      ingredientName: "Produit autorisé",
+      quantity: 1,
+      raw: "1 Produit autorisé",
+    })
     await ctx.db.insert("recipeIngredients", {
       recipeId: hiddenRecipe,
       productId: b,

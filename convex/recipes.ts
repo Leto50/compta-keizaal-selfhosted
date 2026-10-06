@@ -76,7 +76,7 @@ export const list = query({
       withIngredients
         .filter((recipe) =>
           canSeeCatalogEntry(access, [
-            ...(recipe.productId ? [recipe.productId] : []),
+            recipe.productId,
             ...recipe.ingredients.map((ingredient) => ingredient.productId),
           ])
         )
@@ -182,7 +182,7 @@ export const listArchived = query({
       withIngredients
         .filter((recipe) =>
           canSeeCatalogEntry(access, [
-            ...(recipe.productId ? [recipe.productId] : []),
+            recipe.productId,
             ...recipe.ingredients.map((ingredient) => ingredient.productId),
           ])
         )
@@ -542,7 +542,7 @@ async function filterVisibleRecipes(
         .withIndex("by_recipe", (index) => index.eq("recipeId", recipe._id))
         .collect()
       return canSeeCatalogEntry(access, [
-        ...(recipe.productId ? [recipe.productId] : []),
+        recipe.productId,
         ...ingredients.map((ingredient) => ingredient.productId),
       ])
     })

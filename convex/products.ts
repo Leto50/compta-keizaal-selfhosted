@@ -122,7 +122,7 @@ export const catalog = query({
           .withIndex("by_recipe", (index) => index.eq("recipeId", recipe._id))
           .collect()
         const ids = [
-          ...(recipe.productId ? [recipe.productId] : []),
+          recipe.productId,
           ...ingredients.map((ingredient) => ingredient.productId),
         ]
         if (canSeeCatalogEntry(access, ids))
