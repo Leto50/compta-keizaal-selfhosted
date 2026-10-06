@@ -148,6 +148,7 @@ async function storeReaderAccess(
         : [...new Set(access.productIds)],
     showPurchasePrices: access.showPurchasePrices,
     showSalePrices: access.showSalePrices,
+    showSalaries: access.showSalaries,
     userId,
     updatedBy,
     updatedAt: Date.now(),
@@ -220,7 +221,7 @@ export const saveAccountAccess = mutation({
       createdAt: Date.now(),
       entityType: "account",
       entityId: args.userId,
-      detail: `${accountRoleLabels[args.role]} · ${args.access.sections.join(", ") || "aucune rubrique"} · prix ${args.access.showPrices ? "visibles" : "masqués"} · stocks ${args.access.showStock ? "visibles" : "masqués"} · ${args.access.productIds === undefined ? "tous les produits" : `${args.access.productIds.length} produits`} · ${args.access.operationKinds.join(", ") || "aucune opération"}`,
+      detail: `${accountRoleLabels[args.role]} · ${args.access.sections.join(", ") || "aucune rubrique"} · prix ${args.access.showPrices ? "visibles" : "masqués"} · salaires ${args.access.showSalaries === false ? "masqués" : "visibles"} · stocks ${args.access.showStock ? "visibles" : "masqués"} · ${args.access.productIds === undefined ? "tous les produits" : `${args.access.productIds.length} produits`} · ${args.access.operationKinds.join(", ") || "aucune opération"}`,
     })
   },
 })

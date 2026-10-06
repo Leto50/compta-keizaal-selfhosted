@@ -231,6 +231,104 @@ async function fixture() {
 }
 
 describe("droits détaillés des lecteurs", () => {
+  it.each([false, true])(
+    "retire les salaires et leurs totaux dérivés sans retirer les autres montants (sélection limitée : %s)",
+    async (scoped) => {
+      const { admin, reader, userId, access } = await fixture()
+      const visibleAccess = {
+        ...(scoped ? access : defaultReaderAccess),
+        productIds: scoped ? access.productIds : undefined,
+        showPrices: true,
+      }
+      await admin.mutation(api.administration.saveAccountAccess, {
+        userId,
+        role: "reader",
+        access: visibleAccess,
+      })
+      const before = await reader.query(api.accounts.overview, {})
+      expect(before.charges.salary).toBeGreaterThan(0)
+      expect(before.settings.salaryRate).toBe(0.25)
+      await admin.mutation(api.administration.saveAccountAccess, {
+        userId,
+        role: "reader",
+        access: { ...visibleAccess, showSalaries: false },
+      })
+      expect(
+        (await reader.query(api.auth.getCurrentUser, {}))?.readerAccess
+          ?.showSalaries
+      ).toBe(false)
+      const account = await reader.query(api.accounts.overview, {})
+      expect(account).toMatchObject({
+        journalBalance: before.journalBalance,
+        settings: {
+          salaryRate: 0,
+          cashBalance: before.settings.cashBalance,
+          fundsBalance: before.settings.fundsBalance,
+        },
+        charges: {
+          salary: 0,
+          total: 0,
+          census: before.charges.census,
+          rent: before.charges.rent,
+          tax: before.charges.tax,
+        },
+      })
+      expect(account.weeks[0]).toMatchObject({
+        incoming: before.weeks[0]?.incoming,
+        outgoing: before.weeks[0]?.outgoing,
+        net: before.weeks[0]?.net,
+        transactionCount: before.weeks[0]?.transactionCount,
+      })
+      for (const week of account.weeks) {
+        expect(week).toMatchObject({ salary: 0, salaryRevenue: 0 })
+        for (const actor of week.actors)
+          expect(actor).toMatchObject({ salary: 0, salaryRevenue: 0 })
+      }
+      expect((await reader.query(api.products.list, {}))[0]?.salePrice).toBe(
+        8765
+      )
+      expect(
+        (await reader.query(api.transactions.list, {})).some(
+          (transaction) => transaction.total === 8765
+        )
+      ).toBe(true)
+      expect(
+        (await admin.query(api.accounts.overview, {})).charges.salary
+      ).toBeGreaterThan(0)
+      await admin.mutation(api.administration.saveAccountAccess, {
+        userId,
+        role: "reader",
+        access: { ...visibleAccess, showSalaries: true },
+      })
+      expect(await reader.query(api.accounts.overview, {})).toEqual(before)
+    }
+  )
+
+  it("conserve les salaires des anciennes configurations sans ce droit", async () => {
+    const { admin, reader, userId } = await fixture()
+    const legacyAccess = {
+      ...defaultReaderAccess,
+      productIds: undefined,
+      showSalaries: undefined,
+    }
+    await admin.mutation(api.administration.saveAccountAccess, {
+      userId,
+      role: "reader",
+      access: { ...legacyAccess, showSalaries: false },
+    })
+    await admin.mutation(api.administration.saveAccountAccess, {
+      userId,
+      role: "reader",
+      access: legacyAccess,
+    })
+    expect(
+      (await reader.query(api.auth.getCurrentUser, {}))?.readerAccess
+        ?.showSalaries
+    ).toBe(true)
+    expect(
+      (await reader.query(api.accounts.overview, {})).charges.salary
+    ).toBeGreaterThan(0)
+  })
   it.each([
     {
       showPurchasePrices: false,
@@ -544,6 +642,7 @@ describe("droits détaillés des lecteurs", () => {
           sections: ["inventory"],
           productIds: [ids.a],
           showPrices: false,
+          showSalaries: false,
         },
       }
     )
@@ -554,6 +653,7 @@ describe("droits détaillés des lecteurs", () => {
         sections: ["inventory"],
         productIds: [ids.a],
         showPrices: false,
+        showSalaries: false,
       },
     })
     const absentId = await backend.run(async (ctx) => {

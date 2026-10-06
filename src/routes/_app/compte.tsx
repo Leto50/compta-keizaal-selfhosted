@@ -119,7 +119,7 @@ function AccountPage() {
   const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
   const siteName = useSiteName()
   const { queryArgs } = Route.useLoaderData()
-  const { isAdmin, showPrices } = usePermissions()
+  const { isAdmin, showPrices, showSalaries } = usePermissions()
   const { data } = useSuspenseQuery(
     convexQuery(api.accounts.overview, queryArgs)
   )
@@ -135,9 +135,17 @@ function AccountPage() {
     data.weeks.find(
       (week) => week.startsAt.toString() === selectedWeekStartsAt
     ) ?? currentWeek
-  const visibleActorSortOption =
-    showPrices || /^(name|operations)-/.test(actorSortOption)
-      ? actorSortOption
+  const visibleActorSortOptions = actorSortOptions.filter(
+    (option) =>
+      (showPrices || /^(name|operations)-/.test(option.value)) &&
+      (showSalaries || !option.value.startsWith("salary-"))
+  )
+  const visibleActorSortOption = visibleActorSortOptions.some(
+    (option) => option.value === actorSortOption
+  )
+    ? actorSortOption
+    : showPrices
+      ? "incoming-desc"
       : "operations-desc"
   const [actorSortKey, actorSortDirection] = visibleActorSortOption.split(
     "-"
@@ -218,7 +226,9 @@ function AccountPage() {
           </CardTitle>
           <CardDescription className="max-sm:col-span-2">
             {showPrices
-              ? "Le chiffre, les achats et le salaire calculé sur les ventes hors commande de chaque membre de la boutique."
+              ? showSalaries
+                ? "Le chiffre, les achats et le salaire calculé sur les ventes hors commande de chaque membre de la boutique."
+                : "Le chiffre, les achats et le solde de chaque membre de la boutique."
               : "Le nombre d’opérations autorisées pour chaque membre de la boutique."}
           </CardDescription>
           <CardAction className="flex flex-wrap justify-end gap-2 max-sm:col-span-2 max-sm:row-start-3">
@@ -257,16 +267,11 @@ function AccountPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {actorSortOptions
-                  .filter(
-                    (option) =>
-                      showPrices || /^(name|operations)-/.test(option.value)
-                  )
-                  .map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                {visibleActorSortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </CardAction>
@@ -303,14 +308,16 @@ function AccountPage() {
                           label="Achats"
                           onSort={() => handleActorSort("outgoing")}
                         />
-                        <SortableTableHead
-                          active={actorSortKey === "salary"}
-                          className="text-right"
-                          direction={actorSortDirection}
-                          inactiveDirection="desc"
-                          label={`Salaire (${formatNumber(data.settings.salaryRate * 100)} %)`}
-                          onSort={() => handleActorSort("salary")}
-                        />
+                        {showSalaries ? (
+                          <SortableTableHead
+                            active={actorSortKey === "salary"}
+                            className="text-right"
+                            direction={actorSortDirection}
+                            inactiveDirection="desc"
+                            label={`Salaire (${formatNumber(data.settings.salaryRate * 100)} %)`}
+                            onSort={() => handleActorSort("salary")}
+                          />
+                        ) : null}
                         <SortableTableHead
                           active={actorSortKey === "net"}
                           className="text-right"
@@ -348,14 +355,16 @@ function AccountPage() {
                           <TableCell className="text-right font-semibold text-[#8a3e2f] tabular-nums">
                             {formatSeptims(actor.outgoing)}
                           </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            <p className="font-semibold text-primary">
-                              {formatDecimalSeptims(actor.salary)}
-                            </p>
-                            <p className="text-[0.68rem] text-muted-foreground">
-                              sur {formatSeptims(actor.salaryRevenue)}
-                            </p>
-                          </TableCell>
+                          {showSalaries ? (
+                            <TableCell className="text-right tabular-nums">
+                              <p className="font-semibold text-primary">
+                                {formatDecimalSeptims(actor.salary)}
+                              </p>
+                              <p className="text-[0.68rem] text-muted-foreground">
+                                sur {formatSeptims(actor.salaryRevenue)}
+                              </p>
+                            </TableCell>
+                          ) : null}
                           <TableCell
                             className={cn(
                               "text-right font-display tabular-nums",
@@ -408,14 +417,17 @@ function AccountPage() {
                         signed
                         tone={actor.net >= 0 ? "positive" : "negative"}
                         value={actor.net}
+                        className={!showSalaries ? "col-span-2" : undefined}
                       />
-                      <ActorAmount
-                        decimal
-                        detail={`sur ${formatSeptims(actor.salaryRevenue)}`}
-                        label={`Salaire · ${formatNumber(data.settings.salaryRate * 100)} %`}
-                        tone="positive"
-                        value={actor.salary}
-                      />
+                      {showSalaries ? (
+                        <ActorAmount
+                          decimal
+                          detail={`sur ${formatSeptims(actor.salaryRevenue)}`}
+                          label={`Salaire · ${formatNumber(data.settings.salaryRate * 100)} %`}
+                          tone="positive"
+                          value={actor.salary}
+                        />
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -594,12 +606,14 @@ function AccountPage() {
                 label="Taxe"
                 value={data.charges.tax}
               />
-              <ChargeRow
-                detail={`${formatNumber(data.settings.salaryRate * 100)} % de ${formatDecimalSeptims(currentWeek?.salaryRevenue ?? 0)} de ventes hors commande`}
-                icon={ArrowDownLeft}
-                label="Salaires"
-                value={data.charges.salary}
-              />
+              {showSalaries ? (
+                <ChargeRow
+                  detail={`${formatNumber(data.settings.salaryRate * 100)} % de ${formatDecimalSeptims(currentWeek?.salaryRevenue ?? 0)} de ventes hors commande`}
+                  icon={ArrowDownLeft}
+                  label="Salaires"
+                  value={data.charges.salary}
+                />
+              ) : null}
               <Separator className="my-1" />
               <div className="flex items-end justify-between gap-4 border border-primary/20 bg-primary/6 p-3">
                 <div>
@@ -614,34 +628,38 @@ function AccountPage() {
                   {formatDecimalSeptims(chancelleryPayment)}
                 </p>
               </div>
-              <Separator className="my-1" />
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-                    Total des charges
-                  </p>
-                  <p className="mt-1 font-display text-2xl text-primary tabular-nums">
-                    {formatDecimalSeptims(data.charges.total)}
-                  </p>
-                </div>
-              </div>
-              <Separator className="my-1" />
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Résultat courant après charges
-                </p>
-                <p
-                  className={cn(
-                    "mt-1 font-display text-xl tabular-nums",
-                    resultAfterCharges >= 0
-                      ? "text-[#456044]"
-                      : "text-[#8a3e2f]"
-                  )}
-                >
-                  {resultAfterCharges > 0 ? "+" : ""}
-                  {formatDecimalSeptims(resultAfterCharges)}
-                </p>
-              </div>
+              {showSalaries ? (
+                <>
+                  <Separator className="my-1" />
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                        Total des charges
+                      </p>
+                      <p className="mt-1 font-display text-2xl text-primary tabular-nums">
+                        {formatDecimalSeptims(data.charges.total)}
+                      </p>
+                    </div>
+                  </div>
+                  <Separator className="my-1" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Résultat courant après charges
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-1 font-display text-xl tabular-nums",
+                        resultAfterCharges >= 0
+                          ? "text-[#456044]"
+                          : "text-[#8a3e2f]"
+                      )}
+                    >
+                      {resultAfterCharges > 0 ? "+" : ""}
+                      {formatDecimalSeptims(resultAfterCharges)}
+                    </p>
+                  </div>
+                </>
+              ) : null}
             </CardContent>
           </Card>
         ) : null}
@@ -651,6 +669,7 @@ function AccountPage() {
 }
 
 function ActorAmount({
+  className,
   decimal = false,
   detail,
   label,
@@ -658,6 +677,7 @@ function ActorAmount({
   tone,
   value,
 }: Readonly<{
+  className?: string
   decimal?: boolean
   detail?: string
   label: string
@@ -667,7 +687,7 @@ function ActorAmount({
 }>) {
   const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
   return (
-    <div>
+    <div className={className}>
       <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
         {label}
       </p>

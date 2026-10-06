@@ -24,6 +24,10 @@ export function usePermissions() {
     showPrices: showPurchasePrices && showSalePrices,
     showPurchasePrices,
     showSalePrices,
+    showSalaries:
+      showPurchasePrices &&
+      showSalePrices &&
+      (writer || user?.readerAccess?.showSalaries !== false),
     showStock:
       canWrite(user?.role) ||
       (hasAccountRole(user?.role, "reader") &&

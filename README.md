@@ -101,6 +101,9 @@ pnpm build
   autorisés et les types d’opérations consultables. Les restrictions sont
   appliquées côté serveur, aux archives, aux détails et aux résumés de l’accueil.
   Les colonnes, champs et indicateurs non autorisés sont retirés de l’interface.
+  Les salaires disposent d’un droit distinct : les autres montants restent
+  visibles, mais le taux salarial, le total des charges et le résultat après
+  charges sont également retirés pour éviter de révéler les salaires.
   Une recette, un lot, une commande ou une opération contenant un produit
   interdit est entièrement masqué. Les montants du compte sont calculés sur
   les opérations autorisées ; les soldes globaux de caisse et des fonds ne sont

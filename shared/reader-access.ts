@@ -34,6 +34,7 @@ export interface ReaderAccess {
   showStock: boolean
   showPurchasePrices?: boolean
   showSalePrices?: boolean
+  showSalaries?: boolean
   productIds?: string[]
   operationKinds: ReaderOperationKind[]
 }
@@ -43,6 +44,7 @@ export const defaultReaderAccess: ReaderAccess = {
   showStock: true,
   showPurchasePrices: true,
   showSalePrices: true,
+  showSalaries: true,
   operationKinds: [...readerOperationKinds],
 }
 export function canReadSection(
@@ -105,6 +107,7 @@ const priceFields = new Set([
   "net",
   "salary",
   "salaryRevenue",
+  "salaryRate",
   "cashBalance",
   "fundsBalance",
   "censusPerEmployee",
@@ -113,6 +116,7 @@ const priceFields = new Set([
   "rent",
   "tax",
 ])
+const salaryFields = new Set(["salary", "salaryRevenue", "salaryRate"])
 const stockFields = new Set([
   "currentStock",
   "minimumStock",
@@ -124,7 +128,7 @@ const stockFields = new Set([
 ])
 
 // Keep response shapes stable, but replace protected numeric values with zero.
-// The UI uses the same policy to label them as “Masqué”, never as real values.
+// The UI uses the same policy to remove protected fields from the page.
 export function redactReaderData<T>(value: T, access: ReaderAccess | null): T {
   if (!access) return value
   if (Array.isArray(value))
@@ -143,9 +147,18 @@ export function redactReaderData<T>(value: T, access: ReaderAccess | null): T {
             : purchaseHidden || saleHidden
       if (
         (hidePrice && priceFields.has(key)) ||
+        (access.showSalaries === false && salaryFields.has(key)) ||
         (!access.showStock && stockFields.has(key))
       )
         return [key, typeof entry === "number" ? 0 : entry]
+      if (
+        access.showSalaries === false &&
+        key === "charges" &&
+        entry !== null &&
+        typeof entry === "object" &&
+        !Array.isArray(entry)
+      )
+        return [key, redactReaderData({ ...entry, total: 0 }, access)]
       if (
         (!access.showStock && (key === "lowStock" || key === "stockDeltas")) ||
         (purchaseHidden && key === "missingCostReferences")

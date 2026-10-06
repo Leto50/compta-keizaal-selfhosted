@@ -61,6 +61,10 @@ const state = vi.hoisted<{
 }))
 
 const originalFonts = Object.getOwnPropertyDescriptor(document, "fonts")
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(
+  Element.prototype,
+  "scrollIntoView"
+)
 
 vi.mock("convex/react", () => ({
   useMutation: (reference: FunctionReference<"mutation">) => {
@@ -122,6 +126,10 @@ vi.mock("@/lib/auth-client", () => ({
 }))
 
 beforeAll(async () => {
+  Object.defineProperty(Element.prototype, "scrollIntoView", {
+    configurable: true,
+    value: vi.fn(),
+  })
   Object.defineProperty(document, "fonts", {
     configurable: true,
     value: new EventTarget(),
@@ -248,6 +256,13 @@ afterEach(() => {
 })
 
 afterAll(() => {
+  if (originalScrollIntoView)
+    Object.defineProperty(
+      Element.prototype,
+      "scrollIntoView",
+      originalScrollIntoView
+    )
+  else Reflect.deleteProperty(Element.prototype, "scrollIntoView")
   if (originalFonts) Object.defineProperty(document, "fonts", originalFonts)
   else Reflect.deleteProperty(document, "fonts")
 })
@@ -397,6 +412,54 @@ describe("réglage du nom du site", () => {
 })
 
 describe("interface lecteur", () => {
+  it("retire seulement les salaires et les totaux qui les révèlent, même avec des données en cache", () => {
+    state.access = defaultReaderAccess
+    const view = render(page(AccountRoute))
+    expect(screen.getByRole("columnheader", { name: /Salaire/ })).not.toBeNull()
+    expect(screen.getByText("Total des charges")).not.toBeNull()
+    state.access = { ...defaultReaderAccess, showSalaries: false }
+    view.rerender(page(AccountRoute))
+    expect(screen.queryByText(/salaire/i)).toBeNull()
+    expect(screen.queryByText("Total des charges")).toBeNull()
+    expect(screen.queryByText("Résultat courant après charges")).toBeNull()
+    expect(screen.queryByText("Masqué")).toBeNull()
+    for (const name of [
+      "Caisse déclarée",
+      "Fonds",
+      "Solde du journal",
+      "Loyer",
+      "Cens",
+      "Taxe",
+    ])
+      expect(screen.getByText(name)).not.toBeNull()
+    expect(
+      screen.getByRole("columnheader", { name: /Chiffre encaissé/ })
+    ).not.toBeNull()
+    expect(screen.getByRole("columnheader", { name: /Achats/ })).not.toBeNull()
+    expect(screen.getByText("Bilan hebdomadaire")).not.toBeNull()
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "Trier l’activité par personnage" })
+    )
+    expect(screen.queryByRole("option", { name: /Salaire/ })).toBeNull()
+  })
+
+  it("conserve le tri autorisé quand un lecteur triant par salaire perd ce droit", () => {
+    state.access = defaultReaderAccess
+    const view = render(page(AccountRoute))
+    fireEvent.click(
+      screen
+        .getByRole("columnheader", { name: /Salaire/ })
+        .querySelector("button")!
+    )
+    state.access = { ...defaultReaderAccess, showSalaries: false }
+    view.rerender(page(AccountRoute))
+    expect(screen.queryByRole("columnheader", { name: /Salaire/ })).toBeNull()
+    expect(
+      screen
+        .getByRole("columnheader", { name: /Chiffre encaissé/ })
+        .getAttribute("aria-sort")
+    ).toBe("descending")
+  })
   it("montre les prix de vente sans colonne de prix d’achat", () => {
     state.access = { ...defaultReaderAccess, showPurchasePrices: false }
     render(page(InventoryRoute))
@@ -613,6 +676,7 @@ describe("interface lecteur", () => {
       />
     )
     fireEvent.click(screen.getByRole("button", { name: "Gérer l’accès test" }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Voir les salaires" }))
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Voir les prix, coûts et montants" })
     )
@@ -634,6 +698,7 @@ describe("interface lecteur", () => {
           ),
           showPrices: false,
           showStock: false,
+          showSalaries: false,
         },
       })
     )

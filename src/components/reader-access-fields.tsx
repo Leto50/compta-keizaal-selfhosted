@@ -95,6 +95,22 @@ export function ReaderAccessFields({
               Masquer un type de prix masque aussi les montants des opérations
               et les totaux financiers.
             </p>
+            {value.showPurchasePrices !== false &&
+            value.showSalePrices !== false ? (
+              <>
+                <Check
+                  checked={value.showSalaries !== false}
+                  label="Voir les salaires"
+                  onChange={(showSalaries) =>
+                    onChange({ ...value, showSalaries })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sans les salaires, le total des charges et le résultat après
+                  charges sont également retirés.
+                </p>
+              </>
+            ) : null}
           </>
         ) : null}
       </div>
