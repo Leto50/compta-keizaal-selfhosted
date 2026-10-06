@@ -4,6 +4,7 @@ import { canWrite, hasAccountRole } from "../../shared/account-roles"
 import {
   canSeeCatalogEntry,
   defaultReaderAccess,
+  readerVisibleOperationKinds,
   type ReaderAccess,
 } from "../../shared/reader-access"
 
@@ -32,7 +33,9 @@ export async function readReaderAccess(
     showPurchasePrices: stored.showPurchasePrices ?? true,
     showSalePrices: stored.showSalePrices ?? true,
     showSalaries: stored.showSalaries ?? true,
-    operationKinds: stored.operationKinds,
+    operationKinds: stored.operationKinds.filter((kind) =>
+      readerVisibleOperationKinds.some((visibleKind) => visibleKind === kind)
+    ),
     ...(stored.productIds === undefined
       ? {}
       : { productIds: stored.productIds }),
@@ -45,6 +48,8 @@ export async function transactionIsVisible(
   transaction: Doc<"transactions">
 ): Promise<boolean> {
   if (!access) return true
+  if (transaction.kind === "adjustment" || transaction.kind === "production")
+    return false
   if (!access.operationKinds.includes(transaction.kind)) return false
   if (!access.productIds) return true
   const lines = await ctx.db

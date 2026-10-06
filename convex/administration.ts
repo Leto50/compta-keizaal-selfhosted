@@ -22,6 +22,7 @@ import {
 } from "../shared/account-identifiers"
 import { type MutationCtx } from "./_generated/server"
 import { DEFAULT_SITE_NAME, SITE_NAME_MAX_LENGTH } from "../shared/site-name"
+import { readerVisibleOperationKinds } from "../shared/reader-access"
 
 const SITE_NAME_KEY = "site-name"
 
@@ -141,7 +142,9 @@ async function storeReaderAccess(
   const details = {
     ...access,
     sections: [...new Set(access.sections)],
-    operationKinds: [...new Set(access.operationKinds)],
+    operationKinds: [...new Set(access.operationKinds)].filter((kind) =>
+      readerVisibleOperationKinds.some((visibleKind) => visibleKind === kind)
+    ),
     productIds:
       access.productIds === undefined
         ? undefined

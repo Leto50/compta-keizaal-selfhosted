@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { api, components } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
-import { defaultReaderAccess } from "../shared/reader-access"
+import {
+  defaultReaderAccess,
+  readerOperationKinds,
+} from "../shared/reader-access"
 
 async function fixture() {
   const backend = createTestBackend()
@@ -110,6 +113,17 @@ async function fixture() {
       occurredAt: Date.now(),
       reason: "production",
     })
+    const adjustment = await ctx.db.insert("transactions", {
+      actorName: "Employé",
+      kind: "adjustment",
+      financial: false,
+      productId: a,
+      productName: "Stock ajusté",
+      quantity: 1,
+      occurredAt: Date.now(),
+      source: "web",
+      total: 0,
+    })
     const recipe = await ctx.db.insert("recipes", {
       active: true,
       productId: a,
@@ -209,6 +223,7 @@ async function fixture() {
       hiddenSale,
       mixed,
       production,
+      adjustment,
       recipe,
       bundle,
       order,
@@ -231,6 +246,68 @@ async function fixture() {
 }
 
 describe("droits détaillés des lecteurs", () => {
+  it.each(["default", "legacy", "saved"] as const)(
+    "exclut les ajustements et productions des lecteurs, y compris par appel direct (%s)",
+    async (policy) => {
+      const { backend, admin, reader, userId, ids } = await fixture()
+      await backend.run(async (ctx) => {
+        const stored = await ctx.db
+          .query("readerAccess")
+          .withIndex("by_user", (index) => index.eq("userId", userId))
+          .unique()
+        if (!stored) throw new Error("Droits absents")
+        if (policy === "default") await ctx.db.delete(stored._id)
+        else
+          await ctx.db.patch(stored._id, {
+            ...defaultReaderAccess,
+            productIds: undefined,
+            operationKinds: [...readerOperationKinds],
+          })
+      })
+      if (policy === "saved")
+        await admin.mutation(api.administration.saveAccountAccess, {
+          userId,
+          role: "reader",
+          access: {
+            ...defaultReaderAccess,
+            productIds: undefined,
+            operationKinds: [...readerOperationKinds],
+          },
+        })
+      expect(
+        (await reader.query(api.auth.getCurrentUser, {}))?.readerAccess
+          ?.operationKinds
+      ).toEqual(defaultReaderAccess.operationKinds)
+      const list = await reader.query(api.transactions.list, {})
+      expect(list.some((transaction) => transaction._id === ids.sale)).toBe(
+        true
+      )
+      for (const transactionId of [ids.adjustment, ids.production]) {
+        expect(
+          list.some((transaction) => transaction._id === transactionId)
+        ).toBe(false)
+        expect(
+          await reader.query(api.transactions.getDetails, { transactionId })
+        ).toBeNull()
+        expect(
+          await admin.query(api.transactions.getDetails, { transactionId })
+        ).toMatchObject({ _id: transactionId })
+      }
+      if (policy === "saved")
+        expect(
+          await backend.run(
+            async (ctx) =>
+              (
+                await ctx.db
+                  .query("readerAccess")
+                  .withIndex("by_user", (index) => index.eq("userId", userId))
+                  .unique()
+              )?.operationKinds
+          )
+        ).toEqual(defaultReaderAccess.operationKinds)
+    }
+  )
+
   it.each([false, true])(
     "retire les salaires et leurs totaux dérivés sans retirer les autres montants (sélection limitée : %s)",
     async (scoped) => {

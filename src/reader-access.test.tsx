@@ -676,6 +676,17 @@ describe("interface lecteur", () => {
       />
     )
     fireEvent.click(screen.getByRole("button", { name: "Gérer l’accès test" }))
+    expect(screen.queryByRole("checkbox", { name: "Ajustement" })).toBeNull()
+    expect(screen.queryByRole("checkbox", { name: "Production" })).toBeNull()
+    for (const name of [
+      "Achat",
+      "Vente",
+      "Échange",
+      "Commande",
+      "Lot",
+      "Service",
+    ])
+      expect(screen.getByRole("checkbox", { name })).not.toBeNull()
     fireEvent.click(screen.getByRole("checkbox", { name: "Voir les salaires" }))
     fireEvent.click(
       screen.getByRole("checkbox", { name: "Voir les prix, coûts et montants" })

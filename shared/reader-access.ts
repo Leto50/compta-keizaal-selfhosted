@@ -28,6 +28,11 @@ export const readerOperationKinds = [
   "service",
 ] as const
 export type ReaderOperationKind = (typeof readerOperationKinds)[number]
+// Stock events remain accepted in stored policies for compatibility, but only
+// financial operations are displayed in the journal and accessible to readers.
+export const readerVisibleOperationKinds = readerOperationKinds.filter(
+  (kind) => kind !== "adjustment" && kind !== "production"
+)
 export interface ReaderAccess {
   sections: ReaderSection[]
   showPrices: boolean
@@ -45,7 +50,7 @@ export const defaultReaderAccess: ReaderAccess = {
   showPurchasePrices: true,
   showSalePrices: true,
   showSalaries: true,
-  operationKinds: [...readerOperationKinds],
+  operationKinds: [...readerVisibleOperationKinds],
 }
 export function canReadSection(
   role: string | null | undefined,
@@ -82,7 +87,7 @@ export function hasScopedReaderAccess(access: ReaderAccess | null): boolean {
   return (
     !!access &&
     (access.productIds !== undefined ||
-      readerOperationKinds.some(
+      readerVisibleOperationKinds.some(
         (kind) => !access.operationKinds.includes(kind)
       ))
   )

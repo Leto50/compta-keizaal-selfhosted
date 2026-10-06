@@ -5,7 +5,7 @@ import { type Id } from "../../convex/_generated/dataModel"
 import {
   readerSections,
   readerSectionLabels,
-  readerOperationKinds,
+  readerVisibleOperationKinds,
   type ReaderAccess,
 } from "../../shared/reader-access"
 import { operationLabels } from "@/lib/format"
@@ -160,9 +160,11 @@ export function ReaderAccessFields({
         ) : null}
       </div>
       <div className="grid gap-2 border-t border-border/60 pt-3">
-        <p className="text-sm font-semibold">Types d’opérations visibles</p>
+        <p className="text-sm font-semibold">
+          Opérations visibles dans Transactions
+        </p>
         <div className="grid gap-2 sm:grid-cols-2">
-          {readerOperationKinds.map((kind) => (
+          {readerVisibleOperationKinds.map((kind) => (
             <Check
               key={kind}
               checked={value.operationKinds.includes(kind)}
