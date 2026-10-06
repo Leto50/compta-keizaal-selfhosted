@@ -241,7 +241,7 @@ export function AccountAccessDialog({
               paramètres, les accès et l’historique d’audit.
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="grid gap-2">
             <div className="grid flex-1 gap-2">
               <Label htmlFor={`account-role-${account.id}`}>Rôle</Label>
               <Select
@@ -267,25 +267,6 @@ export function AccountAccessDialog({
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              disabled={
-                isSavingRole ||
-                (role === account.role && !accessChanged) ||
-                (role !== "admin" && roleIsProtected)
-              }
-              onClick={handleRoleSave}
-              type="button"
-            >
-              {isSavingRole ? (
-                <Spinner
-                  aria-hidden="true"
-                  className="motion-reduce:animate-none"
-                />
-              ) : (
-                <Save aria-hidden="true" />
-              )}
-              Enregistrer l’accès
-            </Button>
           </div>
           {role === "reader" ? (
             <ReaderAccessFields
@@ -294,6 +275,26 @@ export function AccountAccessDialog({
               disabled={isSavingRole}
             />
           ) : null}
+          <Button
+            className="w-full sm:w-fit sm:justify-self-end"
+            disabled={
+              isSavingRole ||
+              (role === account.role && !accessChanged) ||
+              (role !== "admin" && roleIsProtected)
+            }
+            onClick={handleRoleSave}
+            type="button"
+          >
+            {isSavingRole ? (
+              <Spinner
+                aria-hidden="true"
+                className="motion-reduce:animate-none"
+              />
+            ) : (
+              <Save aria-hidden="true" />
+            )}
+            Enregistrer l’accès
+          </Button>
         </section>
 
         <Separator />

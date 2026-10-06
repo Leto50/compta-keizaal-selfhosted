@@ -203,11 +203,11 @@ function AccountPage() {
 
       <Card className="mt-5 rounded-none border-[#5b462b]/35 bg-[#fff8e7]/30 py-0 ring-0">
         <CardHeader className="border-b border-border/60">
-          <CardTitle className="flex items-center gap-2 font-display text-xl">
+          <CardTitle className="flex items-center gap-2 font-display text-xl max-sm:col-span-2">
             <UsersRound aria-hidden="true" className="size-5 text-primary" />
             Activité par personnage
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="max-sm:col-span-2">
             Le chiffre, les achats et le salaire calculé sur les ventes hors
             commande de chaque membre de la boutique.
           </CardDescription>
@@ -523,7 +523,7 @@ function AccountPage() {
               Estimation avec les paramètres comptables actuels.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid grid-cols-1 gap-3">
             <ChargeRow
               icon={Landmark}
               label="Loyer"

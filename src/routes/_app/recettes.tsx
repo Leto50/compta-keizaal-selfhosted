@@ -392,7 +392,8 @@ function RecipeEntry({
 }>) {
   const { formatCost: formatDecimalSeptims, formatSalePrice: formatUnitPrice } =
     useVisibleAmounts()
-  const { canWrite, canRead } = usePermissions()
+  const { canWrite, canRead, showPurchasePrices, showSalePrices } =
+    usePermissions()
   const outputProduct = recipe.productId
     ? products.find((product) => product._id === recipe.productId)
     : undefined
@@ -430,7 +431,9 @@ function RecipeEntry({
           <div>
             <dt className="text-muted-foreground">Coût matière</dt>
             <dd className="mt-0.5 font-semibold text-foreground">
-              {recipe.cost === undefined ? (
+              {!showPurchasePrices ? (
+                "Masqué"
+              ) : recipe.cost === undefined ? (
                 <Badge variant="outline">Incomplet</Badge>
               ) : (
                 formatDecimalSeptims(recipe.cost)
@@ -440,9 +443,11 @@ function RecipeEntry({
           <div>
             <dt className="text-muted-foreground">Prix de vente</dt>
             <dd className="mt-0.5 font-semibold text-foreground">
-              {outputProduct?.salePrice === undefined
-                ? "—"
-                : formatUnitPrice(outputProduct.salePrice)}
+              {!showSalePrices
+                ? "Masqué"
+                : outputProduct?.salePrice === undefined
+                  ? "—"
+                  : formatUnitPrice(outputProduct.salePrice)}
             </dd>
           </div>
         </dl>
@@ -540,7 +545,7 @@ function BundleEntry({
 }>) {
   const { formatCost: formatDecimalSeptims, formatSaleAmount: formatSeptims } =
     useVisibleAmounts()
-  const { canWrite } = usePermissions()
+  const { canWrite, showPurchasePrices, showSalePrices } = usePermissions()
   const cost = calculateBundleCost(bundle.items, products, recipes)
 
   return (
@@ -572,7 +577,9 @@ function BundleEntry({
           <div>
             <dt className="text-muted-foreground">Coût de composition</dt>
             <dd className="mt-0.5 font-semibold text-foreground">
-              {cost === undefined ? (
+              {!showPurchasePrices ? (
+                "Masqué"
+              ) : cost === undefined ? (
                 <Badge variant="outline">Incomplet</Badge>
               ) : (
                 formatDecimalSeptims(cost)
@@ -582,7 +589,11 @@ function BundleEntry({
           <div>
             <dt className="text-muted-foreground">Prix de vente</dt>
             <dd className="mt-0.5 font-semibold text-foreground">
-              {bundle.price === undefined ? "—" : formatSeptims(bundle.price)}
+              {!showSalePrices
+                ? "Masqué"
+                : bundle.price === undefined
+                  ? "—"
+                  : formatSeptims(bundle.price)}
             </dd>
           </div>
         </dl>

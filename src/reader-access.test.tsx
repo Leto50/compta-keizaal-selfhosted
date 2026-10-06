@@ -454,6 +454,52 @@ describe("interface lecteur", () => {
     ).toBe(true)
   })
 
+  it("permet de poursuivre le journal après une page sans opération autorisée", () => {
+    const originalPage = state.data.get("transactions:listPage")
+    state.data.set("transactions:listPage", {
+      page: [],
+      isDone: false,
+      continueCursor: "next-visible-page",
+    })
+    const view = render(page(JournalRoute))
+    expect(
+      screen.getByText("Aucune opération visible sur cette page")
+    ).not.toBeNull()
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Suivante" })
+        .disabled
+    ).toBe(false)
+    fireEvent.click(screen.getByRole("button", { name: "Suivante" }))
+    expect(screen.getByText("Page 2")).not.toBeNull()
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Précédente" })
+        .disabled
+    ).toBe(false)
+    state.data.set("transactions:listPage", {
+      page: [],
+      isDone: true,
+      continueCursor: "done",
+    })
+    view.rerender(page(JournalRoute))
+    expect(
+      screen.getByText("Aucune opération autorisée à afficher")
+    ).not.toBeNull()
+    expect(
+      screen.queryByText(
+        "Ajoutez une première opération pour commencer l’historique."
+      )
+    ).toBeNull()
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Précédente" })
+        .disabled
+    ).toBe(false)
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Suivante" })
+        .disabled
+    ).toBe(true)
+    state.data.set("transactions:listPage", originalPage)
+  })
+
   it("ne propose que les rubriques autorisées et garde un accueil sans données interdites", () => {
     state.access = {
       ...defaultReaderAccess,

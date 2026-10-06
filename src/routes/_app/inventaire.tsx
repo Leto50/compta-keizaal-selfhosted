@@ -389,7 +389,7 @@ function InventoryPage() {
                     direction={sortDirection}
                     inactiveDirection="desc"
                     label="Stock"
-                    onSort={() => handleSort("stock")}
+                    onSort={showStock ? () => handleSort("stock") : undefined}
                   />
                   <TableHead className="text-right">Seuil</TableHead>
                   <SortableTableHead
@@ -398,7 +398,11 @@ function InventoryPage() {
                     direction={sortDirection}
                     inactiveDirection="desc"
                     label="Prix d’achat"
-                    onSort={() => handleSort("purchasePrice")}
+                    onSort={
+                      showPurchasePrices
+                        ? () => handleSort("purchasePrice")
+                        : undefined
+                    }
                   />
                   <SortableTableHead
                     active={sortKey === "salePrice"}
@@ -406,14 +410,16 @@ function InventoryPage() {
                     direction={sortDirection}
                     inactiveDirection="desc"
                     label="Prix de vente"
-                    onSort={() => handleSort("salePrice")}
+                    onSort={
+                      showSalePrices ? () => handleSort("salePrice") : undefined
+                    }
                   />
                   <SortableTableHead
                     active={sortKey === "status"}
                     className="pr-4 text-right"
                     direction={sortDirection}
                     label="État"
-                    onSort={() => handleSort("status")}
+                    onSort={showStock ? () => handleSort("status") : undefined}
                   />
                   {canWrite ? (
                     <TableHead className="w-10">

@@ -520,53 +520,65 @@ function JournalPage() {
               </Table>
             </CardContent>
           </Card>
-
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#5b462b]/20 pt-4">
-            <p className="text-xs tracking-wide text-muted-foreground">
-              Page {activePagination.previousCursors.length + 1}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                disabled={
-                  activePagination.previousCursors.length === 0 ||
-                  isFetchingPage
-                }
-                onClick={showPreviousPage}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronLeft aria-hidden="true" />
-                Précédente
-              </Button>
-              <Button
-                disabled={page.isDone || isFetchingPage}
-                onClick={showNextPage}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Suivante
-                <ChevronRight aria-hidden="true" />
-              </Button>
-            </div>
-          </div>
         </>
       ) : (
         <Alert className="mt-7 border-[#6a4f2e]/30 bg-card/35">
           <ScrollText aria-hidden="true" />
           <AlertTitle>
-            {hasFilters
-              ? "Aucune opération ne correspond"
-              : "Aucune opération enregistrée"}
+            {!page.isDone
+              ? "Aucune opération visible sur cette page"
+              : hasFilters
+                ? "Aucune opération ne correspond"
+                : canWrite
+                  ? "Aucune opération enregistrée"
+                  : "Aucune opération autorisée à afficher"}
           </AlertTitle>
           <AlertDescription>
-            {hasFilters
-              ? "Élargissez la période ou effacez un filtre pour retrouver d’autres opérations."
-              : "Ajoutez une première opération pour commencer l’historique."}
+            {!page.isDone
+              ? "Passez à la page suivante pour continuer la consultation."
+              : hasFilters
+                ? "Élargissez la période ou effacez un filtre pour retrouver d’autres opérations."
+                : canWrite
+                  ? "Ajoutez une première opération pour commencer l’historique."
+                  : "Seules les opérations autorisées pour votre compte sont affichées."}
           </AlertDescription>
         </Alert>
       )}
+
+      {page &&
+      (transactions.length > 0 ||
+        !page.isDone ||
+        activePagination.previousCursors.length > 0) ? (
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#5b462b]/20 pt-4">
+          <p className="text-xs tracking-wide text-muted-foreground">
+            Page {activePagination.previousCursors.length + 1}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              disabled={
+                activePagination.previousCursors.length === 0 || isFetchingPage
+              }
+              onClick={showPreviousPage}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <ChevronLeft aria-hidden="true" />
+              Précédente
+            </Button>
+            <Button
+              disabled={page.isDone || isFetchingPage}
+              onClick={showNextPage}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Suivante
+              <ChevronRight aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {canWrite && editor ? (
         <ActivityEditor onClose={() => setEditor(null)} request={editor} />
