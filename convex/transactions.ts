@@ -3,7 +3,9 @@ import { paginationOptsValidator } from "convex/server"
 
 import { type Doc, type Id } from "./_generated/dataModel"
 import { mutation, query, type QueryCtx } from "./_generated/server"
-import { requireUser, requireWriter } from "./lib/auth"
+import { requireReadAccess, requireWriter } from "./lib/auth"
+import { redactReaderData } from "../shared/reader-access"
+import { transactionIsVisible, visibleTransactions } from "./lib/readerAccess"
 import { isFinancialTransaction } from "./lib/accountSummary"
 import { resolveOrderContact } from "./lib/contacts"
 import {
@@ -120,7 +122,7 @@ export const listPage = query({
     to: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const { user, access } = await requireReadAccess(ctx, "transactions")
     const readModelsReady = await readModelsAreReady(ctx)
     const from = args.from
     const to = args.to
@@ -275,14 +277,19 @@ export const listPage = query({
     }
     const result = await buildQuery().paginate(paginationOpts)
 
-    return {
-      ...result,
-      page: result.page.map((transaction) => ({
-        ...transaction,
-        canManage: canWrite(user.role),
-        canDelete: canWrite(user.role),
-      })),
-    }
+    return redactReaderData(
+      {
+        ...result,
+        page: (await visibleTransactions(ctx, access, result.page)).map(
+          (transaction) => ({
+            ...transaction,
+            canManage: canWrite(user.role),
+            canDelete: canWrite(user.role),
+          })
+        ),
+      },
+      access
+    )
   },
 })
 
@@ -291,10 +298,14 @@ export const getDetails = query({
     transactionId: v.id("transactions"),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const { user, access } = await requireReadAccess(ctx, "transactions")
     const transaction = await ctx.db.get(args.transactionId)
-    if (!transaction) return null
-    return withTransactionDetails(ctx, transaction, canWrite(user.role))
+    if (!transaction || !(await transactionIsVisible(ctx, access, transaction)))
+      return null
+    return redactReaderData(
+      await withTransactionDetails(ctx, transaction, canWrite(user.role)),
+      access
+    )
   },
 })
 
@@ -303,17 +314,21 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx)
+    const { user, access } = await requireReadAccess(ctx, "transactions")
     const limit = Math.min(200, Math.max(10, Math.round(args.limit ?? 100)))
     const transactions = await ctx.db
       .query("transactions")
       .withIndex("by_occurred_at")
       .order("desc")
       .take(limit)
-    return Promise.all(
-      transactions.map((transaction) =>
-        withTransactionDetails(ctx, transaction, canWrite(user.role))
-      )
+    return redactReaderData(
+      await Promise.all(
+        (await visibleTransactions(ctx, access, transactions)).map(
+          (transaction) =>
+            withTransactionDetails(ctx, transaction, canWrite(user.role))
+        )
+      ),
+      access
     )
   },
 })

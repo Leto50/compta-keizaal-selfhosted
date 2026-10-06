@@ -44,8 +44,10 @@ import {
 } from "@/components/ui/table"
 import { api } from "../../../convex/_generated/api"
 import { usePermissions } from "@/hooks/use-permissions"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 import { useSiteName } from "@/hooks/use-site-name"
-import { formatDecimalSeptims, formatNumber, formatSeptims } from "@/lib/format"
+import { formatNumber } from "@/lib/format"
 import {
   sortActorEntries,
   type ActorSortKey,
@@ -100,7 +102,8 @@ function formatWeek(startsAt: number, endsAt: number): string {
 }
 
 export const Route = createFileRoute("/_app/compte")({
-  component: AccountPage,
+  beforeLoad: readerRouteAccess("account"),
+  component: withReaderAccess(AccountPage, "account"),
   errorComponent: PageError,
   loader: async ({ context }) => {
     const queryArgs = { currentWeekStartsAt: startOfUtcWeek(Date.now()) }
@@ -113,6 +116,7 @@ export const Route = createFileRoute("/_app/compte")({
 })
 
 function AccountPage() {
+  const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
   const siteName = useSiteName()
   const { queryArgs } = Route.useLoaderData()
   const { isAdmin } = usePermissions()
@@ -172,13 +176,21 @@ function AccountPage() {
           description="Montant compté manuellement"
           icon={Coins}
           label="Caisse déclarée"
-          value={formatDecimalSeptims(data.settings.cashBalance)}
+          value={
+            data.scoped
+              ? "Non disponible pour cette sélection"
+              : formatDecimalSeptims(data.settings.cashBalance)
+          }
         />
         <AccountMetric
           description="Réserve disponible déclarée"
           icon={Landmark}
           label="Fonds"
-          value={formatDecimalSeptims(data.settings.fundsBalance)}
+          value={
+            data.scoped
+              ? "Non disponible pour cette sélection"
+              : formatDecimalSeptims(data.settings.fundsBalance)
+          }
         />
         <AccountMetric
           description="Somme de toutes les transactions"
@@ -597,6 +609,7 @@ function ActorAmount({
   tone: "negative" | "positive"
   value: number
 }>) {
+  const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
   return (
     <div>
       <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
@@ -666,6 +679,7 @@ function ChargeRow({
   label: string
   value: number
 }>) {
+  const { formatDecimalSeptims } = useVisibleAmounts()
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-2">

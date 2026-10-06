@@ -14,6 +14,7 @@ import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
 import { usePermissions } from "@/hooks/use-permissions"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
 import {
   ProductArchivesDialog,
   ProductDialog,
@@ -142,7 +143,8 @@ function validateInventorySearch(
 }
 
 export const Route = createFileRoute("/_app/inventaire")({
-  component: InventoryPage,
+  beforeLoad: readerRouteAccess("inventory"),
+  component: withReaderAccess(InventoryPage, "inventory"),
   errorComponent: PageError,
   loader: async ({ context }) => {
     await Promise.all([
@@ -160,7 +162,7 @@ export const Route = createFileRoute("/_app/inventaire")({
 })
 
 function InventoryPage() {
-  const { canWrite } = usePermissions()
+  const { canWrite, showStock, showPrices } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data: products } = useSuspenseQuery(
@@ -174,8 +176,13 @@ function InventoryPage() {
   )
   const category = filters.category ?? "all"
   const search = filters.q ?? ""
-  const lowOnly = filters.stock === "low"
-  const sortOption = filters.sort ?? "name-asc"
+  const lowOnly = showStock && filters.stock === "low"
+  const requestedSort = filters.sort ?? "name-asc"
+  const sortOption =
+    (!showStock && /^(stock|status)/.test(requestedSort)) ||
+    (!showPrices && requestedSort.includes("Price"))
+      ? "name-asc"
+      : requestedSort
   const [sortKey, sortDirection] = sortOption.split("-") as [
     InventorySortKey,
     SortDirection,
@@ -278,6 +285,7 @@ function InventoryPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
+            disabled={!showStock}
             aria-pressed={lowOnly}
             onClick={() =>
               void navigate({
@@ -335,11 +343,17 @@ function InventoryPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {inventorySortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
+              {inventorySortOptions
+                .filter(
+                  (option) =>
+                    (showStock || !/^(stock|status)/.test(option.value)) &&
+                    (showPrices || !option.value.includes("Price"))
+                )
+                .map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -444,6 +458,9 @@ function InventoryPage() {
 }
 
 function ProductState({ product }: Readonly<{ product: Doc<"products"> }>) {
+  const { showStock } = usePermissions()
+  if (!showStock && product.tracksStock)
+    return <Badge variant="outline">Masqué</Badge>
   if (!product.tracksStock) {
     return (
       <Badge
@@ -487,7 +504,7 @@ function InventoryRow({
   onWriteRecipe: (productId: Id<"products">) => void
   product: Doc<"products">
 }>) {
-  const { canWrite } = usePermissions()
+  const { canWrite, showPrices, showStock } = usePermissions()
   const canWriteRecipe =
     canWrite && isProductCraftable(product, hasAnyRecipe) && !hasAnyRecipe
 
@@ -537,25 +554,33 @@ function InventoryRow({
         <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
           Stock
         </span>
-        {product.tracksStock ? formatNumber(product.currentStock) : "—"}
+        {product.tracksStock
+          ? showStock
+            ? formatNumber(product.currentStock)
+            : "Masqué"
+          : "—"}
       </TableCell>
       <TableCell className="text-right text-muted-foreground max-md:col-span-3 max-md:col-start-4 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-display max-md:text-lg max-md:text-foreground">
         <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
           Seuil
         </span>
-        {product.tracksStock ? formatNumber(product.minimumStock) : "—"}
+        {product.tracksStock
+          ? showStock
+            ? formatNumber(product.minimumStock)
+            : "Masqué"
+          : "—"}
       </TableCell>
       <TableCell className="text-right max-md:col-span-3 max-md:col-start-1 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
         <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
           Prix d’achat
         </span>
-        {productPrice(product.purchasePrice)}
+        {showPrices ? productPrice(product.purchasePrice) : "Masqué"}
       </TableCell>
       <TableCell className="text-right max-md:col-span-3 max-md:col-start-4 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
         <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
           Prix de vente
         </span>
-        {productPrice(product.salePrice)}
+        {showPrices ? productPrice(product.salePrice) : "Masqué"}
       </TableCell>
       <TableCell className="pr-4 text-right max-md:col-span-2 max-md:col-start-5 max-md:row-start-1 max-md:p-0 max-md:pr-9">
         <ProductState product={product} />

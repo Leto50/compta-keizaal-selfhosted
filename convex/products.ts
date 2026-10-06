@@ -2,7 +2,12 @@ import { ConvexError, v } from "convex/values"
 
 import { type Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
-import { requireUser, requireWriter } from "./lib/auth"
+import { requireReadAccess, requireWriter } from "./lib/auth"
+import {
+  canSeeProduct,
+  canSeeCatalogEntry,
+  redactReaderData,
+} from "../shared/reader-access"
 import {
   applyInventoryProductChanges,
   rebuildInventorySummaryIfReady,
@@ -30,7 +35,7 @@ export const list = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "inventory")
     const products = args.category
       ? await ctx.db
           .query("products")
@@ -44,25 +49,33 @@ export const list = query({
           .collect()
     const search = normalizeName(args.search ?? "")
 
-    return products
-      .filter(
-        (product) =>
-          product.active && (!search || product.normalizedName.includes(search))
-      )
-      .sort((left, right) => left.name.localeCompare(right.name, "fr"))
+    return redactReaderData(
+      products
+        .filter(
+          (product) =>
+            product.active &&
+            canSeeProduct(access, product._id) &&
+            (!search || product.normalizedName.includes(search))
+        )
+        .sort((left, right) => left.name.localeCompare(right.name, "fr")),
+      access
+    )
   },
 })
 
 export const selectable = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "inventory")
     const products = await ctx.db
       .query("products")
       .withIndex("by_active", (index) => index.eq("active", true))
       .collect()
-    return products.sort((left, right) =>
-      left.name.localeCompare(right.name, "fr")
+    return redactReaderData(
+      products
+        .filter((product) => canSeeProduct(access, product._id))
+        .sort((left, right) => left.name.localeCompare(right.name, "fr")),
+      access
     )
   },
 })
@@ -70,13 +83,71 @@ export const selectable = query({
 export const listArchived = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "inventory")
     const products = await ctx.db
       .query("products")
       .withIndex("by_active", (index) => index.eq("active", false))
       .collect()
-    return products.sort((left, right) =>
-      left.name.localeCompare(right.name, "fr")
+    return redactReaderData(
+      products
+        .filter((product) => canSeeProduct(access, product._id))
+        .sort((left, right) => left.name.localeCompare(right.name, "fr")),
+      access
+    )
+  },
+})
+
+// Supporting product data for permitted recipes/lots, without exposing the rest
+// of the inventory when the reader cannot open that section.
+export const catalog = query({
+  args: {},
+  handler: async (ctx) => {
+    const { access } = await requireReadAccess(
+      ctx,
+      "inventory",
+      "recipes",
+      "bundles"
+    )
+    const products = (await ctx.db.query("products").collect()).filter(
+      (product) => canSeeProduct(access, product._id)
+    )
+    if (!access || access.sections.includes("inventory"))
+      return redactReaderData(products, access)
+    const referenced = new Set<string>()
+    if (access.sections.includes("recipes")) {
+      for (const recipe of await ctx.db.query("recipes").collect()) {
+        if (recipe.active === false) continue
+        const ingredients = await ctx.db
+          .query("recipeIngredients")
+          .withIndex("by_recipe", (index) => index.eq("recipeId", recipe._id))
+          .collect()
+        const ids = [
+          ...(recipe.productId ? [recipe.productId] : []),
+          ...ingredients.map((ingredient) => ingredient.productId),
+        ]
+        if (canSeeCatalogEntry(access, ids))
+          ids.forEach((id) => {
+            if (id) referenced.add(id)
+          })
+      }
+    }
+    if (access.sections.includes("bundles")) {
+      for (const bundle of await ctx.db.query("bundles").collect()) {
+        if (!bundle.active) continue
+        const items = await ctx.db
+          .query("bundleItems")
+          .withIndex("by_bundle", (index) => index.eq("bundleId", bundle._id))
+          .collect()
+        const ids = items.map((item) => item.productId)
+        if (canSeeCatalogEntry(access, ids))
+          ids.forEach((id) => {
+            if (id) referenced.add(id)
+          })
+      }
+    }
+    return redactReaderData(
+      products.filter((product) => referenced.has(product._id)),
+      access
     )
   },
 })

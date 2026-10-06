@@ -46,7 +46,7 @@ import { api } from "../../convex/_generated/api"
 import { type Doc } from "../../convex/_generated/dataModel"
 import { getUserFacingErrorMessage } from "@/lib/errors"
 import { bundleFormSchema, MAX_DYNAMIC_LINES } from "@/lib/form-schemas"
-import { formatSeptims } from "@/lib/format"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 import { priceDraftFromValue, priceDraftToValue } from "@/lib/prices"
 
 type Bundle = FunctionReturnType<typeof api.recipes.listBundles>[number]
@@ -425,6 +425,7 @@ export function BundleDialog({
 }
 
 export function BundleArchivesDialog() {
+  const { formatSeptims } = useVisibleAmounts()
   const { canWrite } = usePermissions()
   const archivedBundles = useQuery(api.bundles.listArchived)
   const setBundleActive = useMutation(api.bundles.setActive)

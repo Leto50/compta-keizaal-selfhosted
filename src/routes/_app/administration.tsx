@@ -82,6 +82,7 @@ const actionLabels: Readonly<Record<string, string>> = {
   "account.password_reset": "Mot de passe remplacé",
   "account.reactivated": "Accès réactivé",
   "account.role_updated": "Rôle modifié",
+  "account.access_updated": "Droits de consultation modifiés",
   "account.sessions_revoked": "Sessions fermées",
   "account.settings_updated": "Paramètres comptables modifiés",
   "bundle.archived": "Lot archivé",

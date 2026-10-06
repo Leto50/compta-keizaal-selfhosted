@@ -2,7 +2,13 @@ import { ConvexError, v } from "convex/values"
 
 import { type Doc, type Id } from "./_generated/dataModel"
 import { mutation, query, type QueryCtx } from "./_generated/server"
-import { requireUser, requireWriter } from "./lib/auth"
+import { requireReadAccess, requireWriter } from "./lib/auth"
+import {
+  canReadSection,
+  canSeeCatalogEntry,
+  redactReaderData,
+  type ReaderAccess,
+} from "../shared/reader-access"
 import { assertWholeNumberRange } from "./lib/numbers"
 import { rebuildInventorySummaryIfReady } from "./lib/inventorySummary"
 import { isProductDeclaredCraftable } from "./lib/products"
@@ -50,7 +56,7 @@ async function completeRecipe(
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "recipes")
     const recipes = await ctx.db.query("recipes").collect()
     const activeRecipes = recipes.filter((recipe) => recipe.active !== false)
     const productsById = activeRecipes.some(
@@ -66,8 +72,16 @@ export const list = query({
     const withIngredients = await Promise.all(
       activeRecipes.map((recipe) => completeRecipe(ctx, recipe, productsById))
     )
-    return withIngredients.sort((left, right) =>
-      left.name.localeCompare(right.name, "fr")
+    return redactReaderData(
+      withIngredients
+        .filter((recipe) =>
+          canSeeCatalogEntry(access, [
+            ...(recipe.productId ? [recipe.productId] : []),
+            ...recipe.ingredients.map((ingredient) => ingredient.productId),
+          ])
+        )
+        .sort((left, right) => left.name.localeCompare(right.name, "fr")),
+      access
     )
   },
 })
@@ -75,7 +89,7 @@ export const list = query({
 export const listCraftableProductIds = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "recipes")
     const [recipes, products] = await Promise.all([
       ctx.db.query("recipes").collect(),
       ctx.db.query("products").collect(),
@@ -88,9 +102,10 @@ export const listCraftableProductIds = query({
         )
         .map((product) => product._id)
     )
+    const visibleRecipes = await filterVisibleRecipes(ctx, recipes, access)
     return [
       ...new Set(
-        recipes.flatMap((recipe) =>
+        visibleRecipes.flatMap((recipe) =>
           recipe.active !== false &&
           recipe.productId &&
           craftableProducts.has(recipe.productId)
@@ -105,11 +120,17 @@ export const listCraftableProductIds = query({
 export const listLinkedProductIds = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { user, access } = await requireReadAccess(
+      ctx,
+      "inventory",
+      "recipes"
+    )
+    if (!canReadSection(user.role, access, "recipes")) return []
     const recipes = await ctx.db.query("recipes").collect()
+    const visibleRecipes = await filterVisibleRecipes(ctx, recipes, access)
     return [
       ...new Set(
-        recipes.flatMap((recipe) =>
+        visibleRecipes.flatMap((recipe) =>
           recipe.productId ? [recipe.productId] : []
         )
       ),
@@ -120,11 +141,17 @@ export const listLinkedProductIds = query({
 export const listActiveLinkedProductIds = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { user, access } = await requireReadAccess(
+      ctx,
+      "inventory",
+      "recipes"
+    )
+    if (!canReadSection(user.role, access, "recipes")) return []
     const recipes = await ctx.db.query("recipes").collect()
+    const visibleRecipes = await filterVisibleRecipes(ctx, recipes, access)
     return [
       ...new Set(
-        recipes.flatMap((recipe) =>
+        visibleRecipes.flatMap((recipe) =>
           recipe.active !== false && recipe.productId ? [recipe.productId] : []
         )
       ),
@@ -135,7 +162,7 @@ export const listActiveLinkedProductIds = query({
 export const listArchived = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "recipes")
     const recipes = await ctx.db.query("recipes").collect()
     const archived = recipes.filter((recipe) => recipe.active === false)
     const productsById = archived.some(
@@ -151,8 +178,16 @@ export const listArchived = query({
     const withIngredients = await Promise.all(
       archived.map((recipe) => completeRecipe(ctx, recipe, productsById))
     )
-    return withIngredients.sort((left, right) =>
-      left.name.localeCompare(right.name, "fr")
+    return redactReaderData(
+      withIngredients
+        .filter((recipe) =>
+          canSeeCatalogEntry(access, [
+            ...(recipe.productId ? [recipe.productId] : []),
+            ...recipe.ingredients.map((ingredient) => ingredient.productId),
+          ])
+        )
+        .sort((left, right) => left.name.localeCompare(right.name, "fr")),
+      access
     )
   },
 })
@@ -469,9 +504,9 @@ export const setActive = mutation({
 export const listBundles = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "bundles")
     const bundles = await ctx.db.query("bundles").collect()
-    return Promise.all(
+    const withItems = await Promise.all(
       bundles
         .filter((bundle) => bundle.active)
         .map(async (bundle) => ({
@@ -482,5 +517,35 @@ export const listBundles = query({
             .collect(),
         }))
     )
+    return redactReaderData(
+      withItems.filter((bundle) =>
+        canSeeCatalogEntry(
+          access,
+          bundle.items.map((item) => item.productId)
+        )
+      ),
+      access
+    )
   },
 })
+
+async function filterVisibleRecipes(
+  ctx: QueryCtx,
+  recipes: Doc<"recipes">[],
+  access: ReaderAccess | null
+) {
+  if (!access?.productIds) return recipes
+  const visible = await Promise.all(
+    recipes.map(async (recipe) => {
+      const ingredients = await ctx.db
+        .query("recipeIngredients")
+        .withIndex("by_recipe", (index) => index.eq("recipeId", recipe._id))
+        .collect()
+      return canSeeCatalogEntry(access, [
+        ...(recipe.productId ? [recipe.productId] : []),
+        ...ingredients.map((ingredient) => ingredient.productId),
+      ])
+    })
+  )
+  return recipes.filter((_, index) => visible[index])
+}

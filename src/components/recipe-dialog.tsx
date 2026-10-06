@@ -59,6 +59,7 @@ import { type Doc, type Id } from "../../convex/_generated/dataModel"
 import { getUserFacingErrorMessage } from "@/lib/errors"
 import { MAX_DYNAMIC_LINES, recipeFormSchema } from "@/lib/form-schemas"
 import { formatDecimalSeptims } from "@/lib/format"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 import { isProductCraftable } from "@/lib/product-categories"
 import {
   isRecipeFamily,
@@ -680,6 +681,7 @@ export function RecipeDialog({
 }
 
 export function RecipeArchivesDialog() {
+  const { formatDecimalSeptims } = useVisibleAmounts()
   const { canWrite } = usePermissions()
   const archivedRecipes = useQuery(api.recipes.listArchived)
   const setRecipeActive = useMutation(api.recipes.setActive)

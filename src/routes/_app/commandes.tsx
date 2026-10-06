@@ -63,16 +63,13 @@ import {
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "../../../convex/_generated/api"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
+import { canWrite as roleCanWrite } from "../../../shared/account-roles"
 import { type Doc } from "../../../convex/_generated/dataModel"
 import { getUserFacingErrorMessage } from "@/lib/errors"
 import { orderProcessingFormSchema } from "@/lib/form-schemas"
-import {
-  formatDate,
-  formatNumber,
-  formatOrderStatus,
-  formatSeptims,
-  formatUnitPrice,
-} from "@/lib/format"
+import { formatDate, formatNumber, formatOrderStatus } from "@/lib/format"
 import { calculateOrderPreparation } from "@/lib/order-preparation"
 import { cn } from "@/lib/utils"
 import {
@@ -139,9 +136,13 @@ function validateOrderSearch(search: Record<string, unknown>) {
 }
 
 export const Route = createFileRoute("/_app/commandes")({
-  component: OrdersPage,
+  beforeLoad: readerRouteAccess("orders"),
+  component: withReaderAccess(OrdersPage, "orders"),
   errorComponent: PageError,
   loader: async ({ context }) => {
+    const user = await context.queryClient.fetchQuery(
+      convexQuery(api.auth.getCurrentUser, {})
+    )
     await Promise.all([
       context.queryClient.ensureQueryData(
         convexQuery(api.orders.listAttention, {})
@@ -149,12 +150,22 @@ export const Route = createFileRoute("/_app/commandes")({
       context.queryClient.ensureQueryData(
         convexQuery(api.orders.listHistoryPage, historyQueryArgs(null))
       ),
-      context.queryClient.ensureQueryData(convexQuery(api.contacts.list, {})),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.products.selectable, {})
-      ),
-      context.queryClient.ensureQueryData(convexQuery(api.characters.list, {})),
-      context.queryClient.ensureQueryData(convexQuery(api.recipes.list, {})),
+      ...(roleCanWrite(user?.role)
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.contacts.list, {})
+            ),
+            context.queryClient.ensureQueryData(
+              convexQuery(api.products.selectable, {})
+            ),
+            context.queryClient.ensureQueryData(
+              convexQuery(api.characters.list, {})
+            ),
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.list, {})
+            ),
+          ]
+        : []),
     ])
   },
   pendingComponent: PageSkeleton,
@@ -182,16 +193,13 @@ function OrdersPage() {
     (historyPagination.cursor === null ? initialHistoryPage : undefined)
   const historicalOrders = historyPage?.page ?? []
   const isFetchingHistoryPage = liveHistoryPage === undefined
-  const { data: contacts } = useSuspenseQuery(
-    convexQuery(api.contacts.list, {})
-  )
-  const { data: products } = useSuspenseQuery(
-    convexQuery(api.products.selectable, {})
-  )
-  const { data: characters } = useSuspenseQuery(
-    convexQuery(api.characters.list, {})
-  )
-  const { data: recipes } = useSuspenseQuery(convexQuery(api.recipes.list, {}))
+  const contacts =
+    useConvexQuery(api.contacts.list, canWrite ? {} : "skip") ?? []
+  const products =
+    useConvexQuery(api.products.selectable, canWrite ? {} : "skip") ?? []
+  const characters =
+    useConvexQuery(api.characters.list, canWrite ? {} : "skip") ?? []
+  const recipes = useConvexQuery(api.recipes.list, canWrite ? {} : "skip") ?? []
   const updateStatus = useMutation(api.orders.updateStatus)
   const kind = view === "supplier" ? "supplier" : "client"
   const selectedOrders =
@@ -449,6 +457,7 @@ function OrderEntry({
   recipes: readonly Recipe[]
 }>) {
   const { canWrite } = usePermissions()
+  const { formatSeptims, formatUnitPrice } = useVisibleAmounts()
   const total = orderTotal(order)
   const preparation = calculateOrderPreparation(order.lines, products, recipes)
   const overdue = orderIsOverdue(order)
@@ -549,7 +558,7 @@ function OrderEntry({
           </TableBody>
         </Table>
 
-        {order.kind === "client" ? (
+        {order.kind === "client" && canWrite ? (
           <OrderPreparationDetails preparation={preparation} />
         ) : null}
 

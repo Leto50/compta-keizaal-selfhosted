@@ -84,11 +84,12 @@ import {
   formatDate,
   formatNumber,
   formatQuantity,
-  formatSeptims,
   operationLabels,
 } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { api } from "../../../convex/_generated/api"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 import { type Doc, type Id } from "../../../convex/_generated/dataModel"
 
 const PAGE_SIZE = 30
@@ -204,7 +205,8 @@ function journalQueryArgs(filters: JournalRouteSearch, cursor: string | null) {
 }
 
 export const Route = createFileRoute("/_app/journal")({
-  component: JournalPage,
+  beforeLoad: readerRouteAccess("transactions"),
+  component: withReaderAccess(JournalPage, "transactions"),
   errorComponent: PageError,
   loader: async ({ context, deps }) => {
     await Promise.all([
@@ -233,7 +235,7 @@ const operationToneClasses: Readonly<
 }
 
 function JournalPage() {
-  const { canWrite } = usePermissions()
+  const { canWrite, access } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const filterKey = JSON.stringify(filters)
@@ -378,11 +380,15 @@ function JournalPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les types</SelectItem>
-                {transactionKinds.map((kind) => (
-                  <SelectItem key={kind} value={kind}>
-                    {operationLabels[kind]}
-                  </SelectItem>
-                ))}
+                {transactionKinds
+                  .filter(
+                    (kind) => !access || access.operationKinds.includes(kind)
+                  )
+                  .map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {operationLabels[kind]}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -601,6 +607,7 @@ function JournalRow({
   showActions: boolean
   transaction: Transaction
 }>) {
+  const { formatSeptims } = useVisibleAmounts()
   return (
     <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
       <TableCell className="pl-4 text-muted-foreground max-md:col-start-1 max-md:row-start-2 max-md:p-0 max-md:pt-3">
@@ -814,6 +821,7 @@ function TransactionLines({
 function TransactionLineContent({
   transactionId,
 }: Readonly<{ transactionId: Id<"transactions"> }>) {
+  const { formatSeptims } = useVisibleAmounts()
   const details = useConvexQuery(api.transactions.getDetails, {
     transactionId,
   })

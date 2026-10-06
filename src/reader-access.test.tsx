@@ -41,18 +41,22 @@ import { Route as AdministrationRoute } from "./routes/_app/administration"
 import { Route as CharactersRoute } from "./routes/_app/personnages"
 import { Route as AuthenticationRoute } from "./routes/connexion"
 import { DEFAULT_SITE_NAME } from "../shared/site-name"
+import { defaultReaderAccess, type ReaderAccess } from "../shared/reader-access"
+import { AccountAccessDialog } from "./components/account-access-dialog"
 
 const state = vi.hoisted<{
   data: Map<string, unknown>
   mutations: Map<string, ReturnType<typeof vi.fn>>
   pathname: string
   role: string | undefined
+  access: ReaderAccess | undefined
   search: Record<string, unknown>
 }>(() => ({
   data: new Map<string, unknown>(),
   mutations: new Map<string, ReturnType<typeof vi.fn>>(),
   pathname: "/inventaire",
   role: "reader",
+  access: undefined,
   search: {},
 }))
 
@@ -68,7 +72,9 @@ vi.mock("convex/react", () => ({
     if (args === "skip") return undefined
     const name = getFunctionName(reference)
     if (name === "auth:getCurrentUser") {
-      return state.role ? { role: state.role } : undefined
+      return state.role
+        ? { role: state.role, readerAccess: state.access }
+        : undefined
     }
     return state.data.get(name)
   },
@@ -183,6 +189,7 @@ beforeAll(async () => {
     api.accounts.overview,
     api.products.list,
     api.products.selectable,
+    api.products.catalog,
     api.products.listArchived,
     api.recipes.list,
     api.recipes.listBundles,
@@ -215,6 +222,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   state.role = "reader"
+  state.access = undefined
   state.search = {}
   state.pathname = "/inventaire"
   state.mutations.clear()
@@ -389,6 +397,143 @@ describe("réglage du nom du site", () => {
 })
 
 describe("interface lecteur", () => {
+  it.each([
+    InventoryRoute,
+    JournalRoute,
+    AccountRoute,
+    OrdersRoute,
+    RecipesRoute,
+  ])(
+    "refuse une URL directe même si les anciens droits sont encore en cache",
+    async (route) => {
+      const guard = route.options.beforeLoad as unknown as (options: {
+        context: { queryClient: QueryClient }
+      }) => Promise<unknown>
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            queryFn: async () => ({
+              role: "reader",
+              readerAccess: { ...defaultReaderAccess, sections: [] },
+            }),
+          },
+        },
+      })
+      queryClient.setQueryData(
+        convexQuery(api.auth.getCurrentUser, {}).queryKey,
+        { role: "reader", readerAccess: defaultReaderAccess }
+      )
+      await expect(guard({ context: { queryClient } })).rejects.toMatchObject({
+        options: { to: "/" },
+      })
+    }
+  )
+  it("masque les prix et stocks même pendant le rafraîchissement des données", () => {
+    state.access = {
+      ...defaultReaderAccess,
+      showPrices: false,
+      showStock: false,
+    }
+    render(page(InventoryRoute))
+    const row = screen.getByRole("row", { name: /Blé test/ })
+    expect(within(row).queryByText("1 septim l’unité")).toBeNull()
+    expect(within(row).queryByText("2 septims l’unité")).toBeNull()
+    expect(within(row).getAllByText("Masqué")).toHaveLength(5)
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Stocks faibles" })
+        .disabled
+    ).toBe(true)
+  })
+
+  it("ne propose que les rubriques autorisées et garde un accueil sans données interdites", () => {
+    state.access = {
+      ...defaultReaderAccess,
+      sections: ["recipes"],
+      showPrices: false,
+    }
+    render(
+      <TooltipProvider>
+        <AppShell>{page(DashboardRoute)}</AppShell>
+      </TooltipProvider>
+    )
+    expect(screen.queryByRole("link", { name: "Inventaire" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Transactions" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Compte" })).toBeNull()
+    expect(screen.queryByText("Dernières transactions")).toBeNull()
+    expect(screen.queryByText("Stocks faibles")).toBeNull()
+    expect(
+      screen.queryByRole("link", { name: "Recettes & lots" })
+    ).not.toBeNull()
+  })
+
+  it("sépare les droits recettes et lots, y compris sur une URL demandant une vue interdite", () => {
+    state.access = {
+      ...defaultReaderAccess,
+      sections: ["bundles"],
+      showPrices: false,
+    }
+    state.search = { view: "recipes" }
+    render(page(RecipesRoute))
+    expect(screen.queryByText("Lot test")).not.toBeNull()
+    expect(screen.queryByText("Soin test")).toBeNull()
+    expect(screen.queryByRole("tab", { name: "Recettes" })).toBeNull()
+    expect(
+      screen.queryByRole("link", { name: "Voir dans l’inventaire" })
+    ).toBeNull()
+  })
+
+  it("retire le contenu d’une rubrique quand ses droits sont révoqués en cours de session", () => {
+    const view = render(page(InventoryRoute))
+    expect(screen.queryByText("Blé test")).not.toBeNull()
+    state.access = { ...defaultReaderAccess, sections: [] }
+    view.rerender(page(InventoryRoute))
+    expect(screen.queryByText("Blé test")).toBeNull()
+    expect(screen.queryByText("Accès non autorisé")).not.toBeNull()
+  })
+
+  it("enregistre les choix détaillés depuis Gérer l’accès", async () => {
+    state.role = "admin"
+    render(
+      <AccountAccessDialog
+        account={{
+          id: "reader",
+          identifier: "reader",
+          name: "Lecteur",
+          role: "reader",
+          banned: false,
+          readerAccess: defaultReaderAccess,
+        }}
+        isLastActiveAdmin={false}
+        trigger={<button>Gérer l’accès test</button>}
+      />
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Gérer l’accès test" }))
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Voir les prix, coûts et montants" })
+    )
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Voir les stocks et les seuils" })
+    )
+    fireEvent.click(screen.getByRole("checkbox", { name: "Transactions" }))
+    fireEvent.click(screen.getByRole("button", { name: "Enregistrer l’accès" }))
+    await waitFor(() =>
+      expect(
+        state.mutations.get("administration:saveAccountAccess")
+      ).toHaveBeenCalledWith({
+        userId: "reader",
+        role: "reader",
+        access: {
+          ...defaultReaderAccess,
+          sections: defaultReaderAccess.sections.filter(
+            (section) => section !== "transactions"
+          ),
+          showPrices: false,
+          showStock: false,
+        },
+      })
+    )
+  })
+
   it("conserve la navigation métier et masque l’administration", () => {
     render(
       <TooltipProvider>

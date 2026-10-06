@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { useHydrated } from "@/hooks/use-hydrated"
 import { usePermissions } from "@/hooks/use-permissions"
 import { useSiteName } from "@/hooks/use-site-name"
+import { type ReaderSection } from "../../shared/reader-access"
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +39,7 @@ import {
 } from "@/components/ui/sidebar"
 
 interface NavigationItem {
+  sections?: ReaderSection[]
   icon: LucideIcon
   label: string
   to:
@@ -53,14 +55,35 @@ interface NavigationItem {
 
 const navigation: readonly NavigationItem[] = [
   { icon: LayoutDashboard, label: "Aujourd’hui", to: "/" },
-  { icon: Boxes, label: "Inventaire", to: "/inventaire" },
-  { icon: ScrollText, label: "Transactions", to: "/journal" },
-  { icon: Landmark, label: "Compte", to: "/compte" },
-  { icon: ClipboardList, label: "Commandes", to: "/commandes" },
-  { icon: BookOpenText, label: "Recettes & lots", to: "/recettes" },
+  {
+    icon: Boxes,
+    label: "Inventaire",
+    to: "/inventaire",
+    sections: ["inventory"],
+  },
+  {
+    icon: ScrollText,
+    label: "Transactions",
+    to: "/journal",
+    sections: ["transactions"],
+  },
+  { icon: Landmark, label: "Compte", to: "/compte", sections: ["account"] },
+  {
+    icon: ClipboardList,
+    label: "Commandes",
+    to: "/commandes",
+    sections: ["orders"],
+  },
+  {
+    icon: BookOpenText,
+    label: "Recettes & lots",
+    to: "/recettes",
+    sections: ["recipes", "bundles"],
+  },
 ]
 
 function Navigation() {
+  const { canRead } = usePermissions()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -73,29 +96,31 @@ function Navigation() {
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu className="gap-1">
-          {navigation.map((item) => {
-            const Icon = item.icon
-            const isActive =
-              item.to === "/"
-                ? pathname === item.to
-                : pathname.startsWith(item.to)
+          {navigation
+            .filter((item) => !item.sections || item.sections.some(canRead))
+            .map((item) => {
+              const Icon = item.icon
+              const isActive =
+                item.to === "/"
+                  ? pathname === item.to
+                  : pathname.startsWith(item.to)
 
-            return (
-              <SidebarMenuItem key={item.to}>
-                <SidebarMenuButton
-                  asChild
-                  className="h-10 text-sm tracking-[0.02em] data-active:border data-active:border-sidebar-border data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
-                  isActive={isActive}
-                  tooltip={item.label}
-                >
-                  <Link onClick={() => setOpenMobile(false)} to={item.to}>
-                    <Icon aria-hidden="true" strokeWidth={1.7} />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
+              return (
+                <SidebarMenuItem key={item.to}>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-10 text-sm tracking-[0.02em] data-active:border data-active:border-sidebar-border data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
+                    isActive={isActive}
+                    tooltip={item.label}
+                  >
+                    <Link onClick={() => setOpenMobile(false)} to={item.to}>
+                      <Icon aria-hidden="true" strokeWidth={1.7} />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

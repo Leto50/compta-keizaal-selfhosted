@@ -1,5 +1,4 @@
 import { convexQuery } from "@convex-dev/react-query"
-import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { type FunctionReturnType } from "convex/server"
 import {
@@ -12,6 +11,11 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useState } from "react"
+import { useQuery } from "convex/react"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
+import { canReadSection } from "../../../shared/reader-access"
+import { canWrite as roleCanWrite } from "../../../shared/account-roles"
 
 import { BundleArchivesDialog, BundleDialog } from "@/components/bundle-dialog"
 import { OperationDialog } from "@/components/operation-dialog"
@@ -43,12 +47,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "../../../convex/_generated/api"
 import { type Doc } from "../../../convex/_generated/dataModel"
 import { calculateBundleCost } from "@/lib/bundle-cost"
-import {
-  formatDecimalSeptims,
-  formatNumber,
-  formatSeptims,
-  formatUnitPrice,
-} from "@/lib/format"
+import { formatNumber } from "@/lib/format"
 import {
   isRecipeFamily,
   recipeFamilies,
@@ -81,21 +80,41 @@ function validateCatalogSearch(search: Record<string, unknown>): CatalogSearch {
 }
 
 export const Route = createFileRoute("/_app/recettes")({
-  component: RecipesPage,
+  beforeLoad: readerRouteAccess("recipes", "bundles"),
+  component: withReaderAccess(RecipesPage, "recipes", "bundles"),
   errorComponent: PageError,
   loader: async ({ context }) => {
+    const user = await context.queryClient.fetchQuery(
+      convexQuery(api.auth.getCurrentUser, {})
+    )
     await Promise.all([
-      context.queryClient.ensureQueryData(convexQuery(api.recipes.list, {})),
+      ...(canReadSection(user?.role, user?.readerAccess, "recipes")
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.list, {})
+            ),
+          ]
+        : []),
+      ...(canReadSection(user?.role, user?.readerAccess, "bundles")
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.listBundles, {})
+            ),
+          ]
+        : []),
       context.queryClient.ensureQueryData(
-        convexQuery(api.recipes.listBundles, {})
+        convexQuery(api.products.catalog, {})
       ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.products.selectable, {})
-      ),
-      context.queryClient.ensureQueryData(convexQuery(api.characters.list, {})),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.recipes.listLinkedProductIds, {})
-      ),
+      ...(roleCanWrite(user?.role)
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.characters.list, {})
+            ),
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.listLinkedProductIds, {})
+            ),
+          ]
+        : []),
     ])
   },
   pendingComponent: PageSkeleton,
@@ -103,27 +122,27 @@ export const Route = createFileRoute("/_app/recettes")({
 })
 
 function RecipesPage() {
-  const { canWrite } = usePermissions()
+  const { canWrite, canRead } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data: recipes } = useSuspenseQuery(convexQuery(api.recipes.list, {}))
-  const { data: bundles } = useSuspenseQuery(
-    convexQuery(api.recipes.listBundles, {})
-  )
-  const { data: products } = useSuspenseQuery(
-    convexQuery(api.products.selectable, {})
-  )
-  const { data: characters } = useSuspenseQuery(
-    convexQuery(api.characters.list, {})
-  )
-  const { data: linkedProductIds } = useSuspenseQuery(
-    convexQuery(api.recipes.listLinkedProductIds, {})
-  )
+  const recipes =
+    useQuery(api.recipes.list, canRead("recipes") ? {} : "skip") ?? []
+  const bundles =
+    useQuery(api.recipes.listBundles, canRead("bundles") ? {} : "skip") ?? []
+  const products = useQuery(api.products.catalog, {}) ?? []
+  const characters = useQuery(api.characters.list, canWrite ? {} : "skip") ?? []
+  const linkedProductIds =
+    useQuery(api.recipes.listLinkedProductIds, canWrite ? {} : "skip") ?? []
   const [productionProductId, setProductionProductId] =
     useState<Doc<"products">["_id"]>()
   const search = filters.q ?? ""
   const family = filters.family ?? "all"
-  const view = filters.view
+  const view =
+    filters.view === "bundles" && canRead("bundles")
+      ? "bundles"
+      : canRead("recipes")
+        ? "recipes"
+        : "bundles"
   const families = recipeFamilies.filter((entry) =>
     recipes.some((recipe) => recipe.family === entry)
   )
@@ -152,14 +171,18 @@ function RecipesPage() {
       <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-y border-border/70 py-3">
         <Tabs onValueChange={handleViewChange} value={view}>
           <TabsList aria-label="Vue du catalogue" className="bg-[#6e5330]/8">
-            <TabsTrigger value="recipes">
-              <BookMarked aria-hidden="true" />
-              Recettes
-            </TabsTrigger>
-            <TabsTrigger value="bundles">
-              <PackageOpen aria-hidden="true" />
-              Lots
-            </TabsTrigger>
+            {canRead("recipes") ? (
+              <TabsTrigger value="recipes">
+                <BookMarked aria-hidden="true" />
+                Recettes
+              </TabsTrigger>
+            ) : null}
+            {canRead("bundles") ? (
+              <TabsTrigger value="bundles">
+                <PackageOpen aria-hidden="true" />
+                Lots
+              </TabsTrigger>
+            ) : null}
           </TabsList>
         </Tabs>
         <p className="text-sm text-muted-foreground">
@@ -367,7 +390,8 @@ function RecipeEntry({
   products: readonly Doc<"products">[]
   recipe: Recipe
 }>) {
-  const { canWrite } = usePermissions()
+  const { formatDecimalSeptims, formatUnitPrice } = useVisibleAmounts()
+  const { canWrite, canRead } = usePermissions()
   const outputProduct = recipe.productId
     ? products.find((product) => product._id === recipe.productId)
     : undefined
@@ -485,12 +509,14 @@ function RecipeEntry({
                 Produire cette recette
               </Button>
             ) : null}
-            <Button asChild className="w-full" size="sm" variant="ghost">
-              <Link search={{ q: recipe.name }} to="/inventaire">
-                <Boxes aria-hidden="true" />
-                Voir dans l’inventaire
-              </Link>
-            </Button>
+            {canRead("inventory") ? (
+              <Button asChild className="w-full" size="sm" variant="ghost">
+                <Link search={{ q: recipe.name }} to="/inventaire">
+                  <Boxes aria-hidden="true" />
+                  Voir dans l’inventaire
+                </Link>
+              </Button>
+            ) : null}
           </div>
         ) : (
           <p className="mt-auto pt-4 text-xs text-muted-foreground">
@@ -511,6 +537,7 @@ function BundleEntry({
   products: readonly Doc<"products">[]
   recipes: readonly Recipe[]
 }>) {
+  const { formatDecimalSeptims, formatSeptims } = useVisibleAmounts()
   const { canWrite } = usePermissions()
   const cost = calculateBundleCost(bundle.items, products, recipes)
 
