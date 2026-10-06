@@ -14,7 +14,7 @@ interface SortableTableHeadProps extends Omit<
   direction: SortDirection
   inactiveDirection?: SortDirection
   label: string
-  onSort?: () => void
+  onSort: () => void
 }
 
 export function SortableTableHead({
@@ -26,13 +26,6 @@ export function SortableTableHead({
   onSort,
   ...props
 }: Readonly<SortableTableHeadProps>) {
-  if (!onSort) {
-    return (
-      <TableHead className={className} scope="col" {...props}>
-        {label}
-      </TableHead>
-    )
-  }
   const nextDirection = active
     ? direction === "asc"
       ? "décroissant"

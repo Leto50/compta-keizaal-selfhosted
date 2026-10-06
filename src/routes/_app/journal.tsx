@@ -235,7 +235,7 @@ const operationToneClasses: Readonly<
 }
 
 function JournalPage() {
-  const { canWrite, access } = usePermissions()
+  const { canWrite, access, showPrices } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const filterKey = JSON.stringify(filters)
@@ -488,7 +488,9 @@ function JournalPage() {
                     <TableHead>Référence</TableHead>
                     <TableHead>Personnage</TableHead>
                     <TableHead className="text-right">Quantité</TableHead>
-                    <TableHead className="pr-4 text-right">Montant</TableHead>
+                    {showPrices ? (
+                      <TableHead className="pr-4 text-right">Montant</TableHead>
+                    ) : null}
                     {showActions ? (
                       <TableHead className="text-right">Actions</TableHead>
                     ) : null}
@@ -620,6 +622,7 @@ function JournalRow({
   transaction: Transaction
 }>) {
   const { formatSeptims } = useVisibleAmounts()
+  const { showPrices } = usePermissions()
   return (
     <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
       <TableCell className="pl-4 text-muted-foreground max-md:col-start-1 max-md:row-start-2 max-md:p-0 max-md:pt-3">
@@ -661,15 +664,17 @@ function JournalRow({
       <TableCell className="text-right max-md:hidden">
         {transaction.orderId ? "—" : formatNumber(transaction.quantity)}
       </TableCell>
-      <TableCell
-        className={cn(
-          "pr-4 text-right font-semibold tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:self-end max-md:p-0 max-md:pt-3 max-md:font-display max-md:text-lg",
-          transaction.total >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
-        )}
-      >
-        {transaction.total > 0 ? "+" : ""}
-        {formatSeptims(transaction.total)}
-      </TableCell>
+      {showPrices ? (
+        <TableCell
+          className={cn(
+            "pr-4 text-right font-semibold tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:self-end max-md:p-0 max-md:pt-3 max-md:font-display max-md:text-lg",
+            transaction.total >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
+          )}
+        >
+          {transaction.total > 0 ? "+" : ""}
+          {formatSeptims(transaction.total)}
+        </TableCell>
+      ) : null}
       {showActions ? (
         <TableCell className="pr-2 text-right max-md:col-span-2 max-md:col-start-1 max-md:row-start-3 max-md:p-0 max-md:pt-2">
           {transaction.canManage || transaction.canDelete ? (
@@ -834,6 +839,7 @@ function TransactionLineContent({
   transactionId,
 }: Readonly<{ transactionId: Id<"transactions"> }>) {
   const { formatSeptims } = useVisibleAmounts()
+  const { showPrices } = usePermissions()
   const details = useConvexQuery(api.transactions.getDetails, {
     transactionId,
   })
@@ -865,10 +871,12 @@ function TransactionLineContent({
             ) : null}
             {line.productName} · {formatQuantity(line.quantity)}
           </span>
-          <span className="font-semibold text-foreground tabular-nums">
-            {line.direction === "incoming" ? "−" : ""}
-            {formatSeptims(line.total)}
-          </span>
+          {showPrices ? (
+            <span className="font-semibold text-foreground tabular-nums">
+              {line.direction === "incoming" ? "−" : ""}
+              {formatSeptims(line.total)}
+            </span>
+          ) : null}
         </li>
       ))}
     </ul>

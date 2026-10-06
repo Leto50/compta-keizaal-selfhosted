@@ -408,22 +408,19 @@ function ReaderDashboard({
         </div>
       )}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        {canRead("inventory") ? (
+        {canRead("inventory") && showStock ? (
           <Card>
             <CardHeader>
               <CardTitle>Inventaire</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>
-                Stocks faibles :{" "}
-                {showStock ? formatNumber(data.lowStockCount) : "Masqué"}
-              </p>
-              <p>
-                Valeur estimée du stock :{" "}
-                {showStock && showPrices
-                  ? formatDecimalSeptims(data.stockValue)
-                  : "Masqué"}
-              </p>
+              <p>Stocks faibles : {formatNumber(data.lowStockCount)}</p>
+              {showPrices ? (
+                <p>
+                  Valeur estimée du stock :{" "}
+                  {formatDecimalSeptims(data.stockValue)}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         ) : null}
@@ -444,7 +441,7 @@ function ReaderDashboard({
               <p>
                 {formatNumber(data.weeklyTransactionCount)} mouvements autorisés
               </p>
-              <p>{formatSeptims(data.weeklyBalance)}</p>
+              {showPrices ? <p>{formatSeptims(data.weeklyBalance)}</p> : null}
             </CardContent>
           </Card>
         ) : null}
@@ -465,7 +462,9 @@ function ReaderDashboard({
                     {transaction.productName} ·{" "}
                     {operationLabels[transaction.kind]}
                   </span>
-                  <span>{formatSeptims(transaction.total)}</span>
+                  {showPrices ? (
+                    <span>{formatSeptims(transaction.total)}</span>
+                  ) : null}
                 </li>
               ))}
             </ul>

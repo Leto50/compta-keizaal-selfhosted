@@ -456,7 +456,7 @@ function OrderEntry({
   products: readonly Doc<"products">[]
   recipes: readonly Recipe[]
 }>) {
-  const { canWrite } = usePermissions()
+  const { canWrite, showPrices } = usePermissions()
   const { formatSeptims, formatUnitPrice } = useVisibleAmounts()
   const total = orderTotal(order)
   const preparation = calculateOrderPreparation(order.lines, products, recipes)
@@ -541,7 +541,7 @@ function OrderEntry({
               <TableRow className="border-border/60" key={line._id}>
                 <TableCell className="max-w-48 pl-0">
                   <p className="truncate font-semibold">{line.productName}</p>
-                  {line.unitPrice !== undefined ? (
+                  {showPrices && line.unitPrice !== undefined ? (
                     <p className="text-xs text-muted-foreground">
                       {formatUnitPrice(line.unitPrice)}
                     </p>
@@ -550,9 +550,11 @@ function OrderEntry({
                 <TableCell className="w-16 tabular-nums">
                   × {formatNumber(line.quantity)}
                 </TableCell>
-                <TableCell className="w-28 pr-0 text-right font-semibold tabular-nums">
-                  {line.total === undefined ? "—" : formatSeptims(line.total)}
-                </TableCell>
+                {showPrices ? (
+                  <TableCell className="w-28 pr-0 text-right font-semibold tabular-nums">
+                    {line.total === undefined ? "—" : formatSeptims(line.total)}
+                  </TableCell>
+                ) : null}
               </TableRow>
             ))}
           </TableBody>
@@ -602,14 +604,16 @@ function OrderEntry({
             />
           ) : null}
         </div>
-        <div className="text-right">
-          <p className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-            Total convenu
-          </p>
-          <p className="font-display text-xl">
-            {total === undefined ? "À convenir" : formatSeptims(total)}
-          </p>
-        </div>
+        {showPrices ? (
+          <div className="text-right">
+            <p className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
+              Total convenu
+            </p>
+            <p className="font-display text-xl">
+              {total === undefined ? "À convenir" : formatSeptims(total)}
+            </p>
+          </div>
+        ) : null}
       </CardFooter>
     </Card>
   )

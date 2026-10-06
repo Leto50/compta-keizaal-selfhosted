@@ -682,7 +682,7 @@ export function RecipeDialog({
 
 export function RecipeArchivesDialog() {
   const { formatCost: formatDecimalSeptims } = useVisibleAmounts()
-  const { canWrite } = usePermissions()
+  const { canWrite, showPurchasePrices } = usePermissions()
   const archivedRecipes = useQuery(api.recipes.listArchived)
   const setRecipeActive = useMutation(api.recipes.setActive)
   const [restoringId, setRestoringId] = useState<string>()
@@ -750,9 +750,11 @@ export function RecipeArchivesDialog() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {recipe.family}
-                      {recipe.cost === undefined
-                        ? " · coût incomplet"
-                        : ` · ${formatDecimalSeptims(recipe.cost)}`}
+                      {showPurchasePrices
+                        ? recipe.cost === undefined
+                          ? " · coût incomplet"
+                          : ` · ${formatDecimalSeptims(recipe.cost)}`
+                        : null}
                     </p>
                   </div>
                   {canWrite ? (

@@ -426,7 +426,7 @@ export function BundleDialog({
 
 export function BundleArchivesDialog() {
   const { formatSaleAmount: formatSeptims } = useVisibleAmounts()
-  const { canWrite } = usePermissions()
+  const { canWrite, showSalePrices } = usePermissions()
   const archivedBundles = useQuery(api.bundles.listArchived)
   const setBundleActive = useMutation(api.bundles.setActive)
   const [restoringId, setRestoringId] = useState<string>()
@@ -492,11 +492,13 @@ export function BundleArchivesDialog() {
                     <p className="truncate text-sm font-semibold">
                       {bundle.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {bundle.price === undefined
-                        ? "Prix non renseigné"
-                        : formatSeptims(bundle.price)}
-                    </p>
+                    {showSalePrices ? (
+                      <p className="text-xs text-muted-foreground">
+                        {bundle.price === undefined
+                          ? "Prix non renseigné"
+                          : formatSeptims(bundle.price)}
+                      </p>
+                    ) : null}
                   </div>
                   {canWrite ? (
                     <Button

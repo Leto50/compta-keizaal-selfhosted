@@ -286,25 +286,26 @@ function InventoryPage() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            disabled={!showStock}
-            aria-pressed={lowOnly}
-            onClick={() =>
-              void navigate({
-                replace: true,
-                search: (previous) => ({
-                  ...previous,
-                  stock: lowOnly ? undefined : "low",
-                }),
-              })
-            }
-            size="sm"
-            type="button"
-            variant={lowOnly ? "secondary" : "outline"}
-          >
-            <CircleAlert aria-hidden="true" />
-            Stocks faibles
-          </Button>
+          {showStock ? (
+            <Button
+              aria-pressed={lowOnly}
+              onClick={() =>
+                void navigate({
+                  replace: true,
+                  search: (previous) => ({
+                    ...previous,
+                    stock: lowOnly ? undefined : "low",
+                  }),
+                })
+              }
+              size="sm"
+              type="button"
+              variant={lowOnly ? "secondary" : "outline"}
+            >
+              <CircleAlert aria-hidden="true" />
+              Stocks faibles
+            </Button>
+          ) : null}
           <Tabs onValueChange={handleCategoryChange} value={category}>
             <TabsList
               aria-label="Catégories de l'inventaire"
@@ -383,44 +384,48 @@ function InventoryPage() {
                     onSort={() => handleSort("name")}
                   />
                   <TableHead>Catégorie</TableHead>
-                  <SortableTableHead
-                    active={sortKey === "stock"}
-                    className="text-right"
-                    direction={sortDirection}
-                    inactiveDirection="desc"
-                    label="Stock"
-                    onSort={showStock ? () => handleSort("stock") : undefined}
-                  />
-                  <TableHead className="text-right">Seuil</TableHead>
-                  <SortableTableHead
-                    active={sortKey === "purchasePrice"}
-                    className="text-right"
-                    direction={sortDirection}
-                    inactiveDirection="desc"
-                    label="Prix d’achat"
-                    onSort={
-                      showPurchasePrices
-                        ? () => handleSort("purchasePrice")
-                        : undefined
-                    }
-                  />
-                  <SortableTableHead
-                    active={sortKey === "salePrice"}
-                    className="text-right"
-                    direction={sortDirection}
-                    inactiveDirection="desc"
-                    label="Prix de vente"
-                    onSort={
-                      showSalePrices ? () => handleSort("salePrice") : undefined
-                    }
-                  />
-                  <SortableTableHead
-                    active={sortKey === "status"}
-                    className="pr-4 text-right"
-                    direction={sortDirection}
-                    label="État"
-                    onSort={showStock ? () => handleSort("status") : undefined}
-                  />
+                  {showStock ? (
+                    <>
+                      <SortableTableHead
+                        active={sortKey === "stock"}
+                        className="text-right"
+                        direction={sortDirection}
+                        inactiveDirection="desc"
+                        label="Stock"
+                        onSort={() => handleSort("stock")}
+                      />
+                      <TableHead className="text-right">Seuil</TableHead>
+                    </>
+                  ) : null}
+                  {showPurchasePrices ? (
+                    <SortableTableHead
+                      active={sortKey === "purchasePrice"}
+                      className="text-right"
+                      direction={sortDirection}
+                      inactiveDirection="desc"
+                      label="Prix d’achat"
+                      onSort={() => handleSort("purchasePrice")}
+                    />
+                  ) : null}
+                  {showSalePrices ? (
+                    <SortableTableHead
+                      active={sortKey === "salePrice"}
+                      className="text-right"
+                      direction={sortDirection}
+                      inactiveDirection="desc"
+                      label="Prix de vente"
+                      onSort={() => handleSort("salePrice")}
+                    />
+                  ) : null}
+                  {showStock ? (
+                    <SortableTableHead
+                      active={sortKey === "status"}
+                      className="pr-4 text-right"
+                      direction={sortDirection}
+                      label="État"
+                      onSort={() => handleSort("status")}
+                    />
+                  ) : null}
                   {canWrite ? (
                     <TableHead className="w-10">
                       <span className="sr-only">Modifier</span>
@@ -447,7 +452,9 @@ function InventoryPage() {
           <Search aria-hidden="true" />
           <AlertTitle>Aucun produit trouvé</AlertTitle>
           <AlertDescription>
-            Modifiez la recherche, la catégorie ou le filtre de stock.
+            {showStock
+              ? "Modifiez la recherche, la catégorie ou le filtre de stock."
+              : "Modifiez la recherche ou la catégorie."}
           </AlertDescription>
         </Alert>
       )}
@@ -469,8 +476,7 @@ function InventoryPage() {
 
 function ProductState({ product }: Readonly<{ product: Doc<"products"> }>) {
   const { showStock } = usePermissions()
-  if (!showStock && product.tracksStock)
-    return <Badge variant="outline">Masqué</Badge>
+  if (!showStock) return null
   if (!product.tracksStock) {
     return (
       <Badge
@@ -521,7 +527,12 @@ function InventoryRow({
 
   return (
     <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-6 max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
-      <TableCell className="max-w-80 pl-4 font-semibold max-md:col-span-4 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:font-display max-md:text-base">
+      <TableCell
+        className={cn(
+          "max-w-80 pl-4 font-semibold max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:font-display max-md:text-base",
+          showStock ? "max-md:col-span-4" : "max-md:col-span-6"
+        )}
+      >
         <div className="flex min-w-0 items-center max-md:flex-wrap">
           <span className="truncate">{product.name}</span>
           {hasRecipe ? (
@@ -561,41 +572,57 @@ function InventoryRow({
           </Button>
         ) : null}
       </TableCell>
-      <TableCell className="text-right font-display text-base max-md:col-span-3 max-md:col-start-1 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:text-lg">
-        <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
-          Stock
-        </span>
-        {product.tracksStock
-          ? showStock
-            ? formatNumber(product.currentStock)
-            : "Masqué"
-          : "—"}
-      </TableCell>
-      <TableCell className="text-right text-muted-foreground max-md:col-span-3 max-md:col-start-4 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-display max-md:text-lg max-md:text-foreground">
-        <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
-          Seuil
-        </span>
-        {product.tracksStock
-          ? showStock
-            ? formatNumber(product.minimumStock)
-            : "Masqué"
-          : "—"}
-      </TableCell>
-      <TableCell className="text-right max-md:col-span-3 max-md:col-start-1 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
-        <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
-          Prix d’achat
-        </span>
-        {showPurchasePrices ? productPrice(product.purchasePrice) : "Masqué"}
-      </TableCell>
-      <TableCell className="text-right max-md:col-span-3 max-md:col-start-4 max-md:row-start-4 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal">
-        <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
-          Prix de vente
-        </span>
-        {showSalePrices ? productPrice(product.salePrice) : "Masqué"}
-      </TableCell>
-      <TableCell className="pr-4 text-right max-md:col-span-2 max-md:col-start-5 max-md:row-start-1 max-md:p-0 max-md:pr-9">
-        <ProductState product={product} />
-      </TableCell>
+      {showStock ? (
+        <>
+          <TableCell className="text-right font-display text-base max-md:col-span-3 max-md:col-start-1 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:text-lg">
+            <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
+              Stock
+            </span>
+            {product.tracksStock ? formatNumber(product.currentStock) : "—"}
+          </TableCell>
+          <TableCell className="text-right text-muted-foreground max-md:col-span-3 max-md:col-start-4 max-md:row-start-3 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-display max-md:text-lg max-md:text-foreground">
+            <span className="mb-1 block font-sans text-xs text-muted-foreground md:hidden">
+              Seuil
+            </span>
+            {product.tracksStock ? formatNumber(product.minimumStock) : "—"}
+          </TableCell>
+        </>
+      ) : null}
+      {showPurchasePrices ? (
+        <TableCell
+          className={cn(
+            "text-right max-md:col-start-1 max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal",
+            showSalePrices ? "max-md:col-span-3" : "max-md:col-span-6",
+            showStock ? "max-md:row-start-4" : "max-md:row-start-3"
+          )}
+        >
+          <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
+            Prix d’achat
+          </span>
+          {productPrice(product.purchasePrice)}
+        </TableCell>
+      ) : null}
+      {showSalePrices ? (
+        <TableCell
+          className={cn(
+            "text-right max-md:mt-3 max-md:p-0 max-md:text-left max-md:font-semibold max-md:whitespace-normal",
+            showPurchasePrices
+              ? "max-md:col-span-3 max-md:col-start-4"
+              : "max-md:col-span-6 max-md:col-start-1",
+            showStock ? "max-md:row-start-4" : "max-md:row-start-3"
+          )}
+        >
+          <span className="mb-1 block text-xs font-normal text-muted-foreground md:hidden">
+            Prix de vente
+          </span>
+          {productPrice(product.salePrice)}
+        </TableCell>
+      ) : null}
+      {showStock ? (
+        <TableCell className="pr-4 text-right max-md:col-span-2 max-md:col-start-5 max-md:row-start-1 max-md:p-0 max-md:pr-9">
+          <ProductState product={product} />
+        </TableCell>
+      ) : null}
       {canWrite ? (
         <TableCell className="max-md:absolute max-md:top-2.5 max-md:right-2 max-md:p-0">
           <ProductDialog

@@ -397,14 +397,15 @@ describe("réglage du nom du site", () => {
 })
 
 describe("interface lecteur", () => {
-  it("montre les prix de vente en conservant les prix d’achat masqués", () => {
+  it("montre les prix de vente sans colonne de prix d’achat", () => {
     state.access = { ...defaultReaderAccess, showPurchasePrices: false }
     render(page(InventoryRoute))
-    const cells = within(
-      screen.getByRole("row", { name: /Blé test/ })
-    ).getAllByRole("cell")
-    expect(cells[4]?.textContent).toBe("Prix d’achatMasqué")
-    expect(cells[5]?.textContent).toBe("Prix de vente2 septims l’unité")
+    const row = screen.getByRole("row", { name: /Blé test/ })
+    expect(within(row).queryByText("Prix d’achat")).toBeNull()
+    expect(within(row).getByText("2 septims l’unité")).not.toBeNull()
+    expect(
+      screen.queryByRole("columnheader", { name: /Prix d’achat/ })
+    ).toBeNull()
   })
   it.each([
     InventoryRoute,
@@ -447,11 +448,60 @@ describe("interface lecteur", () => {
     const row = screen.getByRole("row", { name: /Blé test/ })
     expect(within(row).queryByText("1 septim l’unité")).toBeNull()
     expect(within(row).queryByText("2 septims l’unité")).toBeNull()
-    expect(within(row).getAllByText("Masqué")).toHaveLength(5)
+    expect(within(row).getAllByRole("cell")).toHaveLength(2)
+    expect(screen.queryByRole("button", { name: "Stocks faibles" })).toBeNull()
     expect(
-      screen.getByRole<HTMLButtonElement>("button", { name: "Stocks faibles" })
-        .disabled
-    ).toBe(true)
+      screen.queryByRole("columnheader", { name: /Stock|Seuil|Prix|État/ })
+    ).toBeNull()
+    expect(screen.queryByText("Masqué")).toBeNull()
+  })
+
+  it.each([
+    { route: DashboardRoute, search: {} },
+    { route: JournalRoute, search: {} },
+    { route: AccountRoute, search: {} },
+    { route: OrdersRoute, search: { view: "client" } },
+    { route: RecipesRoute, search: { view: "recipes" } },
+    { route: RecipesRoute, search: { view: "bundles" } },
+  ])(
+    "retire les informations financières de la page autorisée",
+    ({ route, search }) => {
+      state.access = {
+        ...defaultReaderAccess,
+        showPrices: false,
+        showStock: false,
+      }
+      state.search = search
+      render(page(route))
+      expect(screen.queryByText("Masqué")).toBeNull()
+      expect(screen.queryByText(/septim/i)).toBeNull()
+      expect(
+        screen.queryByText(
+          /^(Prix d’achat|Prix de vente|Montant|Coût matière|Coût de composition|Total convenu|Caisse déclarée|Fonds|Solde du journal|Charges de la semaine en cours)$/
+        )
+      ).toBeNull()
+      if (route === AccountRoute) {
+        expect(screen.getByText("Activité hebdomadaire")).not.toBeNull()
+        expect(
+          screen.getAllByRole("columnheader", { name: "Opérations" }).length
+        ).toBeGreaterThan(0)
+      }
+    }
+  )
+
+  it("retire immédiatement les champs quand leurs droits sont révoqués", () => {
+    state.access = defaultReaderAccess
+    const view = render(page(InventoryRoute))
+    expect(screen.getByText("1 septim l’unité")).not.toBeNull()
+    state.access = {
+      ...defaultReaderAccess,
+      showPrices: false,
+      showStock: false,
+    }
+    view.rerender(page(InventoryRoute))
+    expect(screen.queryByText("1 septim l’unité")).toBeNull()
+    expect(screen.getAllByRole("columnheader")).toHaveLength(2)
+    expect(screen.queryByText("Masqué")).toBeNull()
   })
 
   it("permet de poursuivre le journal après une page sans opération autorisée", () => {
@@ -749,13 +799,22 @@ describe("interface lecteur", () => {
       name: "Lot archivé",
     },
   ])(
-    "consulte les archives des $label sans pouvoir réactiver les entrées",
+    "consulte les archives des $label sans prix ni possibilité de réactivation",
     ({ route, view, name }) => {
+      state.access = {
+        ...defaultReaderAccess,
+        showPrices: false,
+        showStock: false,
+      }
       state.search = view ? { view } : {}
       render(page(route))
       fireEvent.click(screen.getByRole("button", { name: "Archives" }))
       expect(screen.queryByText(name)).not.toBeNull()
       expect(screen.queryByRole("button", { name: "Réactiver" })).toBeNull()
+      const dialog = within(screen.getByRole("dialog"))
+      expect(
+        dialog.queryByText(/septim|Masqué|coût incomplet|Prix non renseigné/i)
+      ).toBeNull()
     }
   )
 

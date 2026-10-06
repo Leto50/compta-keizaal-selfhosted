@@ -100,6 +100,7 @@ pnpm build
   montants et des stocks/seuils, les produits
   autorisés et les types d’opérations consultables. Les restrictions sont
   appliquées côté serveur, aux archives, aux détails et aux résumés de l’accueil.
+  Les colonnes, champs et indicateurs non autorisés sont retirés de l’interface.
   Une recette, un lot, une commande ou une opération contenant un produit
   interdit est entièrement masqué. Les montants du compte sont calculés sur
   les opérations autorisées ; les soldes globaux de caisse et des fonds ne sont
