@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/table"
 import { api } from "../../../convex/_generated/api"
 import { usePermissions } from "@/hooks/use-permissions"
+import { useSiteName } from "@/hooks/use-site-name"
 import { formatDecimalSeptims, formatNumber, formatSeptims } from "@/lib/format"
 import {
   sortActorEntries,
@@ -112,6 +113,7 @@ export const Route = createFileRoute("/_app/compte")({
 })
 
 function AccountPage() {
+  const siteName = useSiteName()
   const { queryArgs } = Route.useLoaderData()
   const { isAdmin } = usePermissions()
   const { data } = useSuspenseQuery(
@@ -160,8 +162,9 @@ function AccountPage() {
         eyebrow="Tenue de boutique"
         title="Compte"
       >
-        Suivez les entrées, les sorties et les charges de L’eau d’Roche sans
-        refaire les calculs du classeur.
+        Suivez les entrées, les sorties et les charges de{" "}
+        <span className="break-words">{siteName}</span> sans refaire les calculs
+        du classeur.
       </PageHeader>
 
       <section className="mt-7 grid gap-4 md:grid-cols-3">
