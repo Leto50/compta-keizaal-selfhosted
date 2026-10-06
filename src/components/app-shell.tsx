@@ -12,12 +12,13 @@ import {
   UsersRound,
   type LucideIcon,
 } from "lucide-react"
-import { type ReactNode } from "react"
+import { type ReactNode, useLayoutEffect, useRef } from "react"
 
 import { ShopMark } from "@/components/shop-mark"
 import { Button } from "@/components/ui/button"
 import { useHydrated } from "@/hooks/use-hydrated"
 import { usePermissions } from "@/hooks/use-permissions"
+import { useSiteName } from "@/hooks/use-site-name"
 import {
   Sidebar,
   SidebarContent,
@@ -102,14 +103,114 @@ function Navigation() {
 }
 
 function Brand() {
+  const siteName = useSiteName()
+  const brandRef = useRef<HTMLDivElement>(null)
+  const logoRef = useRef<HTMLDivElement>(null)
+  const copyRef = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLParagraphElement>(null)
+  const subtitleRef = useRef<HTMLParagraphElement>(null)
+
+  useLayoutEffect(() => {
+    const brand = brandRef.current
+    const logo = logoRef.current
+    const copy = copyRef.current
+    const title = titleRef.current
+    const subtitle = subtitleRef.current
+    if (!brand || !logo || !copy || !title || !subtitle) return
+
+    const fit = () => {
+      brand.style.removeProperty("flex-direction")
+      brand.style.removeProperty("align-items")
+      brand.style.removeProperty("gap")
+      logo.style.removeProperty("width")
+      logo.style.removeProperty("height")
+      copy.style.removeProperty("width")
+      title.style.removeProperty("font-size")
+      title.style.removeProperty("line-height")
+      subtitle.style.removeProperty("line-height")
+      subtitle.style.removeProperty("letter-spacing")
+      if (!copy.clientWidth) return
+
+      let lineHeight = Number.parseFloat(getComputedStyle(title).lineHeight)
+      const resizeLogo = () => {
+        const size = copy.getBoundingClientRect().height
+        logo.style.width = `${size}px`
+        logo.style.height = `${size}px`
+      }
+
+      if (title.getBoundingClientRect().height > lineHeight + 0.5) {
+        title.style.fontSize = "0.9375rem"
+        brand.style.gap = "0.5rem"
+      }
+
+      if (title.getBoundingClientRect().height > lineHeight + 0.5) {
+        title.style.lineHeight = "1.125rem"
+        const context = document.createElement("canvas").getContext("2d")
+        if (context) {
+          const style = getComputedStyle(title)
+          context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+          const metrics = context.measureText(siteName)
+          // Leave space between lines even for taller fallback glyphs.
+          title.style.lineHeight = `${Math.max(Number.parseFloat(style.fontSize) * 1.2, metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent + 2)}px`
+        }
+        subtitle.style.lineHeight = "0.75rem"
+        lineHeight = Number.parseFloat(getComputedStyle(title).lineHeight)
+        resizeLogo()
+      }
+
+      // Give tall names the full width instead of narrowing them further.
+      if (title.getBoundingClientRect().height > lineHeight * 2 + 0.5) {
+        brand.style.flexDirection = "column"
+        brand.style.alignItems = "flex-start"
+        brand.style.removeProperty("gap")
+        copy.style.width = "100%"
+        resizeLogo()
+      }
+
+      const range = document.createRange()
+      range.selectNodeContents(subtitle)
+      const excess = range.getBoundingClientRect().width - subtitle.clientWidth
+      if (excess > 0) {
+        const tracking = Number.parseFloat(
+          getComputedStyle(subtitle).letterSpacing
+        )
+        subtitle.style.letterSpacing = `${Math.max(0, tracking - (excess + 1) / (subtitle.textContent?.length || 1))}px`
+      }
+    }
+
+    const observer = new ResizeObserver(fit)
+    observer.observe(brand)
+    document.fonts.addEventListener("loadingdone", fit)
+    fit()
+    return () => {
+      observer.disconnect()
+      document.fonts.removeEventListener("loadingdone", fit)
+    }
+  }, [siteName])
+
   return (
-    <div className="flex items-center gap-3 overflow-hidden px-1 py-2">
-      <ShopMark className="size-9 shrink-0 text-sidebar-primary" />
-      <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-        <p className="truncate font-display text-base tracking-[0.12em] text-sidebar-foreground">
-          L’eau d’Roche
+    <div
+      className="flex items-center gap-3 overflow-hidden px-1 py-2"
+      ref={brandRef}
+    >
+      <div className="size-9 shrink-0" ref={logoRef}>
+        <ShopMark className="size-full text-sidebar-primary" />
+      </div>
+      <div
+        className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden"
+        ref={copyRef}
+      >
+        <p
+          className="font-display text-base leading-6 tracking-[0.12em] text-balance [overflow-wrap:anywhere] text-sidebar-foreground"
+          ref={titleRef}
+          title={siteName}
+        >
+          {siteName}
         </p>
-        <p className="truncate text-[0.62rem] tracking-[0.22em] text-sidebar-foreground/60 uppercase">
+        <p
+          className="text-[0.62rem] tracking-[0.22em] whitespace-nowrap text-sidebar-foreground/60 uppercase"
+          ref={subtitleRef}
+        >
           Gestion de boutique
         </p>
       </div>
@@ -152,11 +253,11 @@ function Administration() {
               asChild
               className="h-10 text-sm tracking-[0.02em]"
               isActive={pathname.startsWith("/administration")}
-              tooltip="Accès et audit"
+              tooltip="Accès et réglages"
             >
               <Link onClick={() => setOpenMobile(false)} to="/administration">
                 <ShieldCheck aria-hidden="true" strokeWidth={1.7} />
-                <span>Accès & audit</span>
+                <span>Accès & réglages</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -202,6 +303,7 @@ function SignOutButton() {
 }
 
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
+  const siteName = useSiteName()
   return (
     <SidebarProvider
       className="bg-[#181611] bg-[radial-gradient(circle_at_20%_10%,rgba(30,55,79,0.28),transparent_29rem),radial-gradient(circle_at_90%_75%,rgba(50,75,97,0.14),transparent_32rem)] [--sidebar-width-icon:4rem] [--sidebar-width:17rem]"
@@ -229,13 +331,16 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
       </Sidebar>
 
       <SidebarInset className="min-w-0 bg-transparent">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-[#544b3b] bg-[#1e1c17]/95 px-3 text-[#eee2cc] backdrop-blur-xl sm:px-5 md:hidden">
+        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-[#544b3b] bg-[#1e1c17]/95 px-3 py-2 text-[#eee2cc] backdrop-blur-xl sm:px-5 md:hidden">
           <SidebarTrigger
             aria-label="Afficher ou masquer le menu"
             className="text-[#eee2cc] hover:bg-white/5 hover:text-white"
           />
-          <span className="font-display text-sm tracking-[0.12em]">
-            L’eau d’Roche
+          <span
+            className="min-w-0 font-display text-sm tracking-[0.12em] text-balance [overflow-wrap:anywhere]"
+            title={siteName}
+          >
+            {siteName}
           </span>
         </header>
 

@@ -1,10 +1,62 @@
 import { paginationOptsValidator } from "convex/server"
-import { v } from "convex/values"
+import { ConvexError, v } from "convex/values"
 
-import { internalMutation, query } from "./_generated/server"
+import { internalMutation, mutation, query } from "./_generated/server"
 import { createAuth } from "./auth"
 import { requireAdmin } from "./lib/auth"
 import { accountRole } from "../shared/account-roles"
+import { DEFAULT_SITE_NAME, SITE_NAME_MAX_LENGTH } from "../shared/site-name"
+
+const SITE_NAME_KEY = "site-name"
+
+// Le nom seul est public pour identifier le site avant la connexion.
+export const getSiteName = query({
+  args: {},
+  handler: async (ctx) => {
+    const setting = await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (index) => index.eq("key", SITE_NAME_KEY))
+      .unique()
+    return setting?.value ?? DEFAULT_SITE_NAME
+  },
+})
+
+export const saveSiteName = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireAdmin(ctx)
+    const name = args.name.trim()
+    if (!name || name.length > SITE_NAME_MAX_LENGTH) {
+      throw new ConvexError({
+        code: "INVALID_INPUT",
+        message: `Le nom du site doit contenir entre 1 et ${SITE_NAME_MAX_LENGTH} caractères.`,
+      })
+    }
+
+    const existing = await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (index) => index.eq("key", SITE_NAME_KEY))
+      .unique()
+    if (existing?.value === name) return name
+
+    const updatedAt = Date.now()
+    const details = { key: SITE_NAME_KEY, updatedAt, value: name }
+    const settingsId = existing
+      ? existing._id
+      : await ctx.db.insert("systemSettings", details)
+    if (existing) await ctx.db.patch(existing._id, details)
+
+    await ctx.db.insert("auditLogs", {
+      action: "site.name_updated",
+      actorUserId: String(user._id),
+      createdAt: updatedAt,
+      detail: `${existing?.value ?? DEFAULT_SITE_NAME} → ${name}`,
+      entityId: settingsId,
+      entityType: "site_settings",
+    })
+    return name
+  },
+})
 
 function timestamp(value: Date | number): number {
   return value instanceof Date ? value.getTime() : value

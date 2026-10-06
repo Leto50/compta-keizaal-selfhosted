@@ -83,7 +83,12 @@ pnpm build
 
 ## Règles métier
 
-- Toutes les requêtes et mutations applicatives exigent une session valide.
+- Les données métier exigent une session valide. Seul le nom public du site
+  est consultable avant la connexion.
+- Un administrateur peut modifier le nom dans « Accès & réglages → Site ».
+  Le nom doit contenir entre 1 et 24 caractères.
+  Le changement est enregistré dans l’audit et actualise la navigation, la page
+  de connexion et le titre de l’onglet. Chaque instance conserve son propre nom.
 - La configuration des personnages, paramètres et accès est réservée aux
   administrateurs.
 - Le rôle « Lecteur » permet de consulter les données métier et les archives,

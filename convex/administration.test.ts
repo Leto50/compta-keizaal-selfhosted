@@ -2,6 +2,139 @@ import { describe, expect, it } from "vitest"
 
 import { api } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
+import { DEFAULT_SITE_NAME, SITE_NAME_MAX_LENGTH } from "../shared/site-name"
+
+describe("nom du site", () => {
+  it("fournit le nom par défaut sans session, sans exposer les autres réglages", async () => {
+    const backend = createTestBackend()
+    await backend.run(async (ctx) => {
+      await ctx.db.insert("systemSettings", {
+        key: "internal-setting",
+        updatedAt: Date.now(),
+        value: "Valeur interne",
+      })
+    })
+    expect(await backend.query(api.administration.getSiteName, {})).toBe(
+      DEFAULT_SITE_NAME
+    )
+  })
+
+  it("enregistre et partage le nom, journalise les changements et ignore les doublons", async () => {
+    const backend = createTestBackend()
+    const admin = await asAuthenticatedUser(backend, "admin")
+    const user = await admin.query(api.auth.getCurrentUser, {})
+    await admin.mutation(api.administration.saveSiteName, {
+      name: "  La Fiole du Voyageur  ",
+    })
+    expect(await backend.query(api.administration.getSiteName, {})).toBe(
+      "La Fiole du Voyageur"
+    )
+    await admin.mutation(api.administration.saveSiteName, {
+      name: "L’Échoppe du Voyageur",
+    })
+    await admin.mutation(api.administration.saveSiteName, {
+      name: " L’Échoppe du Voyageur ",
+    })
+    const { settings, audit } = await backend.run(async (ctx) => ({
+      settings: await ctx.db.query("systemSettings").collect(),
+      audit: await ctx.db.query("auditLogs").collect(),
+    }))
+    expect(settings).toHaveLength(1)
+    expect(settings[0]).toMatchObject({ value: "L’Échoppe du Voyageur" })
+    expect(audit).toHaveLength(2)
+    expect(audit[0]).toMatchObject({
+      action: "site.name_updated",
+      actorUserId: String(user?._id),
+      detail: `${DEFAULT_SITE_NAME} → La Fiole du Voyageur`,
+      entityId: settings[0]?._id,
+      entityType: "site_settings",
+    })
+    expect(audit[1]).toMatchObject({
+      detail: "La Fiole du Voyageur → L’Échoppe du Voyageur",
+    })
+  })
+
+  it("conserve un nom indépendant pour chaque instance", async () => {
+    const firstInstance = createTestBackend()
+    const secondInstance = createTestBackend()
+    const admin = await asAuthenticatedUser(firstInstance, "admin")
+    await admin.mutation(api.administration.saveSiteName, {
+      name: "La Fiole du Voyageur",
+    })
+    expect(await firstInstance.query(api.administration.getSiteName, {})).toBe(
+      "La Fiole du Voyageur"
+    )
+    expect(await secondInstance.query(api.administration.getSiteName, {})).toBe(
+      DEFAULT_SITE_NAME
+    )
+  })
+
+  it("refuse une modification sans session", async () => {
+    const backend = createTestBackend()
+    await expect(
+      backend.mutation(api.administration.saveSiteName, {
+        name: "Nom non autorisé",
+      })
+    ).rejects.toThrowError("Vous devez être connecté")
+    expect(await backend.query(api.administration.getSiteName, {})).toBe(
+      DEFAULT_SITE_NAME
+    )
+  })
+
+  it.each(["user", "reader"] as const)(
+    "refuse une modification directe par le rôle %s",
+    async (role) => {
+      const backend = createTestBackend()
+      const employee = await asAuthenticatedUser(backend, role)
+      await expect(
+        employee.mutation(api.administration.saveSiteName, {
+          name: "Nom non autorisé",
+        })
+      ).rejects.toThrowError("réservée aux administrateurs")
+      expect(await employee.query(api.administration.getSiteName, {})).toBe(
+        DEFAULT_SITE_NAME
+      )
+      expect(
+        await backend.run(async (ctx) => ctx.db.query("auditLogs").collect())
+      ).toEqual([])
+    }
+  )
+
+  it.each([
+    "",
+    "   ",
+    "x".repeat(SITE_NAME_MAX_LENGTH + 1),
+    "x".repeat(40),
+    "x".repeat(100),
+  ])(
+    "rejette un nom vide ou trop long (%j) sans modifier les données",
+    async (name) => {
+      const backend = createTestBackend()
+      const admin = await asAuthenticatedUser(backend, "admin")
+      await admin.mutation(api.administration.saveSiteName, {
+        name: "Nom existant",
+      })
+      const snapshot = () =>
+        backend.run(async (ctx) => ({
+          settings: await ctx.db.query("systemSettings").collect(),
+          audit: await ctx.db.query("auditLogs").collect(),
+        }))
+      const before = await snapshot()
+      await expect(
+        admin.mutation(api.administration.saveSiteName, { name })
+      ).rejects.toThrowError("Le nom du site doit contenir")
+      expect(await snapshot()).toEqual(before)
+    }
+  )
+
+  it("accepte un nom de 24 caractères", async () => {
+    const backend = createTestBackend()
+    const admin = await asAuthenticatedUser(backend, "admin")
+    const name = "La fiole du grand voyage"
+    await admin.mutation(api.administration.saveSiteName, { name })
+    expect(await backend.query(api.administration.getSiteName, {})).toBe(name)
+  })
+})
 
 describe("administration", () => {
   it.each(["user", "reader"] as const)(

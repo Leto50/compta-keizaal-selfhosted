@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { useHydrated } from "@/hooks/use-hydrated"
+import { useSiteName } from "@/hooks/use-site-name"
 import { authClient } from "@/lib/auth-client"
 import { loginFormSchema } from "@/lib/form-schemas"
 import { normalizeAccountIdentifier } from "../../shared/account-identifiers"
@@ -22,10 +24,11 @@ export const Route = createFileRoute("/connexion")({
     }
   },
   component: AuthenticationPage,
-  head: () => ({ meta: [{ title: "Connexion · L’eau d’Roche" }] }),
 })
 
 function AuthenticationPage() {
+  const isHydrated = useHydrated()
+  const siteName = useSiteName()
   const [error, setError] = useState<string>()
   const form = useForm({
     defaultValues: { identifier: "", password: "" },
@@ -60,8 +63,8 @@ function AuthenticationPage() {
           <p className="mt-8 text-xs tracking-[0.3em] text-[#ad9d80] uppercase">
             Gestion de la boutique
           </p>
-          <h1 className="mt-4 font-display text-4xl leading-tight text-[#f0e4ce] sm:text-6xl">
-            L’eau d’Roche
+          <h1 className="mt-4 font-display text-4xl leading-tight break-words text-[#f0e4ce] sm:text-6xl">
+            {siteName}
           </h1>
           <p className="mt-6 max-w-md text-base leading-7 text-[#bcb09d]">
             Inventaire, ventes, achats, commandes et recettes dans un outil
@@ -73,11 +76,13 @@ function AuthenticationPage() {
         </p>
       </div>
 
-      <section className="grid min-h-svh place-items-center bg-[#eee1c7] bg-[radial-gradient(circle_at_70%_18%,rgba(30,55,79,0.10),transparent_20rem)] p-[clamp(1.5rem,6vw,6rem)] shadow-[inset_18px_0_45px_rgba(0,0,0,0.09)]">
-        <div className="w-full max-w-md">
+      <section className="grid min-h-svh min-w-0 place-items-center bg-[#eee1c7] bg-[radial-gradient(circle_at_70%_18%,rgba(30,55,79,0.10),transparent_20rem)] p-[clamp(1.5rem,6vw,6rem)] shadow-[inset_18px_0_45px_rgba(0,0,0,0.09)]">
+        <div className="w-full max-w-md min-w-0">
           <div className="mb-8 flex items-center gap-3 text-[#55452e] lg:hidden">
-            <ShopMark />
-            <p className="font-display tracking-wider">L’eau d’Roche</p>
+            <ShopMark className="shrink-0" />
+            <p className="min-w-0 font-display tracking-wider break-words">
+              {siteName}
+            </p>
           </div>
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Espace employés
@@ -93,6 +98,7 @@ function AuthenticationPage() {
 
           <form
             className="mt-8 grid gap-5"
+            method="post"
             noValidate
             onSubmit={(event) => {
               event.preventDefault()
@@ -172,7 +178,7 @@ function AuthenticationPage() {
               {(isSubmitting) => (
                 <Button
                   className="mt-1 h-10"
-                  disabled={isSubmitting}
+                  disabled={!isHydrated || isSubmitting}
                   type="submit"
                 >
                   {isSubmitting ? (
