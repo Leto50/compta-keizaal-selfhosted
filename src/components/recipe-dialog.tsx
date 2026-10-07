@@ -59,6 +59,7 @@ import { type Doc, type Id } from "../../convex/_generated/dataModel"
 import { getUserFacingErrorMessage } from "@/lib/errors"
 import { MAX_DYNAMIC_LINES, recipeFormSchema } from "@/lib/form-schemas"
 import { formatDecimalSeptims } from "@/lib/format"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 import { isProductCraftable } from "@/lib/product-categories"
 import {
   isRecipeFamily,
@@ -680,7 +681,8 @@ export function RecipeDialog({
 }
 
 export function RecipeArchivesDialog() {
-  const { canWrite } = usePermissions()
+  const { formatCost: formatDecimalSeptims } = useVisibleAmounts()
+  const { canWrite, showPurchasePrices } = usePermissions()
   const archivedRecipes = useQuery(api.recipes.listArchived)
   const setRecipeActive = useMutation(api.recipes.setActive)
   const [restoringId, setRestoringId] = useState<string>()
@@ -748,9 +750,11 @@ export function RecipeArchivesDialog() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {recipe.family}
-                      {recipe.cost === undefined
-                        ? " · coût incomplet"
-                        : ` · ${formatDecimalSeptims(recipe.cost)}`}
+                      {showPurchasePrices
+                        ? recipe.cost === undefined
+                          ? " · coût incomplet"
+                          : ` · ${formatDecimalSeptims(recipe.cost)}`
+                        : null}
                     </p>
                   </div>
                   {canWrite ? (

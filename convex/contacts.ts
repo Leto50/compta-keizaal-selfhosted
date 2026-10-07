@@ -1,7 +1,8 @@
 import { ConvexError, v } from "convex/values"
 
 import { mutation, query, type MutationCtx } from "./_generated/server"
-import { requireUser, requireWriter } from "./lib/auth"
+import { requireReadAccess, requireWriter } from "./lib/auth"
+import { orderIsVisible } from "./lib/readerAccess"
 import { contactIsActive } from "./lib/contacts"
 import { normalizeName } from "./lib/text"
 
@@ -28,10 +29,27 @@ async function hasDuplicateName(
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "orders")
+    const visibleContactIds = access?.productIds
+      ? new Set(
+          (
+            await Promise.all(
+              (await ctx.db.query("orders").collect()).map(async (order) =>
+                (await orderIsVisible(ctx, access, order))
+                  ? order.contactId
+                  : undefined
+              )
+            )
+          ).filter((id) => id !== undefined)
+        )
+      : null
     const contacts = await ctx.db.query("contacts").collect()
     return contacts
-      .filter(contactIsActive)
+      .filter(
+        (contact) =>
+          contactIsActive(contact) &&
+          (!visibleContactIds || visibleContactIds.has(contact._id))
+      )
       .sort(
         (left, right) =>
           left.kind.localeCompare(right.kind) ||
@@ -43,14 +61,31 @@ export const list = query({
 export const listForManagement = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "orders")
+    const visibleContactIds = access?.productIds
+      ? new Set(
+          (
+            await Promise.all(
+              (await ctx.db.query("orders").collect()).map(async (order) =>
+                (await orderIsVisible(ctx, access, order))
+                  ? order.contactId
+                  : undefined
+              )
+            )
+          ).filter((id) => id !== undefined)
+        )
+      : null
     const contacts = await ctx.db.query("contacts").collect()
-    return contacts.sort(
-      (left, right) =>
-        Number(contactIsActive(right)) - Number(contactIsActive(left)) ||
-        left.kind.localeCompare(right.kind) ||
-        left.name.localeCompare(right.name, "fr")
-    )
+    return contacts
+      .filter(
+        (contact) => !visibleContactIds || visibleContactIds.has(contact._id)
+      )
+      .sort(
+        (left, right) =>
+          Number(contactIsActive(right)) - Number(contactIsActive(left)) ||
+          left.kind.localeCompare(right.kind) ||
+          left.name.localeCompare(right.name, "fr")
+      )
   },
 })
 

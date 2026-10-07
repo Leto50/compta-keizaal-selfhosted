@@ -1,4 +1,11 @@
 import { useForm } from "@tanstack/react-form"
+import { useMutation } from "convex/react"
+import { api } from "../../convex/_generated/api"
+import {
+  defaultReaderAccess,
+  type ReaderAccess,
+} from "../../shared/reader-access"
+import { ReaderAccessFields, readerAccessArgs } from "./reader-access-fields"
 import { KeyRound, Power, PowerOff, Save, ShieldAlert } from "lucide-react"
 import { useState, type ReactNode } from "react"
 import { toast } from "sonner"
@@ -50,6 +57,7 @@ export interface ManagedAccount {
   identifier: string
   name: string
   role: AccountRole
+  readerAccess?: ReaderAccess | null
 }
 
 interface AccountAccessDialogProps {
@@ -76,6 +84,13 @@ export function AccountAccessDialog({
 }: Readonly<AccountAccessDialogProps>) {
   const [open, setOpen] = useState(false)
   const [role, setRole] = useState<AccountRole>(account.role)
+  const [access, setAccess] = useState<ReaderAccess>(
+    account.readerAccess ?? defaultReaderAccess
+  )
+  const saveAccess = useMutation(api.administration.saveAccountAccess)
+  const accessChanged =
+    JSON.stringify(access) !==
+    JSON.stringify(account.readerAccess ?? defaultReaderAccess)
   const [isSavingRole, setIsSavingRole] = useState(false)
   const [isChangingStatus, setIsChangingStatus] = useState(false)
   const [isSuspendConfirmationOpen, setIsSuspendConfirmationOpen] =
@@ -128,29 +143,27 @@ export function AccountAccessDialog({
 
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen)
-    if (nextOpen) setRole(account.role)
+    if (nextOpen) {
+      setRole(account.role)
+      setAccess(account.readerAccess ?? defaultReaderAccess)
+    }
     if (!nextOpen) passwordForm.reset()
   }
 
   async function handleRoleSave() {
-    if (role === account.role) return
+    if (role === account.role && !accessChanged) return
     setIsSavingRole(true)
     try {
-      const result = await authClient.admin.setRole({
+      await saveAccess({
         role,
         userId: account.id,
+        access: readerAccessArgs(access),
       })
-      if (result.error) {
-        toast.error(
-          resultError(result.error, "Impossible de modifier ce rôle.")
-        )
-        return
-      }
       toast.success(
-        `${account.name} est maintenant ${accountRoleLabels[role].toLowerCase()}.`
+        `L’accès de ${account.name} est enregistré (${accountRoleLabels[role].toLowerCase()}).`
       )
     } catch {
-      toast.error("Impossible de modifier ce rôle.")
+      toast.error("Impossible de modifier cet accès.")
     } finally {
       setIsSavingRole(false)
     }
@@ -228,7 +241,7 @@ export function AccountAccessDialog({
               paramètres, les accès et l’historique d’audit.
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="grid gap-2">
             <div className="grid flex-1 gap-2">
               <Label htmlFor={`account-role-${account.id}`}>Rôle</Label>
               <Select
@@ -254,26 +267,34 @@ export function AccountAccessDialog({
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              disabled={
-                isSavingRole ||
-                role === account.role ||
-                (role !== "admin" && roleIsProtected)
-              }
-              onClick={handleRoleSave}
-              type="button"
-            >
-              {isSavingRole ? (
-                <Spinner
-                  aria-hidden="true"
-                  className="motion-reduce:animate-none"
-                />
-              ) : (
-                <Save aria-hidden="true" />
-              )}
-              Enregistrer le rôle
-            </Button>
           </div>
+          {role === "reader" ? (
+            <ReaderAccessFields
+              value={access}
+              onChange={setAccess}
+              disabled={isSavingRole}
+            />
+          ) : null}
+          <Button
+            className="w-full sm:w-fit sm:justify-self-end"
+            disabled={
+              isSavingRole ||
+              (role === account.role && !accessChanged) ||
+              (role !== "admin" && roleIsProtected)
+            }
+            onClick={handleRoleSave}
+            type="button"
+          >
+            {isSavingRole ? (
+              <Spinner
+                aria-hidden="true"
+                className="motion-reduce:animate-none"
+              />
+            ) : (
+              <Save aria-hidden="true" />
+            )}
+            Enregistrer l’accès
+          </Button>
         </section>
 
         <Separator />

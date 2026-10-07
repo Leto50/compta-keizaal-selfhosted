@@ -3,6 +3,8 @@ import { ConvexError } from "convex/values"
 import { authComponent } from "../auth"
 import { type MutationCtx, type QueryCtx } from "../_generated/server"
 import { canWrite, hasAccountRole } from "../../shared/account-roles"
+import { canReadSection, type ReaderSection } from "../../shared/reader-access"
+import { readReaderAccess } from "./readerAccess"
 
 type AuthenticatedContext = MutationCtx | QueryCtx
 
@@ -38,4 +40,19 @@ export async function requireWriter(ctx: MutationCtx) {
     })
   }
   return user
+}
+
+export async function requireReadAccess(
+  ctx: AuthenticatedContext,
+  ...sections: ReaderSection[]
+) {
+  const user = await requireUser(ctx)
+  const access = await readReaderAccess(ctx, user)
+  if (!sections.some((section) => canReadSection(user.role, access, section))) {
+    throw new ConvexError({
+      code: "FORBIDDEN",
+      message: "Votre accès ne permet pas de consulter ces données.",
+    })
+  }
+  return { user, access }
 }

@@ -8,7 +8,9 @@ import {
   type MutationCtx,
   type QueryCtx,
 } from "./_generated/server"
-import { requireUser, requireWriter } from "./lib/auth"
+import { requireReadAccess, requireWriter } from "./lib/auth"
+import { redactReaderData, type ReaderAccess } from "../shared/reader-access"
+import { orderIsVisible, transactionIsVisible } from "./lib/readerAccess"
 import {
   type exchangeLineValidator,
   loadStockBeforeTransaction,
@@ -246,7 +248,11 @@ async function synchronizeLinkedTransaction(
   return prepared
 }
 
-async function withOrderDetails(ctx: QueryCtx, order: Doc<"orders">) {
+async function withOrderDetails(
+  ctx: QueryCtx,
+  order: Doc<"orders">,
+  access: ReaderAccess | null
+) {
   const [lines, linkedTransaction] = await Promise.all([
     ctx.db
       .query("orderLines")
@@ -254,7 +260,16 @@ async function withOrderDetails(ctx: QueryCtx, order: Doc<"orders">) {
       .collect(),
     order.transactionId ? ctx.db.get(order.transactionId) : null,
   ])
-  return { ...order, lines, linkedTransaction }
+  const visibleTransaction =
+    linkedTransaction &&
+    (!access || access.sections.includes("transactions")) &&
+    (await transactionIsVisible(ctx, access, linkedTransaction))
+      ? linkedTransaction
+      : null
+  return redactReaderData(
+    { ...order, lines, linkedTransaction: visibleTransaction },
+    access
+  )
 }
 
 export const getById = query({
@@ -262,19 +277,26 @@ export const getById = query({
     orderId: v.id("orders"),
   },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "orders")
     const order = await ctx.db.get(args.orderId)
-    return order ? withOrderDetails(ctx, order) : null
+    return order && (await orderIsVisible(ctx, access, order))
+      ? withOrderDetails(ctx, order, access)
+      : null
   },
 })
 
 export const listAttention = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "orders")
     const orders = await loadOrdersNeedingAttention(ctx)
+    const visibility = await Promise.all(
+      orders.map((order) => orderIsVisible(ctx, access, order))
+    )
     const withLines = await Promise.all(
-      orders.map((order) => withOrderDetails(ctx, order))
+      orders
+        .filter((_, index) => visibility[index])
+        .map((order) => withOrderDetails(ctx, order, access))
     )
 
     return withLines.sort((left, right) => {
@@ -290,7 +312,7 @@ export const listAttention = query({
 export const listHistoryPage = query({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "orders")
     const result = await ctx.db
       .query("orders")
       .order("desc")
@@ -305,10 +327,15 @@ export const listHistoryPage = query({
       )
       .paginate(args.paginationOpts)
 
+    const visibility = await Promise.all(
+      result.page.map((order) => orderIsVisible(ctx, access, order))
+    )
     return {
       ...result,
       page: await Promise.all(
-        result.page.map((order) => withOrderDetails(ctx, order))
+        result.page
+          .filter((_, index) => visibility[index])
+          .map((order) => withOrderDetails(ctx, order, access))
       ),
     }
   },

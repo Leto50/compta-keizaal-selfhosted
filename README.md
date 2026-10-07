@@ -95,6 +95,21 @@ pnpm build
   sans accès à l’administration. Toute modification est refusée côté serveur, y compris
   par un appel direct à l’API. Un administrateur peut attribuer ce rôle lors de
   la création d’un compte ou depuis « Gérer l’accès ».
+- L’administrateur choisit, pour chaque lecteur, les rubriques accessibles,
+  la visibilité des prix d’achat/coûts de fabrication, des prix de vente, des
+  montants et des stocks/seuils, les produits
+  autorisés et les types d’opérations consultables. Les restrictions sont
+  appliquées côté serveur, aux archives, aux détails et aux résumés de l’accueil.
+  Les colonnes, champs et indicateurs non autorisés sont retirés de l’interface.
+  Les salaires disposent d’un droit distinct : les autres montants restent
+  visibles, mais le taux salarial, le total des charges et le résultat après
+  charges sont également retirés pour éviter de révéler les salaires.
+  Une recette, un lot, une commande ou une opération contenant un produit
+  interdit est entièrement masqué. Les montants du compte sont calculés sur
+  les opérations autorisées ; les soldes globaux de caisse et des fonds ne sont
+  pas affichés lorsque cette sélection est restreinte.
+  Les lecteurs existants conservent leurs accès tant qu’ils ne sont pas configurés.
+  Masquer un type de prix masque également les montants et totaux dérivés.
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
 - Une opération qui rendrait un stock négatif est refusée.

@@ -4,9 +4,15 @@ import { type Doc } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
 import {
   buildAccountWeekSummaries,
+  isFinancialTransaction,
   readAccountWeekSummaries,
 } from "./lib/accountSummary"
-import { requireAdmin, requireUser } from "./lib/auth"
+import { requireAdmin, requireReadAccess } from "./lib/auth"
+import {
+  hasScopedReaderAccess,
+  redactReaderData,
+} from "../shared/reader-access"
+import { visibleTransactions } from "./lib/readerAccess"
 import { assertFiniteRange, assertWholeNumberRange } from "./lib/numbers"
 import { readJournalBalance } from "./lib/journalSummary"
 import { readModelsAreReady } from "./lib/readModels"
@@ -59,7 +65,7 @@ export const overview = query({
     currentWeekStartsAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "account")
     if (args.currentWeekStartsAt !== undefined) {
       assertFiniteRange(
         args.currentWeekStartsAt,
@@ -74,22 +80,44 @@ export const overview = query({
     const firstWeekStartsAt =
       currentWeekStartsAt - (WEEK_COUNT - 1) * WEEK_IN_MILLISECONDS
     const readModelsReady = await readModelsAreReady(ctx)
-    const summariesPromise = readModelsReady
-      ? readAccountWeekSummaries(ctx, firstWeekStartsAt, currentWeekStartsAt)
-      : ctx.db
-          .query("transactions")
-          .withIndex("by_occurred_at", (index) =>
-            index.gte("occurredAt", firstWeekStartsAt)
+    const scoped = hasScopedReaderAccess(access)
+    const scopedTransactions = scoped
+      ? await visibleTransactions(
+          ctx,
+          access,
+          await ctx.db.query("transactions").collect()
+        )
+      : null
+    const summariesPromise = scopedTransactions
+      ? Promise.resolve(
+          buildAccountWeekSummaries(
+            scopedTransactions.filter(
+              (transaction) => transaction.occurredAt >= firstWeekStartsAt
+            )
           )
-          .collect()
-          .then(buildAccountWeekSummaries)
+        )
+      : readModelsReady
+        ? readAccountWeekSummaries(ctx, firstWeekStartsAt, currentWeekStartsAt)
+        : ctx.db
+            .query("transactions")
+            .withIndex("by_occurred_at", (index) =>
+              index.gte("occurredAt", firstWeekStartsAt)
+            )
+            .collect()
+            .then(buildAccountWeekSummaries)
     const [storedSettings, summaries, journalBalance] = await Promise.all([
       ctx.db
         .query("accountSettings")
         .withIndex("by_key", (index) => index.eq("key", "main"))
         .unique(),
       summariesPromise,
-      readJournalBalance(ctx),
+      scopedTransactions
+        ? Promise.resolve(
+            scopedTransactions
+              .filter(isFinancialTransaction)
+              .reduce((sum, transaction) => sum + transaction.total, 0)
+          )
+        : readJournalBalance(ctx),
     ])
     const settings = storedSettings ?? DEFAULT_SETTINGS
     const salaryRate = settings.salaryRate ?? DEFAULT_SETTINGS.salaryRate
@@ -128,23 +156,27 @@ export const overview = query({
       salary: currentWeek?.salary ?? 0,
       tax: Math.floor(taxableProfit * settings.taxRate),
     }
-    return {
-      charges: {
-        ...charges,
-        total: charges.census + charges.rent + charges.salary + charges.tax,
+    return redactReaderData(
+      {
+        charges: {
+          ...charges,
+          total: charges.census + charges.rent + charges.salary + charges.tax,
+        },
+        journalBalance,
+        settings: {
+          cashBalance: scoped ? 0 : settings.cashBalance,
+          censusPerEmployee: settings.censusPerEmployee,
+          employeeCount: settings.employeeCount,
+          fundsBalance: scoped ? 0 : settings.fundsBalance,
+          salaryRate,
+          taxRate: settings.taxRate,
+          weeklyRent: settings.weeklyRent,
+        },
+        weeks,
+        scoped,
       },
-      journalBalance,
-      settings: {
-        cashBalance: settings.cashBalance,
-        censusPerEmployee: settings.censusPerEmployee,
-        employeeCount: settings.employeeCount,
-        fundsBalance: settings.fundsBalance,
-        salaryRate,
-        taxRate: settings.taxRate,
-        weeklyRent: settings.weeklyRent,
-      },
-      weeks,
-    }
+      access
+    )
   },
 })
 

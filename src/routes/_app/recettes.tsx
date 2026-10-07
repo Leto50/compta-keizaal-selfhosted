@@ -1,5 +1,4 @@
 import { convexQuery } from "@convex-dev/react-query"
-import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { type FunctionReturnType } from "convex/server"
 import {
@@ -12,6 +11,12 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useState } from "react"
+import { useQuery } from "convex/react"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
+import { cn } from "@/lib/utils"
+import { canReadSection } from "../../../shared/reader-access"
+import { canWrite as roleCanWrite } from "../../../shared/account-roles"
 
 import { BundleArchivesDialog, BundleDialog } from "@/components/bundle-dialog"
 import { OperationDialog } from "@/components/operation-dialog"
@@ -43,12 +48,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "../../../convex/_generated/api"
 import { type Doc } from "../../../convex/_generated/dataModel"
 import { calculateBundleCost } from "@/lib/bundle-cost"
-import {
-  formatDecimalSeptims,
-  formatNumber,
-  formatSeptims,
-  formatUnitPrice,
-} from "@/lib/format"
+import { formatNumber } from "@/lib/format"
 import {
   isRecipeFamily,
   recipeFamilies,
@@ -81,21 +81,41 @@ function validateCatalogSearch(search: Record<string, unknown>): CatalogSearch {
 }
 
 export const Route = createFileRoute("/_app/recettes")({
-  component: RecipesPage,
+  beforeLoad: readerRouteAccess("recipes", "bundles"),
+  component: withReaderAccess(RecipesPage, "recipes", "bundles"),
   errorComponent: PageError,
   loader: async ({ context }) => {
+    const user = await context.queryClient.fetchQuery(
+      convexQuery(api.auth.getCurrentUser, {})
+    )
     await Promise.all([
-      context.queryClient.ensureQueryData(convexQuery(api.recipes.list, {})),
+      ...(canReadSection(user?.role, user?.readerAccess, "recipes")
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.list, {})
+            ),
+          ]
+        : []),
+      ...(canReadSection(user?.role, user?.readerAccess, "bundles")
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.listBundles, {})
+            ),
+          ]
+        : []),
       context.queryClient.ensureQueryData(
-        convexQuery(api.recipes.listBundles, {})
+        convexQuery(api.products.catalog, {})
       ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.products.selectable, {})
-      ),
-      context.queryClient.ensureQueryData(convexQuery(api.characters.list, {})),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.recipes.listLinkedProductIds, {})
-      ),
+      ...(roleCanWrite(user?.role)
+        ? [
+            context.queryClient.ensureQueryData(
+              convexQuery(api.characters.list, {})
+            ),
+            context.queryClient.ensureQueryData(
+              convexQuery(api.recipes.listLinkedProductIds, {})
+            ),
+          ]
+        : []),
     ])
   },
   pendingComponent: PageSkeleton,
@@ -103,27 +123,27 @@ export const Route = createFileRoute("/_app/recettes")({
 })
 
 function RecipesPage() {
-  const { canWrite } = usePermissions()
+  const { canWrite, canRead } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data: recipes } = useSuspenseQuery(convexQuery(api.recipes.list, {}))
-  const { data: bundles } = useSuspenseQuery(
-    convexQuery(api.recipes.listBundles, {})
-  )
-  const { data: products } = useSuspenseQuery(
-    convexQuery(api.products.selectable, {})
-  )
-  const { data: characters } = useSuspenseQuery(
-    convexQuery(api.characters.list, {})
-  )
-  const { data: linkedProductIds } = useSuspenseQuery(
-    convexQuery(api.recipes.listLinkedProductIds, {})
-  )
+  const recipes =
+    useQuery(api.recipes.list, canRead("recipes") ? {} : "skip") ?? []
+  const bundles =
+    useQuery(api.recipes.listBundles, canRead("bundles") ? {} : "skip") ?? []
+  const products = useQuery(api.products.catalog, {}) ?? []
+  const characters = useQuery(api.characters.list, canWrite ? {} : "skip") ?? []
+  const linkedProductIds =
+    useQuery(api.recipes.listLinkedProductIds, canWrite ? {} : "skip") ?? []
   const [productionProductId, setProductionProductId] =
     useState<Doc<"products">["_id"]>()
   const search = filters.q ?? ""
   const family = filters.family ?? "all"
-  const view = filters.view
+  const view =
+    filters.view === "bundles" && canRead("bundles")
+      ? "bundles"
+      : canRead("recipes")
+        ? "recipes"
+        : "bundles"
   const families = recipeFamilies.filter((entry) =>
     recipes.some((recipe) => recipe.family === entry)
   )
@@ -152,14 +172,18 @@ function RecipesPage() {
       <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-y border-border/70 py-3">
         <Tabs onValueChange={handleViewChange} value={view}>
           <TabsList aria-label="Vue du catalogue" className="bg-[#6e5330]/8">
-            <TabsTrigger value="recipes">
-              <BookMarked aria-hidden="true" />
-              Recettes
-            </TabsTrigger>
-            <TabsTrigger value="bundles">
-              <PackageOpen aria-hidden="true" />
-              Lots
-            </TabsTrigger>
+            {canRead("recipes") ? (
+              <TabsTrigger value="recipes">
+                <BookMarked aria-hidden="true" />
+                Recettes
+              </TabsTrigger>
+            ) : null}
+            {canRead("bundles") ? (
+              <TabsTrigger value="bundles">
+                <PackageOpen aria-hidden="true" />
+                Lots
+              </TabsTrigger>
+            ) : null}
           </TabsList>
         </Tabs>
         <p className="text-sm text-muted-foreground">
@@ -367,13 +391,21 @@ function RecipeEntry({
   products: readonly Doc<"products">[]
   recipe: Recipe
 }>) {
-  const { canWrite } = usePermissions()
+  const { formatCost: formatDecimalSeptims, formatSalePrice: formatUnitPrice } =
+    useVisibleAmounts()
+  const { canWrite, canRead, showPurchasePrices, showSalePrices } =
+    usePermissions()
   const outputProduct = recipe.productId
     ? products.find((product) => product._id === recipe.productId)
     : undefined
 
   return (
-    <Card className="min-h-48 gap-0 rounded-none border-[#5b462b]/30 border-t-[#684f2d]/60 bg-linear-to-br from-[#fffbed]/60 to-[#e3d3b3]/20 py-0 ring-0">
+    <Card
+      className={cn(
+        "gap-0 rounded-none border-[#5b462b]/30 border-t-[#684f2d]/60 bg-linear-to-br from-[#fffbed]/60 to-[#e3d3b3]/20 py-0 ring-0",
+        (showPurchasePrices || showSalePrices) && "min-h-48"
+      )}
+    >
       <CardHeader className="p-4 pb-0">
         <p className="text-[0.65rem] font-semibold tracking-[0.16em] text-primary uppercase">
           {recipe.family}
@@ -401,26 +433,39 @@ function RecipeEntry({
         ) : null}
       </CardHeader>
       <CardContent className="flex flex-1 flex-col p-4 pt-3">
-        <dl className="mb-4 grid grid-cols-2 gap-3 border-y border-border/60 py-2 text-xs">
-          <div>
-            <dt className="text-muted-foreground">Coût matière</dt>
-            <dd className="mt-0.5 font-semibold text-foreground">
-              {recipe.cost === undefined ? (
-                <Badge variant="outline">Incomplet</Badge>
-              ) : (
-                formatDecimalSeptims(recipe.cost)
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Prix de vente</dt>
-            <dd className="mt-0.5 font-semibold text-foreground">
-              {outputProduct?.salePrice === undefined
-                ? "—"
-                : formatUnitPrice(outputProduct.salePrice)}
-            </dd>
-          </div>
-        </dl>
+        {showPurchasePrices || showSalePrices ? (
+          <dl
+            className={cn(
+              "mb-4 grid gap-3 border-y border-border/60 py-2 text-xs",
+              showPurchasePrices && showSalePrices
+                ? "grid-cols-2"
+                : "grid-cols-1"
+            )}
+          >
+            {showPurchasePrices ? (
+              <div>
+                <dt className="text-muted-foreground">Coût matière</dt>
+                <dd className="mt-0.5 font-semibold text-foreground">
+                  {recipe.cost === undefined ? (
+                    <Badge variant="outline">Incomplet</Badge>
+                  ) : (
+                    formatDecimalSeptims(recipe.cost)
+                  )}
+                </dd>
+              </div>
+            ) : null}
+            {showSalePrices ? (
+              <div>
+                <dt className="text-muted-foreground">Prix de vente</dt>
+                <dd className="mt-0.5 font-semibold text-foreground">
+                  {outputProduct?.salePrice === undefined
+                    ? "—"
+                    : formatUnitPrice(outputProduct.salePrice)}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
         {recipe.effect ? (
           <p className="flex gap-2 text-xs leading-relaxed text-muted-foreground italic">
             <Sparkles
@@ -485,12 +530,14 @@ function RecipeEntry({
                 Produire cette recette
               </Button>
             ) : null}
-            <Button asChild className="w-full" size="sm" variant="ghost">
-              <Link search={{ q: recipe.name }} to="/inventaire">
-                <Boxes aria-hidden="true" />
-                Voir dans l’inventaire
-              </Link>
-            </Button>
+            {canRead("inventory") ? (
+              <Button asChild className="w-full" size="sm" variant="ghost">
+                <Link search={{ q: recipe.name }} to="/inventaire">
+                  <Boxes aria-hidden="true" />
+                  Voir dans l’inventaire
+                </Link>
+              </Button>
+            ) : null}
           </div>
         ) : (
           <p className="mt-auto pt-4 text-xs text-muted-foreground">
@@ -511,7 +558,9 @@ function BundleEntry({
   products: readonly Doc<"products">[]
   recipes: readonly Recipe[]
 }>) {
-  const { canWrite } = usePermissions()
+  const { formatCost: formatDecimalSeptims, formatSaleAmount: formatSeptims } =
+    useVisibleAmounts()
+  const { canWrite, showPurchasePrices, showSalePrices } = usePermissions()
   const cost = calculateBundleCost(bundle.items, products, recipes)
 
   return (
@@ -539,24 +588,39 @@ function BundleEntry({
         ) : null}
       </CardHeader>
       <CardContent className="p-4 pt-3">
-        <dl className="mb-3 grid grid-cols-2 gap-3 border-y border-border/60 py-2 text-xs">
-          <div>
-            <dt className="text-muted-foreground">Coût de composition</dt>
-            <dd className="mt-0.5 font-semibold text-foreground">
-              {cost === undefined ? (
-                <Badge variant="outline">Incomplet</Badge>
-              ) : (
-                formatDecimalSeptims(cost)
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Prix de vente</dt>
-            <dd className="mt-0.5 font-semibold text-foreground">
-              {bundle.price === undefined ? "—" : formatSeptims(bundle.price)}
-            </dd>
-          </div>
-        </dl>
+        {showPurchasePrices || showSalePrices ? (
+          <dl
+            className={cn(
+              "mb-3 grid gap-3 border-y border-border/60 py-2 text-xs",
+              showPurchasePrices && showSalePrices
+                ? "grid-cols-2"
+                : "grid-cols-1"
+            )}
+          >
+            {showPurchasePrices ? (
+              <div>
+                <dt className="text-muted-foreground">Coût de composition</dt>
+                <dd className="mt-0.5 font-semibold text-foreground">
+                  {cost === undefined ? (
+                    <Badge variant="outline">Incomplet</Badge>
+                  ) : (
+                    formatDecimalSeptims(cost)
+                  )}
+                </dd>
+              </div>
+            ) : null}
+            {showSalePrices ? (
+              <div>
+                <dt className="text-muted-foreground">Prix de vente</dt>
+                <dd className="mt-0.5 font-semibold text-foreground">
+                  {bundle.price === undefined
+                    ? "—"
+                    : formatSeptims(bundle.price)}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
         <ul className="grid gap-1 text-xs text-muted-foreground">
           {bundle.items.map((item) => (
             <li className="flex justify-between gap-3" key={item._id}>
