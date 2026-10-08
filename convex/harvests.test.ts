@@ -59,6 +59,332 @@ async function stockState(backend: ReturnType<typeof createTestBackend>) {
 }
 
 describe("récoltes", () => {
+  it("modifie une récolte, remplace ses ingrédients et conserve ses prix et son auteur d’origine", async () => {
+    const { backend, member, args, productIds } = await setup()
+    const admin = await asAuthenticatedUser(backend, "admin")
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    const original = (await stockState(backend)).transactions[0]!
+    const { characterId, productId } = await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[0]!, {
+        name: "Lys renommé",
+        purchasePrice: 40,
+      })
+      return {
+        characterId: await ctx.db.insert("characters", {
+          active: true,
+          name: "Mira",
+        }),
+        productId: await ctx.db.insert("products", {
+          active: true,
+          category: "ingredient",
+          currentStock: 1,
+          minimumStock: 0,
+          name: "Blé",
+          normalizedName: "blé",
+          purchasePrice: 2,
+          tracksStock: true,
+        }),
+      }
+    })
+    const occurredAt = args.occurredAt - 86_400_000
+    await admin.mutation(api.harvests.update, {
+      transactionId,
+      characterId,
+      occurredAt,
+      comment: "  Récolte corrigée  ",
+      lines: [
+        { productId: productIds[0]!, quantity: 5 },
+        { productId, quantity: 2 },
+      ],
+    })
+    const state = await stockState(backend)
+    expect(state.products.map((product) => product.currentStock)).toEqual([
+      7, 2, 3,
+    ])
+    expect(state.transactions).toEqual([
+      expect.objectContaining({
+        _id: transactionId,
+        actorUserId: original.actorUserId,
+        actorCharacterId: characterId,
+        actorName: "Mira",
+        comment: "Récolte corrigée",
+        occurredAt,
+        quantity: 7,
+        lineCount: 2,
+        kind: "harvest",
+        financial: false,
+        total: 0,
+      }),
+    ])
+    expect(
+      state.lines.map((line) => ({
+        name: line.productName,
+        quantity: line.quantity,
+        price: line.purchaseUnitPrice,
+        total: line.total,
+      }))
+    ).toEqual([
+      { name: "Lys bleu", quantity: 5, price: 4, total: 0 },
+      { name: "Blé", quantity: 2, price: 2, total: 0 },
+    ])
+    expect(calculateHarvestValue(state.lines)).toEqual({
+      knownValue: 24,
+      unpricedLineCount: 0,
+    })
+    expect(
+      state.movements.map((movement) => ({
+        productId: movement.productId,
+        delta: movement.delta,
+        occurredAt: movement.occurredAt,
+      }))
+    ).toEqual([
+      { productId: productIds[0], delta: 5, occurredAt },
+      { productId, delta: 2, occurredAt },
+    ])
+    expect(state.audits.at(-1)).toMatchObject({
+      action: "harvest.updated",
+      entityId: transactionId,
+    })
+    expect(state.audits.at(-1)?.actorUserId).not.toBe(original.actorUserId)
+    expect(JSON.parse(state.audits.at(-1)!.detail!)).toMatchObject({
+      before: { actorName: original.actorName },
+      after: { actorName: "Mira" },
+    })
+    await admin.mutation(api.transactions.remove, { transactionId })
+    expect(
+      (await stockState(backend)).products.map(
+        (product) => product.currentStock
+      )
+    ).toEqual([2, 2, 1])
+  })
+
+  it("corrige une récolte déjà consommée en validant le stock final, sans annuler les ventes suivantes", async () => {
+    const { backend, member, args, productIds } = await setup()
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    await member.mutation(api.transactions.recordTrade, {
+      characterId: args.characterId,
+      occurredAt: args.occurredAt,
+      kind: "sale",
+      lines: [{ kind: "product", productId: productIds[1]!, quantity: 5 }],
+    })
+    await member.mutation(api.harvests.update, {
+      ...args,
+      transactionId,
+      comment: "Lieu précisé",
+    })
+    expect(
+      (await stockState(backend)).products.map(
+        (product) => product.currentStock
+      )
+    ).toEqual([5, 1])
+    const valid = {
+      ...args,
+      transactionId,
+      lines: [args.lines[0]!, { productId: productIds[1]!, quantity: 3 }],
+    }
+    await member.mutation(api.harvests.update, valid)
+    expect(
+      (await stockState(backend)).products.map(
+        (product) => product.currentStock
+      )
+    ).toEqual([5, 0])
+    expect(
+      (await member.query(api.harvests.listPage, pageArgs)).page[0]?.comment
+    ).toBeUndefined()
+    const before = await stockState(backend)
+    for (const lines of [
+      [args.lines[0]!, { productId: productIds[1]!, quantity: 2 }],
+      [args.lines[0]!],
+    ]) {
+      await expect(
+        member.mutation(api.harvests.update, { ...valid, lines })
+      ).rejects.toThrow("négatif")
+      expect(await stockState(backend)).toEqual(before)
+    }
+  })
+
+  it.each([0, -1, 1.5, 1_000_001, NaN, Infinity])(
+    "refuse une modification de quantité %s sans aucune écriture",
+    async (quantity) => {
+      const { backend, member, args } = await setup()
+      const { transactionId } = await member.mutation(api.harvests.record, args)
+      const before = await stockState(backend)
+      await expect(
+        member.mutation(api.harvests.update, {
+          ...args,
+          transactionId,
+          lines: [args.lines[0]!, { ...args.lines[1]!, quantity }],
+        })
+      ).rejects.toThrow()
+      expect(await stockState(backend)).toEqual(before)
+    }
+  )
+
+  it("refuse les doublons, dates et listes invalides ainsi que les stocks excessifs lors d’une modification", async () => {
+    const { backend, member, args, productIds } = await setup()
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    const before = await stockState(backend)
+    for (const patch of [
+      { lines: [] },
+      { lines: [args.lines[0]!, args.lines[0]!] },
+      { lines: Array.from({ length: 51 }, () => args.lines[0]!) },
+      { comment: "x".repeat(501) },
+      { occurredAt: -1 },
+      { occurredAt: Date.now() + 2 * 86_400_000 },
+    ]) {
+      await expect(
+        member.mutation(api.harvests.update, {
+          ...args,
+          transactionId,
+          ...patch,
+        })
+      ).rejects.toThrow()
+      expect(await stockState(backend)).toEqual(before)
+    }
+    await backend.run((ctx) =>
+      ctx.db.patch(productIds[0]!, { currentStock: 1_000_000 })
+    )
+    const atLimit = await stockState(backend)
+    await expect(
+      member.mutation(api.harvests.update, {
+        ...args,
+        transactionId,
+        lines: [{ ...args.lines[0]!, quantity: 4 }, args.lines[1]!],
+      })
+    ).rejects.toThrow("stock")
+    expect(await stockState(backend)).toEqual(atLimit)
+  })
+
+  it("permet de conserver les références archivées existantes et refuse d’en ajouter ou d’utiliser une référence supprimée", async () => {
+    const { backend, member, args, productIds, characterId } = await setup()
+    const { transactionId } = await member.mutation(api.harvests.record, {
+      ...args,
+      lines: [args.lines[0]!],
+    })
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(characterId, { active: false })
+      await ctx.db.patch(productIds[0]!, { active: false })
+      await ctx.db.patch(productIds[1]!, { active: false })
+    })
+    await member.mutation(api.harvests.update, {
+      ...args,
+      transactionId,
+      lines: [args.lines[0]!],
+      comment: "Correction du lieu",
+    })
+    const before = await stockState(backend)
+    await expect(
+      member.mutation(api.harvests.update, { ...args, transactionId })
+    ).rejects.toThrow("ingrédient actif")
+    expect(await stockState(backend)).toEqual(before)
+    await backend.run((ctx) => ctx.db.delete(productIds[0]!))
+    const missing = await stockState(backend)
+    await expect(
+      member.mutation(api.harvests.update, {
+        ...args,
+        transactionId,
+        lines: [args.lines[0]!],
+      })
+    ).rejects.toThrow()
+    expect(await stockState(backend)).toEqual(missing)
+  })
+
+  it("conserve les prix absents ou nuls et les anciennes lignes sans prix lors d’une correction", async () => {
+    const { backend, member, args, productIds } = await setup()
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[0]!, { purchasePrice: 0 })
+      await ctx.db.patch(productIds[1]!, { purchasePrice: undefined })
+    })
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    await backend.run(async (ctx) => {
+      for (const productId of productIds)
+        await ctx.db.patch(productId, { purchasePrice: 99 })
+    })
+    await member.mutation(api.harvests.update, {
+      ...args,
+      transactionId,
+      lines: args.lines.map((line) => ({ ...line, quantity: 5 })),
+    })
+    const harvest = (await member.query(api.harvests.listPage, pageArgs))
+      .page[0]!
+    expect(calculateHarvestValue(harvest.lines)).toEqual({
+      knownValue: 0,
+      unpricedLineCount: 1,
+    })
+    await backend.run((ctx) =>
+      ctx.db.patch(harvest.lines[0]!._id, { purchaseUnitPrice: undefined })
+    )
+    await member.mutation(api.harvests.update, { ...args, transactionId })
+    expect(
+      calculateHarvestValue(
+        (await member.query(api.harvests.listPage, pageArgs)).page[0]!.lines
+      )
+    ).toEqual({ knownValue: 0, unpricedLineCount: 2 })
+  })
+
+  it("réserve la modification aux employés et administrateurs et refuse les autres types d’opérations", async () => {
+    const { backend, member, args } = await setup()
+    const reader = await asAuthenticatedUser(backend, "reader")
+    const admin = await asAuthenticatedUser(backend, "admin")
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    const input = { ...args, transactionId }
+    const before = await stockState(backend)
+    await expect(backend.mutation(api.harvests.update, input)).rejects.toThrow(
+      "connecté"
+    )
+    await expect(reader.mutation(api.harvests.update, input)).rejects.toThrow(
+      "lecture seule"
+    )
+    expect(await stockState(backend)).toEqual(before)
+    await admin.mutation(api.harvests.update, input)
+    await backend.run((ctx) =>
+      ctx.db.patch(transactionId, { kind: "purchase" })
+    )
+    const otherKind = await stockState(backend)
+    await expect(member.mutation(api.harvests.update, input)).rejects.toThrow(
+      "Seule une récolte"
+    )
+    expect(await stockState(backend)).toEqual(otherKind)
+    await backend.run((ctx) => ctx.db.delete(transactionId))
+    await expect(member.mutation(api.harvests.update, input)).rejects.toThrow(
+      "introuvable"
+    )
+  })
+
+  it.each([false, true])(
+    "actualise uniquement l’inventaire lors de la modification (projections : %s)",
+    async (ready) => {
+      const { backend, member, args } = await setup()
+      if (ready)
+        await backend.mutation(internal.migrations.rebuildReadModels, {})
+      const { transactionId } = await member.mutation(api.harvests.record, args)
+      const beforeAccount = await member.query(api.accounts.overview, {})
+      const beforeDashboard = await member.query(api.dashboard.overview, {})
+      const beforeJournal = await member.query(
+        api.transactions.listPage,
+        pageArgs
+      )
+      await member.mutation(api.harvests.update, {
+        ...args,
+        transactionId,
+        lines: [args.lines[0]!],
+      })
+      expect(await member.query(api.accounts.overview, {})).toEqual(
+        beforeAccount
+      )
+      expect(await member.query(api.transactions.listPage, pageArgs)).toEqual(
+        beforeJournal
+      )
+      expect(await member.query(api.dashboard.overview, {})).toMatchObject({
+        weeklyBalance: beforeDashboard.weeklyBalance,
+        weeklyTransactionCount: beforeDashboard.weeklyTransactionCount,
+        recentTransactions: [],
+        stockValue: beforeDashboard.stockValue - 16,
+        lowStockCount: 1,
+      })
+    }
+  )
+
   it("ajoute plusieurs ingrédients et conserve le personnage, le compte, la date et les quantités", async () => {
     const { backend, member, args, characterId, productIds } = await setup()
     const { transactionId } = await member.mutation(api.harvests.record, {

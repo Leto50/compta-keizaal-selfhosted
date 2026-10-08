@@ -895,7 +895,7 @@ export const updateExchange = mutation({
       throw new ConvexError({
         code: "INVALID_OPERATION",
         message:
-          "Supprimez la récolte depuis sa rubrique avant de la ressaisir.",
+          "Modifiez la récolte depuis sa rubrique avec son formulaire dédié.",
       })
     }
     const character = await ctx.db.get(args.characterId)

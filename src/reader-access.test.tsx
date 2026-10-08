@@ -12,6 +12,7 @@ import {
   type FunctionReference,
   type FunctionReturnType,
 } from "convex/server"
+import { ConvexError } from "convex/values"
 import { type ComponentType, type ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import type * as ReactQuery from "@tanstack/react-query"
@@ -1349,6 +1350,219 @@ describe("rubrique récoltes", () => {
     currentRole = "user"
     queryClient.setQueryData(key, { role: "reader" })
     await expect(guard({ context: { queryClient } })).resolves.toBeUndefined()
+  })
+
+  it("préremplit la modification, conserve les tarifs et enregistre sans créer une seconde récolte", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const characters = state.data.get("characters:list") as Doc<"characters">[]
+    const occurredAt = new Date(2026, 9, 8, 12, 41).getTime()
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorCharacterId: characters[0]!._id,
+          actorName: characters[0]!.name,
+          occurredAt,
+          comment: "Ancien lieu",
+          lines: [
+            {
+              _id: "line",
+              productId: products[0]!._id,
+              productName: products[0]!.name,
+              quantity: 3,
+              purchaseUnitPrice: 4,
+            },
+          ],
+        },
+      ],
+      isDone: true,
+      continueCursor: "done",
+    })
+    render(page(HarvestsRoute))
+    fireEvent.click(
+      screen.getByRole("button", { name: /Modifier la récolte de/ })
+    )
+    const dialog = within(screen.getByRole("dialog"))
+    expect(
+      dialog.getByRole("heading", { name: "Modifier la récolte" })
+    ).not.toBeNull()
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Personnage" })
+        .textContent
+    ).toContain(characters[0]!.name)
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Ingrédient 1" })
+        .textContent
+    ).toContain(products[0]!.name)
+    expect(
+      dialog.getByRole<HTMLInputElement>("spinbutton", { name: "Quantité 1" })
+        .value
+    ).toBe("3")
+    expect(
+      dialog.getByRole<HTMLTextAreaElement>("textbox", {
+        name: "Commentaire (facultatif)",
+      }).value
+    ).toBe("Ancien lieu")
+    expect(dialog.getByText("12 sept.")).not.toBeNull()
+    fireEvent.change(dialog.getByRole("spinbutton", { name: "Quantité 1" }), {
+      target: { value: "5" },
+    })
+    expect(dialog.getByText("20 sept.")).not.toBeNull()
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Ajouter un ingrédient" })
+    )
+    fireEvent.click(dialog.getByRole("combobox", { name: "Ingrédient 2" }))
+    fireEvent.click(screen.getByRole("option", { name: /Sel de feu/ }))
+    fireEvent.change(dialog.getByRole("spinbutton", { name: "Quantité 2" }), {
+      target: { value: "2" },
+    })
+    expect(dialog.getByText("22 sept.")).not.toBeNull()
+    fireEvent.change(
+      dialog.getByRole("textbox", { name: "Commentaire (facultatif)" }),
+      { target: { value: "" } }
+    )
+    let finishUpdate!: () => void
+    state.mutations.get("harvests:update")!.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishUpdate = resolve
+      })
+    )
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Enregistrer les modifications" })
+    )
+    await waitFor(() =>
+      expect(state.mutations.get("harvests:update")).toHaveBeenCalledWith({
+        transactionId: "harvest",
+        characterId: characters[0]!._id,
+        occurredAt,
+        lines: [
+          { productId: products[0]!._id, quantity: 5 },
+          { productId: "salt", quantity: 2 },
+        ],
+      })
+    )
+    expect(
+      dialog
+        .getByRole<HTMLInputElement>("spinbutton", { name: "Quantité 1" })
+        .matches(":disabled")
+    ).toBe(true)
+    expect(
+      dialog.getByRole<HTMLButtonElement>("button", {
+        name: "Enregistrer les modifications",
+      }).disabled
+    ).toBe(true)
+    fireEvent.keyDown(document, { key: "Escape" })
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+    finishUpdate()
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    expect(state.mutations.get("harvests:record")).not.toHaveBeenCalled()
+  })
+
+  it("conserve les informations et affiche l’erreur lorsque la correction de stock est refusée", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const characters = state.data.get("characters:list") as Doc<"characters">[]
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorCharacterId: characters[0]!._id,
+          actorName: characters[0]!.name,
+          occurredAt: Date.now(),
+          lines: [
+            {
+              _id: "line",
+              productId: products[0]!._id,
+              productName: products[0]!.name,
+              quantity: 3,
+              purchaseUnitPrice: 4,
+            },
+          ],
+        },
+      ],
+      isDone: true,
+      continueCursor: "done",
+    })
+    render(page(HarvestsRoute))
+    fireEvent.click(
+      screen.getByRole("button", { name: /Modifier la récolte de/ })
+    )
+    const dialog = within(screen.getByRole("dialog"))
+    fireEvent.change(dialog.getByRole("spinbutton", { name: "Quantité 1" }), {
+      target: { value: "1" },
+    })
+    state.mutations.get("harvests:update")!.mockRejectedValueOnce(
+      new ConvexError({
+        code: "INSUFFICIENT_STOCK",
+        message: "Le stock deviendrait négatif.",
+      })
+    )
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Enregistrer les modifications" })
+    )
+    await waitFor(() =>
+      expect(dialog.getByText("Le stock deviendrait négatif.")).not.toBeNull()
+    )
+    expect(
+      dialog.getByRole<HTMLInputElement>("spinbutton", { name: "Quantité 1" })
+        .value
+    ).toBe("1")
+    expect(
+      dialog.getByRole<HTMLButtonElement>("button", {
+        name: "Enregistrer les modifications",
+      }).disabled
+    ).toBe(false)
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Enregistrer les modifications" })
+    )
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    expect(state.mutations.get("harvests:update")).toHaveBeenCalledTimes(2)
+  })
+
+  it("préremplit les références archivées et garde une valeur inconnue malgré les tarifs actuels", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorCharacterId: "archived-character",
+          actorName: "Personnage archivé",
+          occurredAt: Date.now(),
+          lines: [
+            {
+              _id: "line",
+              productId: "archived-product",
+              productName: "Ingrédient archivé",
+              quantity: 3,
+            },
+            {
+              _id: "known-product",
+              productId: products[0]!._id,
+              productName: products[0]!.name,
+              quantity: 1,
+            },
+          ],
+        },
+      ],
+      isDone: true,
+      continueCursor: "done",
+    })
+    render(page(HarvestsRoute))
+    fireEvent.click(
+      screen.getByRole("button", { name: /Modifier la récolte de/ })
+    )
+    const dialog = within(screen.getByRole("dialog"))
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Personnage" })
+        .textContent
+    ).toContain("Personnage archivé")
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Ingrédient 1" })
+        .textContent
+    ).toContain("Ingrédient archivé")
+    expect(dialog.getByText("Non renseignée")).not.toBeNull()
+    expect(dialog.getByText(/2 ingrédients sans prix d’achat/)).not.toBeNull()
+    fireEvent.click(dialog.getByRole("button", { name: "Annuler" }))
+    expect(state.mutations.get("harvests:update")).not.toHaveBeenCalled()
   })
 
   it("valide les champs requis sans enregistrer une récolte incomplète", async () => {

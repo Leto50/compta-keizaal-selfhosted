@@ -1,6 +1,7 @@
-import { useForm } from "@tanstack/react-form"
+import { useForm, useStore } from "@tanstack/react-form"
 import { useMutation } from "convex/react"
-import { Leaf, Plus, Trash2 } from "lucide-react"
+import { type FunctionReturnType } from "convex/server"
+import { Leaf, Pencil, Plus, Trash2 } from "lucide-react"
 import { useId, useState } from "react"
 import { toast } from "sonner"
 
@@ -51,74 +52,142 @@ import { formatDate } from "@/lib/format"
 import { api } from "../../convex/_generated/api"
 import { type Doc, type Id } from "../../convex/_generated/dataModel"
 
-function initialValues() {
+type Harvest = FunctionReturnType<typeof api.harvests.listPage>["page"][number]
+
+function initialValues(harvest?: Harvest) {
   return {
-    characterId: "",
-    comment: "",
-    date: formatDateValue(new Date()),
-    lines: [{ productId: "", quantity: "1" }],
+    characterId: harvest?.actorCharacterId ?? "",
+    comment: harvest?.comment ?? "",
+    date: formatDateValue(new Date(harvest?.occurredAt ?? Date.now())),
+    lines: harvest
+      ? harvest.lines.map((line) => ({
+          productId: line.productId ?? "",
+          quantity: String(line.quantity),
+        }))
+      : [{ productId: "", quantity: "1" }],
   }
 }
 
 export function HarvestDialog({
   characters,
+  harvest,
   products,
 }: Readonly<{
   characters: readonly Doc<"characters">[]
+  harvest?: Harvest
   products: readonly Doc<"products">[]
 }>) {
   const recordHarvest = useMutation(api.harvests.record)
+  const updateHarvest = useMutation(api.harvests.update)
   const fieldId = useId()
   const [open, setOpen] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const form = useForm({
-    defaultValues: initialValues(),
+    defaultValues: initialValues(harvest),
     validators: { onSubmit: harvestFormSchema },
     onSubmit: async ({ value }) => {
       const date = parseDateValue(value.date)
       if (!date) return
+      setSubmitError(null)
       try {
-        await recordHarvest({
+        const args = {
           characterId: value.characterId as Id<"characters">,
           ...(value.comment.trim() ? { comment: value.comment.trim() } : {}),
-          occurredAt: date.getTime(),
+          occurredAt:
+            harvest &&
+            value.date === formatDateValue(new Date(harvest.occurredAt))
+              ? harvest.occurredAt
+              : date.getTime(),
           lines: value.lines.map((line) => ({
             productId: line.productId as Id<"products">,
             quantity: Number(line.quantity),
           })),
-        })
+        }
+        if (harvest) {
+          await updateHarvest({ ...args, transactionId: harvest._id })
+        } else {
+          await recordHarvest(args)
+        }
         toast.success(
-          "Récolte enregistrée. Les ingrédients ont été ajoutés au stock."
+          harvest
+            ? "Récolte modifiée. Les stocks ont été corrigés."
+            : "Récolte enregistrée. Les ingrédients ont été ajoutés au stock."
         )
         setOpen(false)
       } catch (error) {
-        toast.error(
-          getUserFacingErrorMessage(
-            error,
-            "Impossible d’enregistrer la récolte."
-          )
+        const message = getUserFacingErrorMessage(
+          error,
+          harvest
+            ? "Impossible de modifier la récolte."
+            : "Impossible d’enregistrer la récolte."
         )
+        setSubmitError(message)
+        toast.error(message)
       }
     },
   })
-  const ingredients = products.filter(
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const activeIngredients = products.filter(
     (product) =>
       product.active && product.category === "ingredient" && product.tracksStock
   )
-  const unavailable = characters.length === 0 || ingredients.length === 0
+  const ingredients = [
+    ...activeIngredients,
+    ...(harvest?.lines.flatMap((line) =>
+      line.productId &&
+      !activeIngredients.some((product) => product._id === line.productId)
+        ? [
+            {
+              _id: line.productId,
+              name: line.productName,
+              purchasePrice: line.purchaseUnitPrice,
+            },
+          ]
+        : []
+    ) ?? []),
+  ]
+  const selectableCharacters =
+    harvest?.actorCharacterId &&
+    !characters.some((character) => character._id === harvest.actorCharacterId)
+      ? [
+          ...characters,
+          { _id: harvest.actorCharacterId, name: harvest.actorName },
+        ]
+      : characters
+  const unavailable =
+    selectableCharacters.length === 0 || ingredients.length === 0
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
         if (form.state.isSubmitting) return
-        if (nextOpen) form.reset(initialValues())
+        if (nextOpen) {
+          form.reset(initialValues(harvest))
+          setSubmitError(null)
+        }
         setOpen(nextOpen)
       }}
     >
       <DialogTrigger asChild>
-        <Button>
-          <Plus aria-hidden="true" />
-          Nouvelle récolte
+        <Button
+          variant={harvest ? "ghost" : "default"}
+          size={harvest ? "icon" : "default"}
+          title={harvest ? "Modifier la récolte" : undefined}
+          aria-label={
+            harvest
+              ? `Modifier la récolte de ${harvest.actorName} du ${formatDate(harvest.occurredAt)}`
+              : undefined
+          }
+        >
+          {harvest ? (
+            <Pencil aria-hidden="true" />
+          ) : (
+            <>
+              <Plus aria-hidden="true" />
+              Nouvelle récolte
+            </>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
@@ -127,25 +196,36 @@ export function HarvestDialog({
             Entrée de stock
           </p>
           <DialogTitle className="font-display text-2xl">
-            Enregistrer une récolte
+            {harvest ? "Modifier la récolte" : "Enregistrer une récolte"}
           </DialogTitle>
           <DialogDescription>
-            Indiquez les ingrédients collectés. Leurs quantités seront ajoutées
-            au stock de la boutique.
+            {harvest
+              ? "Corrigez les informations et les ingrédients récoltés. Les stocks seront ajustés à partir des anciennes quantités."
+              : "Indiquez les ingrédients collectés. Leurs quantités seront ajoutées au stock de la boutique."}
           </DialogDescription>
         </DialogHeader>
         {unavailable ? (
           <Alert>
             <AlertTitle>
-              {characters.length === 0
+              {selectableCharacters.length === 0
                 ? "Aucun personnage actif"
                 : "Aucun ingrédient disponible"}
             </AlertTitle>
             <AlertDescription>
-              {characters.length === 0
+              {selectableCharacters.length === 0
                 ? "Un administrateur doit créer un personnage avant la première récolte."
                 : "Ajoutez un ingrédient suivi en stock à l’inventaire avant de saisir une récolte."}
             </AlertDescription>
+          </Alert>
+        ) : null}
+        {submitError ? (
+          <Alert variant="destructive">
+            <AlertTitle>
+              {harvest
+                ? "Modification impossible"
+                : "Enregistrement impossible"}
+            </AlertTitle>
+            <AlertDescription>{submitError}</AlertDescription>
           </Alert>
         ) : null}
         <form
@@ -158,7 +238,7 @@ export function HarvestDialog({
         >
           <fieldset
             className="grid min-w-0 gap-5 disabled:opacity-60"
-            disabled={unavailable}
+            disabled={unavailable || isSubmitting}
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <form.Field name="characterId">
@@ -180,7 +260,7 @@ export function HarvestDialog({
                         <SelectValue placeholder="Qui a récolté ?" />
                       </SelectTrigger>
                       <SelectContent>
-                        {characters.map((character) => (
+                        {selectableCharacters.map((character) => (
                           <SelectItem key={character._id} value={character._id}>
                             {character.name}
                           </SelectItem>
@@ -331,14 +411,21 @@ export function HarvestDialog({
                     <HarvestValueSummary
                       lines={lines.map((line) => ({
                         quantity: Number(line.quantity),
-                        purchaseUnitPrice: ingredients.find(
-                          (product) => product._id === line.productId
-                        )?.purchasePrice,
+                        purchaseUnitPrice: harvest?.lines.some(
+                          (entry) => entry.productId === line.productId
+                        )
+                          ? harvest.lines.find(
+                              (entry) => entry.productId === line.productId
+                            )?.purchaseUnitPrice
+                          : ingredients.find(
+                              (product) => product._id === line.productId
+                            )?.purchasePrice,
                       }))}
                     />
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                      Quantités × prix d’achat actuels. Ces tarifs seront
-                      conservés avec la récolte.
+                      {harvest
+                        ? "Les tarifs enregistrés sont conservés pour les ingrédients déjà présents. Les nouveaux ingrédients utilisent leurs prix d’achat actuels."
+                        : "Quantités × prix d’achat actuels. Ces tarifs seront conservés avec la récolte."}
                     </p>
                   </div>
                 ) : null
@@ -365,28 +452,26 @@ export function HarvestDialog({
               )}
             </form.Field>
           </fieldset>
-          <form.Subscribe selector={(state) => state.isSubmitting}>
-            {(isSubmitting) => (
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={isSubmitting}
-                  onClick={() => setOpen(false)}
-                >
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={isSubmitting || unavailable}>
-                  {isSubmitting ? (
-                    <Spinner aria-hidden="true" />
-                  ) : (
-                    <Leaf aria-hidden="true" />
-                  )}
-                  Enregistrer la récolte
-                </Button>
-              </DialogFooter>
-            )}
-          </form.Subscribe>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isSubmitting}
+              onClick={() => setOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isSubmitting || unavailable}>
+              {isSubmitting ? (
+                <Spinner aria-hidden="true" />
+              ) : (
+                <Leaf aria-hidden="true" />
+              )}
+              {harvest
+                ? "Enregistrer les modifications"
+                : "Enregistrer la récolte"}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

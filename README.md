@@ -122,6 +122,12 @@ pnpm build
   l’historique. Les ingrédients sans tarif sont signalés ; une valeur partielle
   n’est pas présentée comme le total de la récolte. Les anciennes récoltes sans
   prix enregistrés restent sans estimation complète.
+  Une récolte peut être modifiée depuis l’historique : personnage, date,
+  commentaire, ingrédients et quantités. La correction ajuste les stocks par
+  différence, conserve les tarifs des ingrédients déjà présents et utilise
+  les prix actuels pour les nouveaux ingrédients. Elle est refusée si un stock
+  deviendrait négatif. L’auteur de la saisie est conservé et la modification
+  est auditée avec le compte de son auteur.
   Une récolte saisie par erreur peut être supprimée : les quantités sont retirées
   du stock et l’action est auditée. La suppression est refusée si elle rendrait
   un stock négatif.

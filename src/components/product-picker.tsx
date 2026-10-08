@@ -17,6 +17,9 @@ import {
 import { type Doc, type Id } from "../../convex/_generated/dataModel"
 import { formatNumber } from "@/lib/format"
 
+type PickerProduct = Pick<Doc<"products">, "_id" | "name"> &
+  Partial<Pick<Doc<"products">, "currentStock" | "tracksStock">>
+
 export function ProductPicker({
   ariaInvalid = false,
   ariaLabel,
@@ -38,7 +41,7 @@ export function ProductPicker({
   onBlur?: () => void
   onChange: (productId: Id<"products"> | undefined) => void
   placeholder?: string
-  products: readonly Doc<"products">[]
+  products: readonly PickerProduct[]
   selectedProductId?: string
   showStock?: boolean
 }>) {
@@ -99,7 +102,9 @@ export function ProductPicker({
                 value={product.name}
               >
                 <span className="min-w-0 flex-1 truncate">{product.name}</span>
-                {showStock && product.tracksStock ? (
+                {showStock &&
+                product.tracksStock &&
+                product.currentStock !== undefined ? (
                   <span className="text-[0.68rem] text-muted-foreground tabular-nums">
                     {formatNumber(product.currentStock)} en stock
                   </span>

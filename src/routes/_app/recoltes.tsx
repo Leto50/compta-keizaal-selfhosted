@@ -151,7 +151,7 @@ function HarvestsPage() {
                       {formatDate(harvest.occurredAt)}
                     </time>
                   </TableCell>
-                  <TableCell className="max-w-40 font-semibold break-words whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:pr-8 max-md:font-display max-md:text-base">
+                  <TableCell className="max-w-40 font-semibold break-words whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:pr-16 max-md:font-display max-md:text-base">
                     {harvest.actorName}
                   </TableCell>
                   <TableCell className="max-w-72 whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-3 max-md:max-w-none max-md:p-0 max-md:pt-2">
@@ -219,7 +219,14 @@ function HarvestsPage() {
                     <HarvestValueSummary compact lines={harvest.lines} />
                   </TableCell>
                   <TableCell className="pr-2 text-right max-md:absolute max-md:top-3 max-md:right-3 max-md:p-0">
-                    <DeleteHarvestDialog harvest={harvest} />
+                    <div className="flex justify-end gap-1">
+                      <HarvestDialog
+                        characters={characters}
+                        products={products}
+                        harvest={harvest}
+                      />
+                      <DeleteHarvestDialog harvest={harvest} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
