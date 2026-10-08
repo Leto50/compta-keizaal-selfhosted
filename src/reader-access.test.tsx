@@ -1318,7 +1318,7 @@ describe("rubrique récoltes", () => {
       </TooltipProvider>
     )
     expect(screen.getByRole("link", { name: "Récoltes" })).not.toBeNull()
-    fireEvent.click(screen.getByRole("button", { name: "J’ai récolté" }))
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle récolte" }))
     expect(screen.queryByRole("dialog")).not.toBeNull()
     state.role = "reader"
     view.rerender(
@@ -1353,7 +1353,7 @@ describe("rubrique récoltes", () => {
 
   it("valide les champs requis sans enregistrer une récolte incomplète", async () => {
     render(page(HarvestsRoute))
-    fireEvent.click(screen.getByRole("button", { name: "J’ai récolté" }))
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle récolte" }))
     fireEvent.click(
       screen.getByRole("button", { name: "Enregistrer la récolte" })
     )
@@ -1374,7 +1374,7 @@ describe("rubrique récoltes", () => {
 
   it("enregistre plusieurs ingrédients, exclut les produits indisponibles et empêche les doublons", async () => {
     render(page(HarvestsRoute))
-    fireEvent.click(screen.getByRole("button", { name: "J’ai récolté" }))
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle récolte" }))
     fireEvent.click(screen.getByRole("combobox", { name: "Personnage" }))
     fireEvent.click(screen.getByRole("option", { name: "Personnage test" }))
     fireEvent.click(screen.getByRole("combobox", { name: "Ingrédient 1" }))
@@ -1445,7 +1445,19 @@ describe("rubrique récoltes", () => {
     render(page(HarvestsRoute))
     expect(screen.queryByText("Alixard Veliane")).not.toBeNull()
     expect(screen.queryByText("+3 unités")).not.toBeNull()
-    expect(screen.queryByText("Autour de Blancherive")).not.toBeNull()
+    expect(
+      screen.getByRole("table", { name: "Historique des récoltes" })
+    ).not.toBeNull()
+    expect(screen.queryByText("Autour de Blancherive")).toBeNull()
+    const detail = screen.getByRole("button", {
+      name: /Voir le détail de la récolte de/,
+    })
+    expect(detail.getAttribute("aria-expanded")).toBe("false")
+    fireEvent.click(detail)
+    expect(detail.getAttribute("aria-expanded")).toBe("true")
+    expect(screen.getByText("Autour de Blancherive")).not.toBeNull()
+    fireEvent.click(detail)
+    expect(screen.queryByText("Autour de Blancherive")).toBeNull()
     expect(screen.getByText("Économie estimée à l’achat")).not.toBeNull()
     expect(screen.getByText("12 sept.")).not.toBeNull()
     expect(

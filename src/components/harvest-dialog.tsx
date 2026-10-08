@@ -117,8 +117,8 @@ export function HarvestDialog({
     >
       <DialogTrigger asChild>
         <Button>
-          <Leaf aria-hidden="true" />
-          J’ai récolté
+          <Plus aria-hidden="true" />
+          Nouvelle récolte
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">

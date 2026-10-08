@@ -1,19 +1,36 @@
 import { formatDecimalSeptims } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import {
   calculateHarvestValue,
   type HarvestValueLine,
 } from "../../shared/harvest-value"
 
 export function HarvestValueSummary({
+  compact = false,
   lines,
-}: Readonly<{ lines: readonly HarvestValueLine[] }>) {
+}: Readonly<{ compact?: boolean; lines: readonly HarvestValueLine[] }>) {
   const { knownValue, unpricedLineCount } = calculateHarvestValue(lines)
   const hasKnownPrices = unpricedLineCount < lines.length
 
   return (
-    <div className="grid gap-1 border-t border-border/70 pt-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
-        <p>
+    <div
+      className={cn(
+        "grid gap-1",
+        compact ? "justify-items-end" : "border-t border-border/70 pt-3"
+      )}
+    >
+      <div
+        className={cn(
+          "text-sm",
+          !compact &&
+            "flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1"
+        )}
+      >
+        <p
+          className={
+            compact ? "text-xs text-muted-foreground md:sr-only" : undefined
+          }
+        >
           {unpricedLineCount === 0
             ? "Économie estimée à l’achat"
             : "Valeur connue à l’achat"}
@@ -24,8 +41,18 @@ export function HarvestValueSummary({
       </div>
       {unpricedLineCount > 0 ? (
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Estimation incomplète : {unpricedLineCount} ingrédient
-          {unpricedLineCount > 1 ? "s" : ""} sans prix d’achat.
+          {compact ? (
+            <>
+              {hasKnownPrices ? "Partielle · " : ""}
+              {unpricedLineCount} prix manquant
+              {unpricedLineCount > 1 ? "s" : ""}
+            </>
+          ) : (
+            <>
+              Estimation incomplète : {unpricedLineCount} ingrédient
+              {unpricedLineCount > 1 ? "s" : ""} sans prix d’achat.
+            </>
+          )}
         </p>
       ) : null}
     </div>

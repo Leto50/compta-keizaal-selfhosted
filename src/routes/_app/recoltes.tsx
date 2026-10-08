@@ -1,7 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, redirect } from "@tanstack/react-router"
-import { Leaf } from "lucide-react"
+import { ChevronDown, Leaf } from "lucide-react"
 import { useState } from "react"
 
 import { DeleteHarvestDialog, HarvestDialog } from "@/components/harvest-dialog"
@@ -11,6 +11,19 @@ import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { usePermissions } from "@/hooks/use-permissions"
 import { formatDate, formatQuantity } from "@/lib/format"
 import { api } from "../../../convex/_generated/api"
@@ -102,53 +115,116 @@ function HarvestsPage() {
               : "Aucune récolte sur cette page"}
           </AlertTitle>
           <AlertDescription>
-            Utilisez « J’ai récolté » pour ajouter les ingrédients collectés au
-            stock.
+            Utilisez « Nouvelle récolte » pour ajouter les ingrédients collectés
+            au stock.
           </AlertDescription>
         </Alert>
       ) : (
-        <div className="mt-7 grid gap-4">
-          {result.page.map((harvest) => (
-            <article
-              className="min-w-0 border border-[#5b462b]/30 bg-[#fff8e7]/30 p-4 sm:p-5"
-              key={harvest._id}
-            >
-              <header className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(harvest.occurredAt)}
-                  </p>
-                  <h2 className="mt-1 font-display text-lg font-medium break-words">
+        <div className="mt-7 border-y border-t-2 border-[#5b462b]/35">
+          <Table aria-label="Historique des récoltes" className="max-md:block">
+            <TableHeader className="max-md:hidden">
+              <TableRow className="border-b-[#5b462b]/50 bg-[#684f2d]/10 hover:bg-[#684f2d]/10">
+                <TableHead scope="col" className="pl-4">
+                  Date
+                </TableHead>
+                <TableHead scope="col">Personnage</TableHead>
+                <TableHead scope="col">Ingrédients</TableHead>
+                <TableHead scope="col" className="text-right">
+                  Quantité
+                </TableHead>
+                <TableHead scope="col" className="pr-4 text-right">
+                  Économie estimée
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="max-md:block">
+              {result.page.map((harvest) => (
+                <TableRow
+                  className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:p-4"
+                  key={harvest._id}
+                >
+                  <TableCell className="pl-4 text-muted-foreground max-md:col-start-1 max-md:row-start-2 max-md:p-0">
+                    <time dateTime={new Date(harvest.occurredAt).toISOString()}>
+                      {formatDate(harvest.occurredAt)}
+                    </time>
+                  </TableCell>
+                  <TableCell className="max-w-40 font-semibold break-words whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:pr-8 max-md:font-display max-md:text-base">
                     {harvest.actorName}
-                  </h2>
-                </div>
-                <DeleteHarvestDialog harvest={harvest} />
-              </header>
-              <ul className="mt-3 grid gap-2 border-t border-border/70 pt-3">
-                {harvest.lines.map((line) => (
-                  <li
-                    className="flex justify-between gap-3 text-sm"
-                    key={line._id}
-                  >
-                    <span className="min-w-0 break-words">
-                      {line.productName}
-                    </span>
-                    <span className="shrink-0 font-semibold text-[#405c43] tabular-nums">
-                      +{formatQuantity(line.quantity)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3">
-                <HarvestValueSummary lines={harvest.lines} />
-              </div>
-              {harvest.comment ? (
-                <p className="mt-3 text-sm break-words whitespace-pre-wrap text-muted-foreground">
-                  {harvest.comment}
-                </p>
-              ) : null}
-            </article>
-          ))}
+                  </TableCell>
+                  <TableCell className="max-w-72 whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-3 max-md:max-w-none max-md:p-0 max-md:pt-2">
+                    <p className="break-words">
+                      {harvest.lines[0]?.productName}
+                      {harvest.lines.length > 1 ? (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · +{harvest.lines.length - 1} ingrédient
+                          {harvest.lines.length > 2 ? "s" : ""}
+                        </span>
+                      ) : null}
+                    </p>
+                    {harvest.lines.length > 1 || harvest.comment ? (
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            className="group mt-1 h-auto px-0 text-[0.68rem]"
+                            type="button"
+                            variant="link"
+                            aria-label={`Voir le détail de la récolte de ${harvest.actorName} du ${formatDate(harvest.occurredAt)}`}
+                          >
+                            Voir le détail
+                            <ChevronDown
+                              aria-hidden="true"
+                              className="transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none"
+                            />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-1">
+                          <ul className="grid gap-1 border-l border-primary/30 pl-2 text-xs text-muted-foreground">
+                            {harvest.lines.map((line) => (
+                              <li
+                                className="flex justify-between gap-3"
+                                key={line._id}
+                              >
+                                <span className="min-w-0 break-words">
+                                  {line.productName}
+                                </span>
+                                <span className="shrink-0 tabular-nums">
+                                  +{formatQuantity(line.quantity)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                          {harvest.comment ? (
+                            <p className="mt-2 text-xs break-words whitespace-pre-wrap text-muted-foreground">
+                              {harvest.comment}
+                            </p>
+                          ) : null}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold text-[#405c43] tabular-nums max-md:col-start-1 max-md:row-start-4 max-md:self-start max-md:p-0 max-md:pt-2 max-md:text-left">
+                    +
+                    {formatQuantity(
+                      harvest.lines.reduce(
+                        (quantity, line) => quantity + line.quantity,
+                        0
+                      )
+                    )}
+                  </TableCell>
+                  <TableCell className="pr-4 text-right whitespace-normal max-md:col-start-2 max-md:row-start-4 max-md:p-0 max-md:pt-2">
+                    <HarvestValueSummary compact lines={harvest.lines} />
+                  </TableCell>
+                  <TableCell className="pr-2 text-right max-md:absolute max-md:top-3 max-md:right-3 max-md:p-0">
+                    <DeleteHarvestDialog harvest={harvest} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
