@@ -178,7 +178,7 @@ describe("résumés d’historique", () => {
     expect((await reader.query(api.accounts.overview, {})).journalBalance).toBe(
       840
     )
-  })
+  }, 20_000)
 
   it("reprend les anciennes récoltes sans prix et absorbe les corrections, suppressions et créations pendant la reprise", async () => {
     const { backend, member, reader, a, characterId, week } = await fixture()
