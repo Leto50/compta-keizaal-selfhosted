@@ -2,7 +2,7 @@ import {
   ConvexBetterAuthProvider,
   type AuthClient,
 } from "@convex-dev/better-auth/react"
-import { type ConvexQueryClient } from "@convex-dev/react-query"
+import { convexQuery, type ConvexQueryClient } from "@convex-dev/react-query"
 import { type QueryClient } from "@tanstack/react-query"
 import {
   createRootRouteWithContext,
@@ -16,6 +16,7 @@ import { type ReactNode } from "react"
 
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { SiteMetadata } from "@/components/site-metadata"
 import { authClient } from "@/lib/auth-client"
 import { getToken } from "@/lib/auth-server"
 import {
@@ -24,6 +25,7 @@ import {
   resolveNavigationAuth,
 } from "@/lib/navigation-auth-cache"
 import appCss from "@/styles.css?url"
+import { api } from "../../convex/_generated/api"
 
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () =>
   getToken()
@@ -48,6 +50,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     return auth
   },
   component: RootComponent,
+  loader: ({ context }) =>
+    context.queryClient.ensureQueryData(
+      convexQuery(api.administration.getSiteName, {})
+    ),
   head: () => ({
     links: [
       { href: appCss, rel: "stylesheet" },
@@ -59,12 +65,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
         name: "viewport",
       },
-      {
-        content:
-          "L’application de gestion de L’eau d’Roche : inventaire, opérations, commandes et recettes.",
-        name: "description",
-      },
-      { title: "L’eau d’Roche" },
       { content: "#1c1a15", name: "theme-color" },
     ],
   }),
@@ -108,8 +108,9 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     <html lang="fr">
       <head>
         <HeadContent />
+        <SiteMetadata />
       </head>
-      <body className="min-w-80 bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
+      <body className="min-w-0 bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster theme="light" />
         <Scripts />

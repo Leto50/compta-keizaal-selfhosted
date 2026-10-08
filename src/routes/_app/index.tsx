@@ -14,6 +14,12 @@ import {
   ScrollText,
 } from "lucide-react"
 import { useState, type ReactElement } from "react"
+import { type FunctionReturnType } from "convex/server"
+import {
+  readerSectionLabels,
+  type ReaderSection,
+} from "../../../shared/reader-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 
 import { OperationDialog } from "@/components/operation-dialog"
 import { PageError } from "@/components/page-error"
@@ -77,11 +83,14 @@ export const Route = createFileRoute("/_app/")({
 })
 
 function DashboardPage() {
-  const { canWrite } = usePermissions()
+  const { canWrite, isReader, isPending } = usePermissions()
   const { queryArgs } = Route.useLoaderData()
   const { data } = useSuspenseQuery(
     convexQuery(api.dashboard.overview, queryArgs)
   )
+
+  if (isPending) return <PageSkeleton />
+  if (isReader) return <ReaderDashboard data={data} />
 
   return (
     <div className="animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
@@ -344,6 +353,124 @@ function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+    </div>
+  )
+}
+
+function ReaderDashboard({
+  data,
+}: Readonly<{ data: FunctionReturnType<typeof api.dashboard.overview> }>) {
+  const { canRead, showStock, showPrices } = usePermissions()
+  const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
+  const destinations: {
+    section: ReaderSection
+    to: "/inventaire" | "/journal" | "/compte" | "/commandes" | "/recettes"
+  }[] = [
+    { section: "inventory", to: "/inventaire" },
+    { section: "transactions", to: "/journal" },
+    { section: "account", to: "/compte" },
+    { section: "orders", to: "/commandes" },
+    { section: "recipes", to: "/recettes" },
+    { section: "bundles", to: "/recettes" },
+  ]
+  const allowed = destinations.filter((entry) => canRead(entry.section))
+  return (
+    <div>
+      <PageHeader eyebrow="Registre du jour" title="La boutique aujourd’hui">
+        Consultez les données autorisées pour votre compte.
+      </PageHeader>
+      {allowed.length === 0 ? (
+        <Alert className="mt-6">
+          <AlertTitle>Aucune rubrique autorisée</AlertTitle>
+          <AlertDescription>
+            Demandez à un administrateur de configurer les données que vous
+            pouvez consulter.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {allowed.map((entry) => (
+            <Button
+              key={entry.section}
+              asChild
+              variant="outline"
+              className="justify-between"
+            >
+              <Link
+                to={entry.to}
+                search={entry.section === "bundles" ? { view: "bundles" } : {}}
+              >
+                {readerSectionLabels[entry.section]}
+                <ChevronRight aria-hidden="true" />
+              </Link>
+            </Button>
+          ))}
+        </div>
+      )}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {canRead("inventory") && showStock ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventaire</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Stocks faibles : {formatNumber(data.lowStockCount)}</p>
+              {showPrices ? (
+                <p>
+                  Valeur estimée du stock :{" "}
+                  {formatDecimalSeptims(data.stockValue)}
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+        {canRead("orders") ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Commandes à traiter</CardTitle>
+            </CardHeader>
+            <CardContent>{formatNumber(data.orderAttention.total)}</CardContent>
+          </Card>
+        ) : null}
+        {canRead("transactions") || canRead("account") ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Cette semaine</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>
+                {formatNumber(data.weeklyTransactionCount)} mouvements autorisés
+              </p>
+              {showPrices ? <p>{formatSeptims(data.weeklyBalance)}</p> : null}
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
+      {canRead("transactions") ? (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Dernières transactions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="grid gap-3">
+              {data.recentTransactions.map((transaction) => (
+                <li
+                  key={transaction._id}
+                  className="flex justify-between gap-3"
+                >
+                  <span>
+                    {transaction.productName} ·{" "}
+                    {operationLabels[transaction.kind]}
+                  </span>
+                  {showPrices ? (
+                    <span>{formatSeptims(transaction.total)}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   )
 }

@@ -9,8 +9,30 @@ import {
   transactionLineDirection,
   transactionLineKind,
 } from "./lib/validators"
+import { readerSections, readerOperationKinds } from "../shared/reader-access"
+
+export const readerAccessValidator = v.object({
+  sections: v.array(
+    v.union(...readerSections.map((section) => v.literal(section)))
+  ),
+  showPrices: v.boolean(),
+  showStock: v.boolean(),
+  showPurchasePrices: v.optional(v.boolean()),
+  showSalePrices: v.optional(v.boolean()),
+  showSalaries: v.optional(v.boolean()),
+  productIds: v.optional(v.array(v.id("products"))),
+  operationKinds: v.array(
+    v.union(...readerOperationKinds.map((kind) => v.literal(kind)))
+  ),
+})
 
 export default defineSchema({
+  readerAccess: defineTable({
+    userId: v.string(),
+    ...readerAccessValidator.fields,
+    updatedAt: v.number(),
+    updatedBy: v.string(),
+  }).index("by_user", ["userId"]),
   accountSettings: defineTable({
     cashBalance: v.number(),
     censusPerEmployee: v.number(),

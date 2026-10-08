@@ -1,4 +1,12 @@
 import { useForm } from "@tanstack/react-form"
+import { useState } from "react"
+import { useMutation } from "convex/react"
+import { api } from "../../convex/_generated/api"
+import {
+  defaultReaderAccess,
+  type ReaderAccess,
+} from "../../shared/reader-access"
+import { ReaderAccessFields, readerAccessArgs } from "./reader-access-fields"
 import { UserPlus, UserRoundCheck } from "lucide-react"
 import { toast } from "sonner"
 
@@ -44,6 +52,8 @@ export function AccountDialog({
   onOpenChange,
   open,
 }: Readonly<AccountDialogProps>) {
+  const [access, setAccess] = useState<ReaderAccess>(defaultReaderAccess)
+  const createReader = useMutation(api.administration.createReaderAccount)
   const form = useForm({
     defaultValues: {
       identifier: "",
@@ -55,6 +65,17 @@ export function AccountDialog({
       const normalizedName = value.name.trim()
       const identifier = normalizeAccountIdentifier(value.identifier)
       try {
+        if (value.role === "reader") {
+          await createReader({
+            identifier,
+            name: normalizedName,
+            password: value.password,
+            access: readerAccessArgs(access),
+          })
+          toast.success(`Le compte de ${normalizedName} a été créé.`)
+          handleOpenChange(false)
+          return
+        }
         const result = await authClient.admin.createUser({
           data: { username: identifier },
           email: internalAccountEmail(identifier),
@@ -64,7 +85,9 @@ export function AccountDialog({
         })
         if (result.error) {
           toast.error(
-            "Impossible de créer le compte. Vérifiez l’identifiant et le mot de passe."
+            result.error.code === "INVALID_ORIGIN"
+              ? "La configuration d’accès de cette boutique doit être corrigée avant de créer des comptes."
+              : "Impossible de créer le compte. Vérifiez l’identifiant et le mot de passe."
           )
           return
         }
@@ -79,7 +102,10 @@ export function AccountDialog({
   })
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) form.reset()
+    if (!nextOpen) {
+      form.reset()
+      setAccess(defaultReaderAccess)
+    }
     onOpenChange(nextOpen)
   }
 
@@ -213,6 +239,13 @@ export function AccountDialog({
               )
             }}
           </form.Field>
+          <form.Subscribe selector={(state) => state.values.role}>
+            {(role) =>
+              role === "reader" ? (
+                <ReaderAccessFields value={access} onChange={setAccess} />
+              ) : null
+            }
+          </form.Subscribe>
           <form.Field name="password">
             {(field) => {
               const invalid =

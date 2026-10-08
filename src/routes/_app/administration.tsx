@@ -8,6 +8,7 @@ import {
   CircleUserRound,
   ListChecks,
   Pencil,
+  Settings2,
   ShieldAlert,
   ShieldCheck,
   UserPlus,
@@ -18,6 +19,7 @@ import { AccountAccessDialog } from "@/components/account-access-dialog"
 import { AccountDialog } from "@/components/account-dialog"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
+import { SiteSettingsForm } from "@/components/site-settings-form"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -57,7 +59,7 @@ type Account = FunctionReturnType<
 type AuditEntry = FunctionReturnType<
   typeof api.administration.listAuditPage
 >["page"][number]
-type AdministrationView = "accounts" | "audit"
+type AdministrationView = "accounts" | "audit" | "site"
 
 interface AdministrationSearch {
   view?: AdministrationView
@@ -80,6 +82,7 @@ const actionLabels: Readonly<Record<string, string>> = {
   "account.password_reset": "Mot de passe remplacé",
   "account.reactivated": "Accès réactivé",
   "account.role_updated": "Rôle modifié",
+  "account.access_updated": "Droits de consultation modifiés",
   "account.sessions_revoked": "Sessions fermées",
   "account.settings_updated": "Paramètres comptables modifiés",
   "bundle.archived": "Lot archivé",
@@ -114,6 +117,7 @@ const actionLabels: Readonly<Record<string, string>> = {
   "recipe.updated": "Recette modifiée",
   "sale.recorded": "Vente enregistrée",
   "service.recorded": "Service enregistré",
+  "site.name_updated": "Nom du site modifié",
   "transaction.deleted": "Opération supprimée",
   "transaction.recorded": "Opération enregistrée",
   "transaction.updated": "Opération modifiée",
@@ -128,13 +132,16 @@ const entityTypeLabels: Readonly<Record<string, string>> = {
   order: "Commande",
   product: "Article",
   recipe: "Recette",
+  site_settings: "Paramètres du site",
   transaction: "Opération",
 }
 
 function validateAdministrationSearch(
   search: Record<string, unknown>
 ): AdministrationSearch {
-  return search.view === "audit" ? { view: "audit" } : {}
+  return search.view === "audit" || search.view === "site"
+    ? { view: search.view }
+    : {}
 }
 
 export const Route = createFileRoute("/_app/administration")({
@@ -565,10 +572,11 @@ function AdministrationPage() {
   }
 
   function setView(nextView: string) {
-    if (nextView !== "accounts" && nextView !== "audit") return
+    if (nextView !== "accounts" && nextView !== "audit" && nextView !== "site")
+      return
     void navigate({
       replace: true,
-      search: nextView === "audit" ? { view: "audit" } : {},
+      search: nextView === "accounts" ? {} : { view: nextView },
     })
   }
 
@@ -582,30 +590,37 @@ function AdministrationPage() {
           </Button>
         }
         eyebrow="Administration"
-        title="Accès & audit"
+        title="Accès & réglages"
       >
         Gérez qui peut entrer dans l’application et retrouvez les actions
-        sensibles réalisées dans la boutique.
+        sensibles réalisées dans la boutique. Personnalisez le nom du site
+        depuis l’onglet Site.
       </PageHeader>
 
       <Tabs className="mt-6" onValueChange={setView} value={view}>
         <TabsList
           aria-label="Sections de l’administration"
-          className="h-10 w-full border border-[#5b462b]/25 bg-[#e4d3b4]/55 p-1 sm:w-auto"
+          className="w-full flex-wrap border border-[#5b462b]/25 bg-[#e4d3b4]/55 p-1 group-data-horizontal/tabs:h-auto sm:w-auto"
         >
-          <TabsTrigger className="h-full px-4" value="accounts">
+          <TabsTrigger className="h-8 px-3 sm:px-4" value="accounts">
             <ShieldCheck aria-hidden="true" />
             Comptes
           </TabsTrigger>
-          <TabsTrigger className="h-full px-4" value="audit">
+          <TabsTrigger className="h-8 px-3 sm:px-4" value="audit">
             <ListChecks aria-hidden="true" />
             Historique d’audit
+          </TabsTrigger>
+          <TabsTrigger className="h-8 px-3 sm:px-4" value="site">
+            <Settings2 aria-hidden="true" />
+            Site
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {view === "accounts" ? (
         <AccountsPanel accounts={accounts} currentUserId={session?.user.id} />
+      ) : view === "site" ? (
+        <SiteSettingsForm />
       ) : (
         <AuditPanel
           accounts={accounts}

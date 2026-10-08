@@ -1,5 +1,6 @@
 import { ConvexError } from "convex/values"
 
+import { type Doc } from "../_generated/dataModel"
 import { type MutationCtx, type QueryCtx } from "../_generated/server"
 import {
   canonicalRecipeFamily,
@@ -68,9 +69,12 @@ export async function initializeRecipeCategoriesData(ctx: MutationCtx) {
   return { initialized: true }
 }
 
-export async function listRecipeCategoriesData(ctx: QueryCtx | MutationCtx) {
+export async function listRecipeCategoriesData(
+  ctx: QueryCtx | MutationCtx,
+  visibleRecipes?: Doc<"recipes">[]
+) {
   const initialized = await recipeCategoriesAreInitialized(ctx)
-  const recipes = await ctx.db.query("recipes").collect()
+  const recipes = visibleRecipes ?? (await ctx.db.query("recipes").collect())
   const storedCategories = await ctx.db.query("recipeCategories").collect()
   const names = initialized
     ? storedCategories.map((category) => category.name)
@@ -93,6 +97,9 @@ export async function listRecipeCategoriesData(ctx: QueryCtx | MutationCtx) {
         ).length,
       }
     })
+    .filter(
+      (category) => visibleRecipes === undefined || category.recipeCount > 0
+    )
     .sort((left, right) => left.name.localeCompare(right.name, "fr"))
 }
 

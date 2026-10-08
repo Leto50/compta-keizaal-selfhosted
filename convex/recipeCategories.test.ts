@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { api, internal } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
+import { defaultReaderAccess } from "../shared/reader-access"
 
 async function fixture() {
   const backend = createTestBackend()
@@ -301,4 +302,117 @@ describe("registre persistant de catégories", () => {
     }
     expect(await registryState(backend)).toEqual(before)
   })
+
+  it("refuse les listes de catégories si le lecteur ne peut pas consulter les recettes", async () => {
+    const { backend } = await fixture()
+    const reader = await asAuthenticatedUser(backend, "reader")
+    const user = await reader.query(api.auth.getCurrentUser, {})
+    await backend.run((ctx) =>
+      ctx.db.insert("readerAccess", {
+        ...defaultReaderAccess,
+        sections: ["bundles"],
+        productIds: undefined,
+        userId: user!._id,
+        updatedAt: Date.now(),
+        updatedBy: "test",
+      })
+    )
+    for (const reference of [
+      api.recipes.listFamilies,
+      api.recipes.listCategories,
+    ]) {
+      await expect(reader.query(reference, {})).rejects.toThrowError(
+        "ne permet pas de consulter"
+      )
+    }
+  })
+
+  it.each([false, true])(
+    "limite les catégories et leurs compteurs aux recettes autorisées, registre initialisé : %s",
+    async (initialized) => {
+      const { backend, member, ingredientId } = await fixture()
+      const reader = await asAuthenticatedUser(backend, "reader")
+      const user = await reader.query(api.auth.getCurrentUser, {})
+      const accessId = await backend.run(async (ctx) => {
+        const hiddenProductId = await ctx.db.insert("products", {
+          active: true,
+          category: "ingredient",
+          currentStock: 0,
+          minimumStock: 0,
+          name: "Ingrédient secret",
+          normalizedName: "ingredient secret",
+          tracksStock: true,
+        })
+        for (const active of [true, false]) {
+          await ctx.db.insert("recipes", {
+            active,
+            family: "Force",
+            name: "Recette autorisée",
+            productId: ingredientId,
+          })
+        }
+        await ctx.db.insert("recipes", {
+          active: false,
+          family: "Force",
+          name: "Recette archivée secrète",
+          productId: hiddenProductId,
+        })
+        await ctx.db.insert("recipes", {
+          family: "Secret",
+          name: "Recette secrète",
+          productId: hiddenProductId,
+        })
+        const unlinkedId = await ctx.db.insert("recipes", {
+          family: "Force",
+          name: "Recette sans produit",
+        })
+        await ctx.db.insert("recipeIngredients", {
+          recipeId: unlinkedId,
+          ingredientName: "Blé",
+          productId: ingredientId,
+          quantity: 1,
+          raw: "1 Blé",
+        })
+        const mixedId = await ctx.db.insert("recipes", {
+          family: "Force",
+          name: "Recette avec ingrédient secret",
+          productId: ingredientId,
+        })
+        await ctx.db.insert("recipeIngredients", {
+          recipeId: mixedId,
+          ingredientName: "Ingrédient secret",
+          productId: hiddenProductId,
+          quantity: 1,
+          raw: "1 Ingrédient secret",
+        })
+        return ctx.db.insert("readerAccess", {
+          ...defaultReaderAccess,
+          sections: ["recipes"],
+          productIds: [ingredientId],
+          userId: user!._id,
+          updatedAt: Date.now(),
+          updatedBy: "test",
+        })
+      })
+      if (initialized) {
+        await backend.mutation(
+          internal.migrations.initializeRecipeCategories,
+          {}
+        )
+        await member.mutation(api.recipes.createCategory, { name: "Réserve" })
+      }
+      expect(await member.query(api.recipes.listFamilies, {})).toContain(
+        "Secret"
+      )
+      expect(await reader.query(api.recipes.listFamilies, {})).toEqual([
+        "Force",
+      ])
+      expect(await reader.query(api.recipes.listCategories, {})).toEqual([
+        { name: "Force", recipeCount: 2, archivedRecipeCount: 1 },
+      ])
+      await backend.run((ctx) => ctx.db.patch(accessId, { productIds: [] }))
+      expect(await reader.query(api.recipes.listFamilies, {})).toEqual([])
+      expect(await reader.query(api.recipes.listCategories, {})).toEqual([])
+    }
+  )
 })

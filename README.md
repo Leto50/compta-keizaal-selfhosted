@@ -45,6 +45,24 @@ Le rendu serveur peut utiliser `CONVEX_INTERNAL_URL` et
 `CONVEX_INTERNAL_SITE_URL` pour joindre Convex sur le réseau privé de la
 plateforme de déploiement.
 
+Le workflow de production utilise `.env` pour L’eau d’Roche et `.env.site2` pour
+La Fiole du Voyageur. L’origine publique de La Fiole du Voyageur est passée
+explicitement à `deploy_convex`, qui l’enregistre dans l’environnement de ses
+fonctions Convex avant de les déployer :
+
+```env
+SITE_URL=https://fiole-voyageur.parvos.fyi
+```
+
+Cette valeur doit être enregistrée dans l’environnement des **fonctions Convex**.
+La passer au conteneur web ou au CLI ne suffit pas. Le troisième argument
+facultatif de `deploy_convex` permet de la synchroniser avec `convex env set SITE_URL`
+sur le backend correspondant. Sans cet argument, l’origine configurée est conservée.
+Pour corriger une instance déjà déployée, modifier `SITE_URL` dans les variables
+d’environnement du tableau de bord Convex de cette instance. Une valeur absente
+ou différente de l’origine du navigateur provoque un refus `403 INVALID_ORIGIN`
+sur les requêtes d’authentification avec une session.
+
 ## Vérification
 
 ```bash
@@ -65,13 +83,33 @@ pnpm build
 
 ## Règles métier
 
-- Toutes les requêtes et mutations applicatives exigent une session valide.
+- Les données métier exigent une session valide. Seul le nom public du site
+  est consultable avant la connexion.
+- Un administrateur peut modifier le nom dans « Accès & réglages → Site ».
+  Le nom doit contenir entre 1 et 24 caractères.
+  Le changement est enregistré dans l’audit et actualise la navigation, la page
+  de connexion et le titre de l’onglet. Chaque instance conserve son propre nom.
 - La configuration des personnages, paramètres et accès est réservée aux
   administrateurs.
 - Le rôle « Lecteur » permet de consulter les données métier et les archives,
   sans accès à l’administration. Toute modification est refusée côté serveur, y compris
   par un appel direct à l’API. Un administrateur peut attribuer ce rôle lors de
   la création d’un compte ou depuis « Gérer l’accès ».
+- L’administrateur choisit, pour chaque lecteur, les rubriques accessibles,
+  la visibilité des prix d’achat/coûts de fabrication, des prix de vente, des
+  montants et des stocks/seuils, les produits
+  autorisés et les types d’opérations consultables. Les restrictions sont
+  appliquées côté serveur, aux archives, aux détails et aux résumés de l’accueil.
+  Les colonnes, champs et indicateurs non autorisés sont retirés de l’interface.
+  Les salaires disposent d’un droit distinct : les autres montants restent
+  visibles, mais le taux salarial, le total des charges et le résultat après
+  charges sont également retirés pour éviter de révéler les salaires.
+  Une recette, un lot, une commande ou une opération contenant un produit
+  interdit est entièrement masqué. Les montants du compte sont calculés sur
+  les opérations autorisées ; les soldes globaux de caisse et des fonds ne sont
+  pas affichés lorsque cette sélection est restreinte.
+  Les lecteurs existants conservent leurs accès tant qu’ils ne sont pas configurés.
+  Masquer un type de prix masque également les montants et totaux dérivés.
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
 - Les catégories de recettes sont conservées dans un registre indépendant. Une

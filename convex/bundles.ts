@@ -2,7 +2,8 @@ import { ConvexError, v } from "convex/values"
 
 import { type Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
-import { requireUser, requireWriter } from "./lib/auth"
+import { requireReadAccess, requireWriter } from "./lib/auth"
+import { canSeeCatalogEntry, redactReaderData } from "../shared/reader-access"
 import { assertFiniteRange, assertWholeNumberRange } from "./lib/numbers"
 import { normalizeCatalogName, normalizeName } from "./lib/text"
 
@@ -14,11 +15,27 @@ const MAX_QUANTITY = 1_000_000
 export const listArchived = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    const { access } = await requireReadAccess(ctx, "bundles")
     const bundles = await ctx.db.query("bundles").collect()
-    return bundles
-      .filter((bundle) => !bundle.active)
-      .sort((left, right) => left.name.localeCompare(right.name, "fr"))
+    const visible = await Promise.all(
+      bundles.map(async (bundle) => {
+        if (!access?.productIds) return true
+        const items = await ctx.db
+          .query("bundleItems")
+          .withIndex("by_bundle", (index) => index.eq("bundleId", bundle._id))
+          .collect()
+        return canSeeCatalogEntry(
+          access,
+          items.map((item) => item.productId)
+        )
+      })
+    )
+    return redactReaderData(
+      bundles
+        .filter((bundle, index) => !bundle.active && visible[index])
+        .sort((left, right) => left.name.localeCompare(right.name, "fr")),
+      access
+    )
   },
 })
 

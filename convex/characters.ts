@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values"
 
 import { type Id } from "./_generated/dataModel"
 import { mutation, query } from "./_generated/server"
-import { requireAdmin, requireUser } from "./lib/auth"
+import { requireAdmin, requireReadAccess } from "./lib/auth"
 import { normalizeName } from "./lib/text"
 
 const MAX_NAME_LENGTH = 100
@@ -10,7 +10,7 @@ const MAX_NAME_LENGTH = 100
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireUser(ctx)
+    await requireReadAccess(ctx, "transactions", "account", "orders")
     const characters = await ctx.db.query("characters").collect()
     return characters
       .filter((character) => character.active)

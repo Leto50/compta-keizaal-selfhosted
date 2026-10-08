@@ -44,7 +44,10 @@ import {
 } from "@/components/ui/table"
 import { api } from "../../../convex/_generated/api"
 import { usePermissions } from "@/hooks/use-permissions"
-import { formatDecimalSeptims, formatNumber, formatSeptims } from "@/lib/format"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
+import { useSiteName } from "@/hooks/use-site-name"
+import { formatNumber } from "@/lib/format"
 import {
   sortActorEntries,
   type ActorSortKey,
@@ -99,7 +102,8 @@ function formatWeek(startsAt: number, endsAt: number): string {
 }
 
 export const Route = createFileRoute("/_app/compte")({
-  component: AccountPage,
+  beforeLoad: readerRouteAccess("account"),
+  component: withReaderAccess(AccountPage, "account"),
   errorComponent: PageError,
   loader: async ({ context }) => {
     const queryArgs = { currentWeekStartsAt: startOfUtcWeek(Date.now()) }
@@ -112,8 +116,10 @@ export const Route = createFileRoute("/_app/compte")({
 })
 
 function AccountPage() {
+  const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
+  const siteName = useSiteName()
   const { queryArgs } = Route.useLoaderData()
-  const { isAdmin } = usePermissions()
+  const { isAdmin, showPrices, showSalaries } = usePermissions()
   const { data } = useSuspenseQuery(
     convexQuery(api.accounts.overview, queryArgs)
   )
@@ -129,10 +135,21 @@ function AccountPage() {
     data.weeks.find(
       (week) => week.startsAt.toString() === selectedWeekStartsAt
     ) ?? currentWeek
-  const [actorSortKey, actorSortDirection] = actorSortOption.split("-") as [
-    ActorSortKey,
-    SortDirection,
-  ]
+  const visibleActorSortOptions = actorSortOptions.filter(
+    (option) =>
+      (showPrices || /^(name|operations)-/.test(option.value)) &&
+      (showSalaries || !option.value.startsWith("salary-"))
+  )
+  const visibleActorSortOption = visibleActorSortOptions.some(
+    (option) => option.value === actorSortOption
+  )
+    ? actorSortOption
+    : showPrices
+      ? "incoming-desc"
+      : "operations-desc"
+  const [actorSortKey, actorSortDirection] = visibleActorSortOption.split(
+    "-"
+  ) as [ActorSortKey, SortDirection]
   const sortedActors = sortActorEntries(
     selectedWeek?.actors ?? [],
     actorSortKey,
@@ -160,41 +177,59 @@ function AccountPage() {
         eyebrow="Tenue de boutique"
         title="Compte"
       >
-        Suivez les entrées, les sorties et les charges de L’eau d’Roche sans
-        refaire les calculs du classeur.
+        {showPrices ? (
+          <>
+            Suivez les entrées, les sorties et les charges de{" "}
+            <span className="break-words">{siteName}</span> sans refaire les
+            calculs du classeur.
+          </>
+        ) : (
+          "Consultez les opérations autorisées, par personnage et par semaine."
+        )}
       </PageHeader>
 
-      <section className="mt-7 grid gap-4 md:grid-cols-3">
-        <AccountMetric
-          description="Montant compté manuellement"
-          icon={Coins}
-          label="Caisse déclarée"
-          value={formatDecimalSeptims(data.settings.cashBalance)}
-        />
-        <AccountMetric
-          description="Réserve disponible déclarée"
-          icon={Landmark}
-          label="Fonds"
-          value={formatDecimalSeptims(data.settings.fundsBalance)}
-        />
-        <AccountMetric
-          description="Somme de toutes les transactions"
-          icon={Scale}
-          label="Solde du journal"
-          tone={data.journalBalance >= 0 ? "positive" : "negative"}
-          value={formatSeptims(data.journalBalance)}
-        />
-      </section>
+      {showPrices ? (
+        <section
+          className={cn("mt-7 grid gap-4", !data.scoped && "md:grid-cols-3")}
+        >
+          {!data.scoped ? (
+            <>
+              <AccountMetric
+                description="Montant compté manuellement"
+                icon={Coins}
+                label="Caisse déclarée"
+                value={formatDecimalSeptims(data.settings.cashBalance)}
+              />
+              <AccountMetric
+                description="Réserve disponible déclarée"
+                icon={Landmark}
+                label="Fonds"
+                value={formatDecimalSeptims(data.settings.fundsBalance)}
+              />
+            </>
+          ) : null}
+          <AccountMetric
+            description="Somme de toutes les transactions"
+            icon={Scale}
+            label="Solde du journal"
+            tone={data.journalBalance >= 0 ? "positive" : "negative"}
+            value={formatSeptims(data.journalBalance)}
+          />
+        </section>
+      ) : null}
 
       <Card className="mt-5 rounded-none border-[#5b462b]/35 bg-[#fff8e7]/30 py-0 ring-0">
         <CardHeader className="border-b border-border/60">
-          <CardTitle className="flex items-center gap-2 font-display text-xl">
+          <CardTitle className="flex items-center gap-2 font-display text-xl max-sm:col-span-2">
             <UsersRound aria-hidden="true" className="size-5 text-primary" />
             Activité par personnage
           </CardTitle>
-          <CardDescription>
-            Le chiffre, les achats et le salaire calculé sur les ventes hors
-            commande de chaque membre de la boutique.
+          <CardDescription className="max-sm:col-span-2">
+            {showPrices
+              ? showSalaries
+                ? "Le chiffre, les achats et le salaire calculé sur les ventes hors commande de chaque membre de la boutique."
+                : "Le chiffre, les achats et le solde de chaque membre de la boutique."
+              : "Le nombre d’opérations autorisées pour chaque membre de la boutique."}
           </CardDescription>
           <CardAction className="flex flex-wrap justify-end gap-2 max-sm:col-span-2 max-sm:row-start-3">
             <Select
@@ -223,7 +258,7 @@ function AccountPage() {
               onValueChange={(value) => {
                 if (isActorSortOption(value)) setActorSortOption(value)
               }}
-              value={actorSortOption}
+              value={visibleActorSortOption}
             >
               <SelectTrigger
                 aria-label="Trier l’activité par personnage"
@@ -232,7 +267,7 @@ function AccountPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {actorSortOptions.map((option) => (
+                {visibleActorSortOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -255,38 +290,44 @@ function AccountPage() {
                       label="Personnage"
                       onSort={() => handleActorSort("name")}
                     />
-                    <SortableTableHead
-                      active={actorSortKey === "incoming"}
-                      className="text-right"
-                      direction={actorSortDirection}
-                      inactiveDirection="desc"
-                      label="Chiffre encaissé"
-                      onSort={() => handleActorSort("incoming")}
-                    />
-                    <SortableTableHead
-                      active={actorSortKey === "outgoing"}
-                      className="text-right"
-                      direction={actorSortDirection}
-                      inactiveDirection="desc"
-                      label="Achats"
-                      onSort={() => handleActorSort("outgoing")}
-                    />
-                    <SortableTableHead
-                      active={actorSortKey === "salary"}
-                      className="text-right"
-                      direction={actorSortDirection}
-                      inactiveDirection="desc"
-                      label={`Salaire (${formatNumber(data.settings.salaryRate * 100)} %)`}
-                      onSort={() => handleActorSort("salary")}
-                    />
-                    <SortableTableHead
-                      active={actorSortKey === "net"}
-                      className="text-right"
-                      direction={actorSortDirection}
-                      inactiveDirection="desc"
-                      label="Solde"
-                      onSort={() => handleActorSort("net")}
-                    />
+                    {showPrices ? (
+                      <>
+                        <SortableTableHead
+                          active={actorSortKey === "incoming"}
+                          className="text-right"
+                          direction={actorSortDirection}
+                          inactiveDirection="desc"
+                          label="Chiffre encaissé"
+                          onSort={() => handleActorSort("incoming")}
+                        />
+                        <SortableTableHead
+                          active={actorSortKey === "outgoing"}
+                          className="text-right"
+                          direction={actorSortDirection}
+                          inactiveDirection="desc"
+                          label="Achats"
+                          onSort={() => handleActorSort("outgoing")}
+                        />
+                        {showSalaries ? (
+                          <SortableTableHead
+                            active={actorSortKey === "salary"}
+                            className="text-right"
+                            direction={actorSortDirection}
+                            inactiveDirection="desc"
+                            label={`Salaire (${formatNumber(data.settings.salaryRate * 100)} %)`}
+                            onSort={() => handleActorSort("salary")}
+                          />
+                        ) : null}
+                        <SortableTableHead
+                          active={actorSortKey === "net"}
+                          className="text-right"
+                          direction={actorSortDirection}
+                          inactiveDirection="desc"
+                          label="Solde"
+                          onSort={() => handleActorSort("net")}
+                        />
+                      </>
+                    ) : null}
                     <SortableTableHead
                       active={actorSortKey === "operations"}
                       className="pr-4 text-right"
@@ -306,29 +347,37 @@ function AccountPage() {
                       <TableCell className="pl-4 font-semibold">
                         {actor.actorName}
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-[#456044] tabular-nums">
-                        {formatSeptims(actor.incoming)}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-[#8a3e2f] tabular-nums">
-                        {formatSeptims(actor.outgoing)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        <p className="font-semibold text-primary">
-                          {formatDecimalSeptims(actor.salary)}
-                        </p>
-                        <p className="text-[0.68rem] text-muted-foreground">
-                          sur {formatSeptims(actor.salaryRevenue)}
-                        </p>
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-display tabular-nums",
-                          actor.net >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
-                        )}
-                      >
-                        {actor.net > 0 ? "+" : ""}
-                        {formatSeptims(actor.net)}
-                      </TableCell>
+                      {showPrices ? (
+                        <>
+                          <TableCell className="text-right font-semibold text-[#456044] tabular-nums">
+                            {formatSeptims(actor.incoming)}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-[#8a3e2f] tabular-nums">
+                            {formatSeptims(actor.outgoing)}
+                          </TableCell>
+                          {showSalaries ? (
+                            <TableCell className="text-right tabular-nums">
+                              <p className="font-semibold text-primary">
+                                {formatDecimalSeptims(actor.salary)}
+                              </p>
+                              <p className="text-[0.68rem] text-muted-foreground">
+                                sur {formatSeptims(actor.salaryRevenue)}
+                              </p>
+                            </TableCell>
+                          ) : null}
+                          <TableCell
+                            className={cn(
+                              "text-right font-display tabular-nums",
+                              actor.net >= 0
+                                ? "text-[#456044]"
+                                : "text-[#8a3e2f]"
+                            )}
+                          >
+                            {actor.net > 0 ? "+" : ""}
+                            {formatSeptims(actor.net)}
+                          </TableCell>
+                        </>
+                      ) : null}
                       <TableCell className="pr-4 text-right text-muted-foreground tabular-nums">
                         {formatNumber(actor.transactionCount)}
                       </TableCell>
@@ -351,31 +400,36 @@ function AccountPage() {
                       {actor.transactionCount === 1 ? "" : "s"}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 text-right">
-                    <ActorAmount
-                      label="Chiffre"
-                      tone="positive"
-                      value={actor.incoming}
-                    />
-                    <ActorAmount
-                      label="Achats"
-                      tone="negative"
-                      value={actor.outgoing}
-                    />
-                    <ActorAmount
-                      label="Solde"
-                      signed
-                      tone={actor.net >= 0 ? "positive" : "negative"}
-                      value={actor.net}
-                    />
-                    <ActorAmount
-                      decimal
-                      detail={`sur ${formatSeptims(actor.salaryRevenue)}`}
-                      label={`Salaire · ${formatNumber(data.settings.salaryRate * 100)} %`}
-                      tone="positive"
-                      value={actor.salary}
-                    />
-                  </div>
+                  {showPrices ? (
+                    <div className="grid grid-cols-2 gap-3 text-right">
+                      <ActorAmount
+                        label="Chiffre"
+                        tone="positive"
+                        value={actor.incoming}
+                      />
+                      <ActorAmount
+                        label="Achats"
+                        tone="negative"
+                        value={actor.outgoing}
+                      />
+                      <ActorAmount
+                        label="Solde"
+                        signed
+                        tone={actor.net >= 0 ? "positive" : "negative"}
+                        value={actor.net}
+                        className={!showSalaries ? "col-span-2" : undefined}
+                      />
+                      {showSalaries ? (
+                        <ActorAmount
+                          decimal
+                          detail={`sur ${formatSeptims(actor.salaryRevenue)}`}
+                          label={`Salaire · ${formatNumber(data.settings.salaryRate * 100)} %`}
+                          tone="positive"
+                          value={actor.salary}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </CardContent>
@@ -387,12 +441,17 @@ function AccountPage() {
         )}
       </Card>
 
-      <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)]">
+      <section
+        className={cn(
+          "mt-6 grid gap-5",
+          showPrices && "xl:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)]"
+        )}
+      >
         <Card className="rounded-none border-[#5b462b]/35 bg-[#fff8e7]/30 py-0 ring-0">
           <CardHeader className="border-b border-border/60">
             <CardTitle className="flex items-center gap-2 font-display text-xl">
               <ReceiptText aria-hidden="true" className="size-5 text-primary" />
-              Bilan hebdomadaire
+              {showPrices ? "Bilan hebdomadaire" : "Activité hebdomadaire"}
             </CardTitle>
             <CardDescription>
               Les huit dernières semaines, calculées depuis le journal.
@@ -403,9 +462,17 @@ function AccountPage() {
               <TableHeader>
                 <TableRow className="bg-[#684f2d]/8 hover:bg-[#684f2d]/8">
                   <TableHead className="pl-4">Semaine</TableHead>
-                  <TableHead className="text-right">Entrées</TableHead>
-                  <TableHead className="text-right">Sorties</TableHead>
-                  <TableHead className="pr-4 text-right">Solde</TableHead>
+                  {showPrices ? (
+                    <>
+                      <TableHead className="text-right">Entrées</TableHead>
+                      <TableHead className="text-right">Sorties</TableHead>
+                      <TableHead className="pr-4 text-right">Solde</TableHead>
+                    </>
+                  ) : (
+                    <TableHead className="pr-4 text-right">
+                      Opérations
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -415,31 +482,41 @@ function AccountPage() {
                       <p className="font-semibold">
                         {formatWeek(week.startsAt, week.endsAt)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatNumber(week.transactionCount)} mouvement
-                        {week.transactionCount === 1 ? "" : "s"}
-                      </p>
+                      {showPrices ? (
+                        <p className="text-xs text-muted-foreground">
+                          {formatNumber(week.transactionCount)} mouvement
+                          {week.transactionCount === 1 ? "" : "s"}
+                        </p>
+                      ) : null}
                       {index === 0 ? (
                         <Badge className="mt-1" variant="outline">
                           Semaine en cours
                         </Badge>
                       ) : null}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-[#456044] tabular-nums">
-                      {formatSeptims(week.incoming)}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-[#8a3e2f] tabular-nums">
-                      {formatSeptims(week.outgoing)}
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        "pr-4 text-right font-display text-base tabular-nums",
-                        week.net >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
-                      )}
-                    >
-                      {week.net > 0 ? "+" : ""}
-                      {formatSeptims(week.net)}
-                    </TableCell>
+                    {showPrices ? (
+                      <>
+                        <TableCell className="text-right font-semibold text-[#456044] tabular-nums">
+                          {formatSeptims(week.incoming)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-[#8a3e2f] tabular-nums">
+                          {formatSeptims(week.outgoing)}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "pr-4 text-right font-display text-base tabular-nums",
+                            week.net >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
+                          )}
+                        >
+                          {week.net > 0 ? "+" : ""}
+                          {formatSeptims(week.net)}
+                        </TableCell>
+                      </>
+                    ) : (
+                      <TableCell className="pr-4 text-right tabular-nums">
+                        {formatNumber(week.transactionCount)}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -462,124 +539,137 @@ function AccountPage() {
                     <Badge variant="outline">En cours</Badge>
                   ) : null}
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-right">
-                  <div>
-                    <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
-                      Entrées
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-[#456044] tabular-nums">
-                      {formatSeptims(week.incoming)}
-                    </p>
+                {showPrices ? (
+                  <div className="grid grid-cols-3 gap-2 text-right">
+                    <div>
+                      <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
+                        Entrées
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#456044] tabular-nums">
+                        {formatSeptims(week.incoming)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
+                        Sorties
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#8a3e2f] tabular-nums">
+                        {formatSeptims(week.outgoing)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
+                        Solde
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-1 font-display text-sm tabular-nums",
+                          week.net >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
+                        )}
+                      >
+                        {week.net > 0 ? "+" : ""}
+                        {formatSeptims(week.net)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
-                      Sorties
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-[#8a3e2f] tabular-nums">
-                      {formatSeptims(week.outgoing)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
-                      Solde
-                    </p>
-                    <p
-                      className={cn(
-                        "mt-1 font-display text-sm tabular-nums",
-                        week.net >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
-                      )}
-                    >
-                      {week.net > 0 ? "+" : ""}
-                      {formatSeptims(week.net)}
-                    </p>
-                  </div>
-                </div>
+                ) : null}
               </div>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="h-fit rounded-none border-t-[3px] border-[#5b462b]/35 border-t-primary/60 bg-[#fff8e7]/30 ring-0">
-          <CardHeader>
-            <CardTitle className="font-display text-xl">
-              Charges de la semaine en cours
-            </CardTitle>
-            <CardDescription>
-              Estimation avec les paramètres comptables actuels.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <ChargeRow
-              icon={Landmark}
-              label="Loyer"
-              value={data.charges.rent}
-            />
-            <ChargeRow
-              detail={`${formatNumber(data.settings.employeeCount)} employé${data.settings.employeeCount === 1 ? "" : "s"}`}
-              icon={UsersRound}
-              label="Cens"
-              value={data.charges.census}
-            />
-            <ChargeRow
-              detail={`${formatNumber(data.settings.taxRate * 100)} % du bénéfice après cens et loyer`}
-              icon={ArrowUpRight}
-              label="Taxe"
-              value={data.charges.tax}
-            />
-            <ChargeRow
-              detail={`${formatNumber(data.settings.salaryRate * 100)} % de ${formatDecimalSeptims(currentWeek?.salaryRevenue ?? 0)} de ventes hors commande`}
-              icon={ArrowDownLeft}
-              label="Salaires"
-              value={data.charges.salary}
-            />
-            <Separator className="my-1" />
-            <div className="flex items-end justify-between gap-4 border border-primary/20 bg-primary/6 p-3">
-              <div>
-                <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-                  À verser à la châtellerie
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Cens + taxe
-                </p>
-              </div>
-              <p className="font-display text-2xl text-primary tabular-nums">
-                {formatDecimalSeptims(chancelleryPayment)}
-              </p>
-            </div>
-            <Separator className="my-1" />
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
-                  Total des charges
-                </p>
-                <p className="mt-1 font-display text-2xl text-primary tabular-nums">
-                  {formatDecimalSeptims(data.charges.total)}
+        {showPrices ? (
+          <Card className="h-fit rounded-none border-t-[3px] border-[#5b462b]/35 border-t-primary/60 bg-[#fff8e7]/30 ring-0">
+            <CardHeader>
+              <CardTitle className="font-display text-xl">
+                Charges de la semaine en cours
+              </CardTitle>
+              <CardDescription>
+                Estimation avec les paramètres comptables actuels.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-3">
+              <ChargeRow
+                icon={Landmark}
+                label="Loyer"
+                value={data.charges.rent}
+              />
+              <ChargeRow
+                detail={`${formatNumber(data.settings.employeeCount)} employé${data.settings.employeeCount === 1 ? "" : "s"}`}
+                icon={UsersRound}
+                label="Cens"
+                value={data.charges.census}
+              />
+              <ChargeRow
+                detail={`${formatNumber(data.settings.taxRate * 100)} % du bénéfice après cens et loyer`}
+                icon={ArrowUpRight}
+                label="Taxe"
+                value={data.charges.tax}
+              />
+              {showSalaries ? (
+                <ChargeRow
+                  detail={`${formatNumber(data.settings.salaryRate * 100)} % de ${formatDecimalSeptims(currentWeek?.salaryRevenue ?? 0)} de ventes hors commande`}
+                  icon={ArrowDownLeft}
+                  label="Salaires"
+                  value={data.charges.salary}
+                />
+              ) : null}
+              <Separator className="my-1" />
+              <div className="flex items-end justify-between gap-4 border border-primary/20 bg-primary/6 p-3">
+                <div>
+                  <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                    À verser à la châtellerie
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Cens + taxe
+                  </p>
+                </div>
+                <p className="font-display text-2xl text-primary tabular-nums">
+                  {formatDecimalSeptims(chancelleryPayment)}
                 </p>
               </div>
-            </div>
-            <Separator className="my-1" />
-            <div>
-              <p className="text-xs text-muted-foreground">
-                Résultat courant après charges
-              </p>
-              <p
-                className={cn(
-                  "mt-1 font-display text-xl tabular-nums",
-                  resultAfterCharges >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
-                )}
-              >
-                {resultAfterCharges > 0 ? "+" : ""}
-                {formatDecimalSeptims(resultAfterCharges)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+              {showSalaries ? (
+                <>
+                  <Separator className="my-1" />
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[0.65rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                        Total des charges
+                      </p>
+                      <p className="mt-1 font-display text-2xl text-primary tabular-nums">
+                        {formatDecimalSeptims(data.charges.total)}
+                      </p>
+                    </div>
+                  </div>
+                  <Separator className="my-1" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Résultat courant après charges
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-1 font-display text-xl tabular-nums",
+                        resultAfterCharges >= 0
+                          ? "text-[#456044]"
+                          : "text-[#8a3e2f]"
+                      )}
+                    >
+                      {resultAfterCharges > 0 ? "+" : ""}
+                      {formatDecimalSeptims(resultAfterCharges)}
+                    </p>
+                  </div>
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
       </section>
     </div>
   )
 }
 
 function ActorAmount({
+  className,
   decimal = false,
   detail,
   label,
@@ -587,6 +677,7 @@ function ActorAmount({
   tone,
   value,
 }: Readonly<{
+  className?: string
   decimal?: boolean
   detail?: string
   label: string
@@ -594,8 +685,9 @@ function ActorAmount({
   tone: "negative" | "positive"
   value: number
 }>) {
+  const { formatSeptims, formatDecimalSeptims } = useVisibleAmounts()
   return (
-    <div>
+    <div className={className}>
       <p className="text-[0.62rem] font-bold tracking-wider text-muted-foreground uppercase">
         {label}
       </p>
@@ -663,6 +755,7 @@ function ChargeRow({
   label: string
   value: number
 }>) {
+  const { formatDecimalSeptims } = useVisibleAmounts()
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-2">

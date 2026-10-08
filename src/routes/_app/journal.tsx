@@ -84,11 +84,12 @@ import {
   formatDate,
   formatNumber,
   formatQuantity,
-  formatSeptims,
   operationLabels,
 } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { api } from "../../../convex/_generated/api"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
+import { useVisibleAmounts } from "@/hooks/use-visible-amounts"
 import { type Doc, type Id } from "../../../convex/_generated/dataModel"
 
 const PAGE_SIZE = 30
@@ -204,7 +205,8 @@ function journalQueryArgs(filters: JournalRouteSearch, cursor: string | null) {
 }
 
 export const Route = createFileRoute("/_app/journal")({
-  component: JournalPage,
+  beforeLoad: readerRouteAccess("transactions"),
+  component: withReaderAccess(JournalPage, "transactions"),
   errorComponent: PageError,
   loader: async ({ context, deps }) => {
     await Promise.all([
@@ -233,7 +235,7 @@ const operationToneClasses: Readonly<
 }
 
 function JournalPage() {
-  const { canWrite } = usePermissions()
+  const { canWrite, access, showPrices } = usePermissions()
   const filters = Route.useSearch()
   const navigate = Route.useNavigate()
   const filterKey = JSON.stringify(filters)
@@ -378,11 +380,15 @@ function JournalPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les types</SelectItem>
-                {transactionKinds.map((kind) => (
-                  <SelectItem key={kind} value={kind}>
-                    {operationLabels[kind]}
-                  </SelectItem>
-                ))}
+                {transactionKinds
+                  .filter(
+                    (kind) => !access || access.operationKinds.includes(kind)
+                  )
+                  .map((kind) => (
+                    <SelectItem key={kind} value={kind}>
+                      {operationLabels[kind]}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -482,7 +488,9 @@ function JournalPage() {
                     <TableHead>Référence</TableHead>
                     <TableHead>Personnage</TableHead>
                     <TableHead className="text-right">Quantité</TableHead>
-                    <TableHead className="pr-4 text-right">Montant</TableHead>
+                    {showPrices ? (
+                      <TableHead className="pr-4 text-right">Montant</TableHead>
+                    ) : null}
                     {showActions ? (
                       <TableHead className="text-right">Actions</TableHead>
                     ) : null}
@@ -514,53 +522,65 @@ function JournalPage() {
               </Table>
             </CardContent>
           </Card>
-
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#5b462b]/20 pt-4">
-            <p className="text-xs tracking-wide text-muted-foreground">
-              Page {activePagination.previousCursors.length + 1}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                disabled={
-                  activePagination.previousCursors.length === 0 ||
-                  isFetchingPage
-                }
-                onClick={showPreviousPage}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronLeft aria-hidden="true" />
-                Précédente
-              </Button>
-              <Button
-                disabled={page.isDone || isFetchingPage}
-                onClick={showNextPage}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Suivante
-                <ChevronRight aria-hidden="true" />
-              </Button>
-            </div>
-          </div>
         </>
       ) : (
         <Alert className="mt-7 border-[#6a4f2e]/30 bg-card/35">
           <ScrollText aria-hidden="true" />
           <AlertTitle>
-            {hasFilters
-              ? "Aucune opération ne correspond"
-              : "Aucune opération enregistrée"}
+            {!page.isDone
+              ? "Aucune opération visible sur cette page"
+              : hasFilters
+                ? "Aucune opération ne correspond"
+                : canWrite
+                  ? "Aucune opération enregistrée"
+                  : "Aucune opération autorisée à afficher"}
           </AlertTitle>
           <AlertDescription>
-            {hasFilters
-              ? "Élargissez la période ou effacez un filtre pour retrouver d’autres opérations."
-              : "Ajoutez une première opération pour commencer l’historique."}
+            {!page.isDone
+              ? "Passez à la page suivante pour continuer la consultation."
+              : hasFilters
+                ? "Élargissez la période ou effacez un filtre pour retrouver d’autres opérations."
+                : canWrite
+                  ? "Ajoutez une première opération pour commencer l’historique."
+                  : "Seules les opérations autorisées pour votre compte sont affichées."}
           </AlertDescription>
         </Alert>
       )}
+
+      {page &&
+      (transactions.length > 0 ||
+        !page.isDone ||
+        activePagination.previousCursors.length > 0) ? (
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#5b462b]/20 pt-4">
+          <p className="text-xs tracking-wide text-muted-foreground">
+            Page {activePagination.previousCursors.length + 1}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              disabled={
+                activePagination.previousCursors.length === 0 || isFetchingPage
+              }
+              onClick={showPreviousPage}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <ChevronLeft aria-hidden="true" />
+              Précédente
+            </Button>
+            <Button
+              disabled={page.isDone || isFetchingPage}
+              onClick={showNextPage}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Suivante
+              <ChevronRight aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {canWrite && editor ? (
         <ActivityEditor onClose={() => setEditor(null)} request={editor} />
@@ -601,6 +621,8 @@ function JournalRow({
   showActions: boolean
   transaction: Transaction
 }>) {
+  const { formatSeptims } = useVisibleAmounts()
+  const { showPrices } = usePermissions()
   return (
     <TableRow className="border-[#5b462b]/20 hover:bg-[#fffdeb]/40 max-md:relative max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-1 max-md:border max-md:border-[#5b462b]/35 max-md:bg-[#fff8e7]/30 max-md:p-4 max-md:shadow-[2px_3px_0_rgba(84,63,37,0.05)]">
       <TableCell className="pl-4 text-muted-foreground max-md:col-start-1 max-md:row-start-2 max-md:p-0 max-md:pt-3">
@@ -642,15 +664,17 @@ function JournalRow({
       <TableCell className="text-right max-md:hidden">
         {transaction.orderId ? "—" : formatNumber(transaction.quantity)}
       </TableCell>
-      <TableCell
-        className={cn(
-          "pr-4 text-right font-semibold tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:self-end max-md:p-0 max-md:pt-3 max-md:font-display max-md:text-lg",
-          transaction.total >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
-        )}
-      >
-        {transaction.total > 0 ? "+" : ""}
-        {formatSeptims(transaction.total)}
-      </TableCell>
+      {showPrices ? (
+        <TableCell
+          className={cn(
+            "pr-4 text-right font-semibold tabular-nums max-md:col-start-2 max-md:row-start-2 max-md:self-end max-md:p-0 max-md:pt-3 max-md:font-display max-md:text-lg",
+            transaction.total >= 0 ? "text-[#456044]" : "text-[#8a3e2f]"
+          )}
+        >
+          {transaction.total > 0 ? "+" : ""}
+          {formatSeptims(transaction.total)}
+        </TableCell>
+      ) : null}
       {showActions ? (
         <TableCell className="pr-2 text-right max-md:col-span-2 max-md:col-start-1 max-md:row-start-3 max-md:p-0 max-md:pt-2">
           {transaction.canManage || transaction.canDelete ? (
@@ -814,6 +838,8 @@ function TransactionLines({
 function TransactionLineContent({
   transactionId,
 }: Readonly<{ transactionId: Id<"transactions"> }>) {
+  const { formatSeptims } = useVisibleAmounts()
+  const { showPrices } = usePermissions()
   const details = useConvexQuery(api.transactions.getDetails, {
     transactionId,
   })
@@ -845,10 +871,12 @@ function TransactionLineContent({
             ) : null}
             {line.productName} · {formatQuantity(line.quantity)}
           </span>
-          <span className="font-semibold text-foreground tabular-nums">
-            {line.direction === "incoming" ? "−" : ""}
-            {formatSeptims(line.total)}
-          </span>
+          {showPrices ? (
+            <span className="font-semibold text-foreground tabular-nums">
+              {line.direction === "incoming" ? "−" : ""}
+              {formatSeptims(line.total)}
+            </span>
+          ) : null}
         </li>
       ))}
     </ul>

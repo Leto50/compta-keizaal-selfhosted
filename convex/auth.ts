@@ -18,6 +18,7 @@ import authSchema from "./betterAuth/schema"
 import { wouldRemoveLastActiveAdmin } from "./lib/accountSecurity"
 import { isAccountRole } from "../shared/account-roles"
 import { authRoles } from "../shared/auth-permissions"
+import { readReaderAccess } from "./lib/readerAccess"
 import {
   internalAccountEmail,
   isAccountIdentifier,
@@ -215,7 +216,12 @@ export const createAuth = (ctx: GenericCtx<DataModel>) =>
 
 export const getCurrentUser = query({
   args: {},
-  handler: async (ctx) => authComponent.safeGetAuthUser(ctx),
+  handler: async (ctx) => {
+    const user = await authComponent.safeGetAuthUser(ctx)
+    return user
+      ? { ...user, readerAccess: await readReaderAccess(ctx, user) }
+      : null
+  },
 })
 
 export const bootstrapAdmin = internalMutation({

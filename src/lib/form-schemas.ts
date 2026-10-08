@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { accountRoles } from "../../shared/account-roles"
+import { SITE_NAME_MAX_LENGTH } from "../../shared/site-name"
 
 import { parseDateValue } from "./date-values"
 import { priceDraftToValue } from "./prices"
@@ -36,6 +37,10 @@ export function optionalText(label: string, maximum: number) {
       `${label} ne peut pas dépasser ${maximum} caractères.`
     )
 }
+
+export const siteNameFormSchema = z.object({
+  name: requiredText("Le nom du site", SITE_NAME_MAX_LENGTH),
+})
 
 export function wholeNumberInput(
   label: string,
