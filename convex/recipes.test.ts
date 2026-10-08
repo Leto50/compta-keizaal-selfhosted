@@ -31,6 +31,100 @@ async function seedRecipeProducts(
 }
 
 describe("recipes", () => {
+  it("crée et réutilise les catégories personnalisées, même après archivage", async () => {
+    const backend = createTestBackend()
+    const member = await asAuthenticatedUser(backend)
+    const reader = await asAuthenticatedUser(backend, "reader")
+    const { ingredientId } = await seedRecipeProducts(backend)
+    const ingredients = [{ productId: ingredientId, quantity: 1 }]
+    const firstId = await member.mutation(api.recipes.save, {
+      createFamily: true,
+      effect: "",
+      family: "  RÉGÉNÉRATION   DE SANTÉ  ",
+      ingredients,
+      name: "Potion de régénération",
+    })
+    await member.mutation(api.recipes.setActive, {
+      active: false,
+      recipeId: firstId,
+    })
+    const secondId = await member.mutation(api.recipes.save, {
+      effect: "",
+      family: "regeneration de sante",
+      ingredients,
+      name: "Élixir de régénération",
+    })
+    await member.mutation(api.recipes.save, {
+      effect: "",
+      family: "Force",
+      createFamily: true,
+      ingredients,
+      name: "Potion de force",
+    })
+
+    const recipes = await backend.run((ctx) =>
+      Promise.all([ctx.db.get(firstId), ctx.db.get(secondId)])
+    )
+    expect(recipes.map((recipe) => recipe?.family)).toEqual([
+      "Régénération de santé",
+      "Régénération de santé",
+    ])
+    const families = await reader.query(api.recipes.listFamilies, {})
+    expect(families).toContain("Force")
+    expect(
+      families.filter((family) => family === "Régénération de santé")
+    ).toHaveLength(1)
+    expect(families).toContain("Soin")
+  })
+
+  it.each(["", "  ", "---", "all", "x".repeat(101)])(
+    "refuse la catégorie invalide %s sans créer d’article ni d’audit",
+    async (family) => {
+      const backend = createTestBackend()
+      const member = await asAuthenticatedUser(backend)
+      const { ingredientId } = await seedRecipeProducts(backend)
+      await expect(
+        member.mutation(api.recipes.save, {
+          effect: "",
+          family,
+          ingredients: [{ productId: ingredientId, quantity: 1 }],
+          name: "Potion invalide",
+        })
+      ).rejects.toThrowError("catégorie valide")
+      const state = await backend.run(async (ctx) => ({
+        audits: await ctx.db.query("auditLogs").collect(),
+        products: await ctx.db.query("products").collect(),
+        recipes: await ctx.db.query("recipes").collect(),
+      }))
+      expect(state.products).toHaveLength(2)
+      expect(state.recipes).toEqual([])
+      expect(state.audits).toEqual([])
+    }
+  )
+
+  it("exige une session pour les catégories et refuse leur création aux lecteurs", async () => {
+    const backend = createTestBackend()
+    const reader = await asAuthenticatedUser(backend, "reader")
+    const { ingredientId } = await seedRecipeProducts(backend)
+    await expect(
+      backend.query(api.recipes.listFamilies, {})
+    ).rejects.toThrowError()
+    await expect(
+      reader.mutation(api.recipes.save, {
+        effect: "",
+        family: "Force",
+        ingredients: [{ productId: ingredientId, quantity: 1 }],
+        name: "Potion de force",
+      })
+    ).rejects.toThrowError()
+    expect(await reader.query(api.recipes.listFamilies, {})).not.toContain(
+      "Force"
+    )
+    expect(
+      await backend.run((ctx) => ctx.db.query("auditLogs").collect())
+    ).toEqual([])
+  })
+
   it("ne propose à la fabrication que les articles liés à une recette active", async () => {
     const backend = createTestBackend()
     const member = await asAuthenticatedUser(backend)

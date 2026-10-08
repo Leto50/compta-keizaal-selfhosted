@@ -1,65 +1,145 @@
-import { v } from "convex/values"
+import { ConvexError } from "convex/values"
 
-import { normalizeName } from "./text"
+import { type Doc } from "../_generated/dataModel"
+import { type MutationCtx, type QueryCtx } from "../_generated/server"
+import {
+  canonicalRecipeFamily,
+  getRecipeFamilies,
+  isRecipeFamily,
+  MAX_RECIPE_FAMILY_LENGTH,
+} from "../../shared/recipe-families"
+import { normalizeCatalogName, normalizeName } from "./text"
 
-export const recipeFamilies = [
-  "Alcool",
-  "Berserker",
-  "Destruction",
-  "Fortifiant",
-  "Guérisseur",
-  "Guerrier",
-  "Magie accrue",
-  "Mana",
-  "Médicinale",
-  "Pied léger",
-  "Poison",
-  "Puissance durable",
-  "Récupération",
-  "Résistance magique",
-  "Sel",
-  "Soin",
-  "Utilitaire",
-  "Vigueur",
-  "Vigueur améliorée",
-] as const
+export { canonicalRecipeFamily } from "../../shared/recipe-families"
 
-export type RecipeFamily = (typeof recipeFamilies)[number]
+const REGISTRY_KEY = "recipe-categories-v1"
 
-export const recipeFamily = v.union(
-  v.literal("Alcool"),
-  v.literal("Berserker"),
-  v.literal("Destruction"),
-  v.literal("Fortifiant"),
-  v.literal("Guérisseur"),
-  v.literal("Guerrier"),
-  v.literal("Magie accrue"),
-  v.literal("Mana"),
-  v.literal("Médicinale"),
-  v.literal("Pied léger"),
-  v.literal("Poison"),
-  v.literal("Puissance durable"),
-  v.literal("Récupération"),
-  v.literal("Résistance magique"),
-  v.literal("Sel"),
-  v.literal("Soin"),
-  v.literal("Utilitaire"),
-  v.literal("Vigueur"),
-  v.literal("Vigueur améliorée")
-)
+export function validatedCategoryName(value: string) {
+  if (!isRecipeFamily(value)) {
+    throw new ConvexError({
+      code: "INVALID_INPUT",
+      message: `Choisissez ou saisissez une catégorie valide (${MAX_RECIPE_FAMILY_LENGTH} caractères maximum).`,
+    })
+  }
+  return normalizeCatalogName(value)
+}
 
-const recipeFamilyAliases = new Map<string, RecipeFamily>([
-  ...recipeFamilies.map((family) => [normalizeName(family), family] as const),
-  ["fortifiants", "Fortifiant"],
-  ["mana accru", "Magie accrue"],
-  ["medicinal", "Médicinale"],
-  ["poisons", "Poison"],
-  ["resistance magie", "Résistance magique"],
-  ["soins", "Soin"],
-  ["utilitaires", "Utilitaire"],
-  ["vigueur accru", "Vigueur améliorée"],
-])
+export async function recipeCategoriesAreInitialized(
+  ctx: QueryCtx | MutationCtx
+) {
+  return (
+    (await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (index) => index.eq("key", REGISTRY_KEY))
+      .unique()) !== null
+  )
+}
 
-export function canonicalRecipeFamily(value: string): RecipeFamily | undefined {
-  return recipeFamilyAliases.get(normalizeName(value))
+export async function initializeRecipeCategoriesData(ctx: MutationCtx) {
+  if (await recipeCategoriesAreInitialized(ctx)) return { initialized: false }
+  const recipes = await ctx.db.query("recipes").collect()
+  const existing = await ctx.db.query("recipeCategories").collect()
+  const names = getRecipeFamilies(recipes.map((recipe) => recipe.family))
+  const categoriesByName = new Map(
+    existing.map((category) => [category.normalizedName, category.name])
+  )
+  for (const name of names) {
+    const normalizedName = normalizeName(name)
+    if (!categoriesByName.has(normalizedName)) {
+      await ctx.db.insert("recipeCategories", { name, normalizedName })
+      categoriesByName.set(normalizedName, name)
+    }
+  }
+  for (const recipe of recipes) {
+    const canonical = canonicalRecipeFamily(recipe.family)
+    if (!canonical) {
+      throw new ConvexError({
+        code: "INVALID_INPUT",
+        message: `La catégorie de la recette « ${recipe.name} » est invalide.`,
+      })
+    }
+    const family = categoriesByName.get(normalizeName(canonical))!
+    if (recipe.family !== family) await ctx.db.patch(recipe._id, { family })
+  }
+  await ctx.db.insert("systemSettings", {
+    key: REGISTRY_KEY,
+    updatedAt: Date.now(),
+    value: "initialized",
+  })
+  return { initialized: true }
+}
+
+export async function listRecipeCategoriesData(
+  ctx: QueryCtx | MutationCtx,
+  visibleRecipes?: Doc<"recipes">[]
+) {
+  const initialized = await recipeCategoriesAreInitialized(ctx)
+  const recipes = visibleRecipes ?? (await ctx.db.query("recipes").collect())
+  const storedCategories = await ctx.db.query("recipeCategories").collect()
+  const names = initialized
+    ? storedCategories.map((category) => category.name)
+    : getRecipeFamilies(recipes.map((recipe) => recipe.family))
+  return names
+    .map((name) => {
+      const matching = recipes.filter(
+        (recipe) =>
+          normalizeName(
+            initialized
+              ? recipe.family
+              : (canonicalRecipeFamily(recipe.family) ?? recipe.family)
+          ) === normalizeName(name)
+      )
+      return {
+        name,
+        recipeCount: matching.length,
+        archivedRecipeCount: matching.filter(
+          (recipe) => recipe.active === false
+        ).length,
+      }
+    })
+    .filter(
+      (category) => visibleRecipes === undefined || category.recipeCount > 0
+    )
+    .sort((left, right) => left.name.localeCompare(right.name, "fr"))
+}
+
+export async function findRecipeCategory(ctx: MutationCtx, value: string) {
+  return ctx.db
+    .query("recipeCategories")
+    .withIndex("by_normalized_name", (index) =>
+      index.eq("normalizedName", normalizeName(value))
+    )
+    .unique()
+}
+
+export async function resolveRecipeCategory(
+  ctx: MutationCtx,
+  value: string,
+  allowCreate: boolean,
+  actorUserId: string
+) {
+  const name = validatedCategoryName(value)
+  await initializeRecipeCategoriesData(ctx)
+  const existing = await findRecipeCategory(ctx, name)
+  if (existing) return existing.name
+  if (!allowCreate) {
+    throw new ConvexError({
+      code: "NOT_FOUND",
+      message:
+        "Cette catégorie n’existe plus. Choisissez une catégorie disponible ou créez-en une nouvelle.",
+    })
+  }
+  const entityId = await ctx.db.insert("recipeCategories", {
+    name,
+    normalizedName: normalizeName(name),
+  })
+  await ctx.db.insert("auditLogs", {
+    action: "recipe_category.created",
+    actorUserId,
+    createdAt: Date.now(),
+    detail: name,
+    entityId,
+    entityType: "recipe_category",
+  })
+  return name
 }

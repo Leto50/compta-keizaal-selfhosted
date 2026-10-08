@@ -19,7 +19,11 @@ import {
   rebuildRecipeCostProjections,
 } from "./lib/recipeCost"
 import { markReadModelsReady, readModelsAreReady } from "./lib/readModels"
-import { canonicalRecipeFamily } from "./lib/recipeFamilies"
+import {
+  canonicalRecipeFamily,
+  initializeRecipeCategoriesData,
+  recipeCategoriesAreInitialized,
+} from "./lib/recipeFamilies"
 import { normalizeCatalogName, normalizeName } from "./lib/text"
 import { buildTransactionSearchText } from "./lib/transactionSearch"
 import { rebuildJournalSummary as rebuildJournalSummaryData } from "./lib/journalSummary"
@@ -700,6 +704,12 @@ export async function normalizeCatalogNamesData(ctx: MutationCtx) {
 }
 
 export async function normalizeRecipeFamiliesData(ctx: MutationCtx) {
+  if (await recipeCategoriesAreInitialized(ctx)) {
+    return {
+      normalized: false,
+      message: "Les catégories sont gérées par le registre.",
+    }
+  }
   const existingMigration = await ctx.db
     .query("systemSettings")
     .withIndex("by_key", (index) =>
@@ -1376,6 +1386,11 @@ export const normalizeCatalogNames = internalMutation({
 export const normalizeRecipeFamilies = internalMutation({
   args: {},
   handler: normalizeRecipeFamiliesData,
+})
+
+export const initializeRecipeCategories = internalMutation({
+  args: {},
+  handler: initializeRecipeCategoriesData,
 })
 
 export const indexTransactionSearch = internalMutation({

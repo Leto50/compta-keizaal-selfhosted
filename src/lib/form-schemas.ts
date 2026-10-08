@@ -4,7 +4,7 @@ import { SITE_NAME_MAX_LENGTH } from "../../shared/site-name"
 
 import { parseDateValue } from "./date-values"
 import { priceDraftToValue } from "./prices"
-import { isRecipeFamily, recipeFamilies } from "./recipe-families"
+import { isRecipeFamily } from "./recipe-families"
 import {
   ACCOUNT_IDENTIFIER_MAX_LENGTH,
   ACCOUNT_IDENTIFIER_MIN_LENGTH,
@@ -289,8 +289,11 @@ export const recipeFormSchema = z
   .object({
     effect: optionalText("La description de l’effet", 500),
     family: z
-      .union([z.enum(recipeFamilies), z.literal("")])
-      .refine(isRecipeFamily, "Choisissez une catégorie de recette."),
+      .string()
+      .refine(
+        isRecipeFamily,
+        "Choisissez ou saisissez une catégorie valide (100 caractères maximum)."
+      ),
     ingredients: z
       .array(catalogLineSchema)
       .min(1, "Ajoutez au moins un ingrédient.")
@@ -319,6 +322,15 @@ export const recipeFormSchema = z
       })
     }
   })
+
+export const recipeCategoryFormSchema = z.object({
+  name: z
+    .string()
+    .refine(
+      isRecipeFamily,
+      "Saisissez une catégorie valide (100 caractères maximum)."
+    ),
+})
 
 const orderLineSchema = catalogLineSchema.extend({
   unitPrice: priceDraftSchema,

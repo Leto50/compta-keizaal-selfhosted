@@ -13,7 +13,13 @@ import { assertWholeNumberRange } from "./lib/numbers"
 import { rebuildInventorySummaryIfReady } from "./lib/inventorySummary"
 import { isProductDeclaredCraftable } from "./lib/products"
 import { calculateRecipeCost } from "./lib/recipeCost"
-import { recipeFamily } from "./lib/recipeFamilies"
+import {
+  findRecipeCategory,
+  initializeRecipeCategoriesData,
+  listRecipeCategoriesData,
+  resolveRecipeCategory,
+  validatedCategoryName,
+} from "./lib/recipeFamilies"
 import { normalizeCatalogName, normalizeName } from "./lib/text"
 
 const MAX_EFFECT_LENGTH = 500
@@ -83,6 +89,128 @@ export const list = query({
         .sort((left, right) => left.name.localeCompare(right.name, "fr")),
       access
     )
+  },
+})
+
+export const listFamilies = query({
+  args: {},
+  handler: async (ctx) => {
+    const { access } = await requireReadAccess(ctx, "recipes")
+    return (await listVisibleRecipeCategories(ctx, access)).map(
+      (category) => category.name
+    )
+  },
+})
+
+export const listCategories = query({
+  args: {},
+  handler: async (ctx) => {
+    const { access } = await requireReadAccess(ctx, "recipes")
+    return listVisibleRecipeCategories(ctx, access)
+  },
+})
+
+async function listVisibleRecipeCategories(
+  ctx: QueryCtx,
+  access: ReaderAccess | null
+) {
+  const visibleRecipes = access?.productIds
+    ? await filterVisibleRecipes(
+        ctx,
+        await ctx.db.query("recipes").collect(),
+        access
+      )
+    : undefined
+  return listRecipeCategoriesData(ctx, visibleRecipes)
+}
+
+export const createCategory = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireWriter(ctx)
+    const name = validatedCategoryName(args.name)
+    await initializeRecipeCategoriesData(ctx)
+    if (await findRecipeCategory(ctx, name)) {
+      throw new ConvexError({
+        code: "ALREADY_EXISTS",
+        message: "Une catégorie portant ce nom existe déjà.",
+      })
+    }
+    return resolveRecipeCategory(ctx, name, true, String(user._id))
+  },
+})
+
+export const renameCategory = mutation({
+  args: { family: v.string(), name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireWriter(ctx)
+    const name = validatedCategoryName(args.name)
+    await initializeRecipeCategoriesData(ctx)
+    const category = await findRecipeCategory(ctx, args.family)
+    if (!category)
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Catégorie introuvable.",
+      })
+    const duplicate = await findRecipeCategory(ctx, name)
+    if (duplicate && duplicate._id !== category._id) {
+      throw new ConvexError({
+        code: "ALREADY_EXISTS",
+        message: "Une catégorie portant ce nom existe déjà.",
+      })
+    }
+    const recipes = await ctx.db
+      .query("recipes")
+      .withIndex("by_family", (index) => index.eq("family", category.name))
+      .collect()
+    await ctx.db.patch(category._id, {
+      name,
+      normalizedName: normalizeName(name),
+    })
+    for (const recipe of recipes)
+      await ctx.db.patch(recipe._id, { family: name })
+    await ctx.db.insert("auditLogs", {
+      action: "recipe_category.renamed",
+      actorUserId: String(user._id),
+      createdAt: Date.now(),
+      detail: `${category.name}->${name}`,
+      entityId: category._id,
+      entityType: "recipe_category",
+    })
+    return name
+  },
+})
+
+export const removeCategory = mutation({
+  args: { family: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireWriter(ctx)
+    await initializeRecipeCategoriesData(ctx)
+    const category = await findRecipeCategory(ctx, args.family)
+    if (!category)
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Catégorie introuvable.",
+      })
+    const recipe = await ctx.db
+      .query("recipes")
+      .withIndex("by_family", (index) => index.eq("family", category.name))
+      .first()
+    if (recipe)
+      throw new ConvexError({
+        code: "INVALID_OPERATION",
+        message:
+          "Cette catégorie est utilisée par des recettes, y compris archivées. Réaffectez-les avant de la supprimer.",
+      })
+    await ctx.db.delete(category._id)
+    await ctx.db.insert("auditLogs", {
+      action: "recipe_category.deleted",
+      actorUserId: String(user._id),
+      createdAt: Date.now(),
+      detail: category.name,
+      entityId: category._id,
+      entityType: "recipe_category",
+    })
   },
 })
 
@@ -194,8 +322,9 @@ export const listArchived = query({
 
 export const save = mutation({
   args: {
+    createFamily: v.optional(v.boolean()),
     effect: v.string(),
-    family: recipeFamily,
+    family: v.string(),
     ingredients: v.array(
       v.object({
         productId: v.id("products"),
@@ -209,7 +338,7 @@ export const save = mutation({
   handler: async (ctx, args) => {
     const user = await requireWriter(ctx)
     const name = normalizeCatalogName(args.name)
-    const family = args.family
+    validatedCategoryName(args.family)
     const effect = args.effect.trim()
     if (!name || name.length > MAX_NAME_LENGTH) {
       throw new ConvexError({
@@ -242,6 +371,12 @@ export const save = mutation({
 
     const normalizedName = normalizeName(name)
     const recipes = await ctx.db.query("recipes").collect()
+    const family = await resolveRecipeCategory(
+      ctx,
+      args.family,
+      args.createFamily === true,
+      String(user._id)
+    )
     if (
       recipes.some(
         (recipe) =>
