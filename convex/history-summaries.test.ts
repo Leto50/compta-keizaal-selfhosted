@@ -68,8 +68,26 @@ describe("résumés d’historique", () => {
   afterEach(() => vi.useRealTimers())
 
   it("lit un historique de 840 opérations sans dépasser 200 documents par requête ni par lot de reprise", async () => {
-    const { backend, member, reader, a, b, characterId, week } =
-      await fixture(200)
+    const {
+      backend,
+      member,
+      reader,
+      admin,
+      access,
+      userId,
+      a,
+      b,
+      characterId,
+      week,
+    } = await fixture(200)
+    await admin.mutation(api.administration.saveAccountAccess, {
+      userId,
+      role: "reader",
+      access: {
+        ...access,
+        sections: [...access.sections, "harvests"],
+      },
+    })
     for (let batch = 0; batch < 28; batch++)
       await backend.run(async (ctx) => {
         for (let offset = 0; offset < 10; offset++) {
@@ -124,6 +142,30 @@ describe("résumés d’historique", () => {
     )
     expect(first).toEqual({ ready: false, indexedTransactions: 10 })
     await backend.finishAllScheduledFunctions(vi.runAllTimers, 1000)
+    await backend.mutation(
+      internal.migrations.prepareHarvestReaderSummaries,
+      {}
+    )
+    await backend.finishAllScheduledFunctions(vi.runAllTimers, 1000)
+    expect(await reader.query(api.harvests.listWeeks, {})).toHaveLength(40)
+    expect(
+      (await reader.query(api.harvests.listGroups, { page: 0 })).groups[0]
+    ).toMatchObject({ harvestCount: 280, quantity: 560, knownValue: 2240 })
+    expect(
+      (
+        await reader.query(api.harvests.listGroups, {
+          page: 0,
+          weekStartsAt: week,
+        })
+      ).groups[0]?.harvestCount
+    ).toBe(7)
+    expect(
+      (
+        await reader.query(api.harvests.listPage, {
+          paginationOpts: { cursor: null, numItems: 30 },
+        })
+      ).page
+    ).toHaveLength(30)
     expect(
       (await member.query(api.harvests.listGroups, { page: 0 })).groups[0]
     ).toMatchObject({

@@ -10,7 +10,9 @@ type Change = {
   multiplier: 1 | -1
 }
 
-export function harvestCharacterKey(harvest: Harvest) {
+export function harvestCharacterKey(
+  harvest: Pick<Harvest, "actorCharacterId" | "actorName">
+) {
   return JSON.stringify([
     harvest.actorCharacterId,
     harvest.actorCharacterId === undefined ? harvest.actorName : undefined,

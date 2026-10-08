@@ -152,6 +152,7 @@ jobs:
                 fi
                 pnpm exec convex deploy --codegen disable
                 pnpm exec convex run migrations:prepareHistorySummaries --codegen disable
+                pnpm exec convex run migrations:prepareHarvestReaderSummaries --codegen disable
               '
           }
 

@@ -14,6 +14,7 @@ export type AccountSummaryTransaction = Pick<
   | "outgoingTotal"
   | "total"
   | "visibilityScopeId"
+  | "harvestScopeContribution"
 >
 
 type WeekActor = Doc<"accountWeekSummaries">["actors"][number]

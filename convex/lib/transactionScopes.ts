@@ -11,6 +11,9 @@ import {
   type AccountSummaryTransaction,
 } from "./accountSummary"
 import { startOfUtcWeek } from "./time"
+import { applyScopedHarvestSummaryChange } from "./harvestReaderSummary"
+import { harvestCharacterKey } from "./harvestSummary"
+import { calculateHarvestValue } from "../../shared/harvest-value"
 
 type Scope = Pick<
   Doc<"transactionVisibilityScopes">,
@@ -75,6 +78,14 @@ export async function scopeIsVisible(
     !access.operationKinds.some((kind) => kind === scope.kind)
   )
     return false
+  return scopeProductsAreVisible(ctx, access, scope)
+}
+
+export async function scopeProductsAreVisible(
+  ctx: QueryCtx,
+  access: ReaderAccess,
+  scope: Scope
+): Promise<boolean> {
   if (access.productIds === undefined) return true
   if (scope.hasUnlinkedProducts) return false
   const productIds: (string | undefined)[] = [...scope.productIds]
@@ -136,13 +147,20 @@ export async function applyTransactionScopeChange(
     ? await ctx.db.get(before.visibilityScopeId)
     : null
   if (previousScope && before) {
-    await changeScopeWeek(ctx, previousScope._id, before, -1)
+    if (before.kind === "harvest") {
+      // Exclude the changed record when resolving the latest remaining snapshot.
+      if (after)
+        await ctx.db.patch(transactionId, { visibilityScopeId: undefined })
+      await applyScopedHarvestSummaryChange(ctx, previousScope._id, before, -1)
+    } else await changeScopeWeek(ctx, previousScope._id, before, -1)
     await ctx.db.patch(previousScope._id, {
-      balance: previousScope.balance - before.total,
+      balance:
+        previousScope.balance -
+        (isFinancialTransaction(before) ? before.total : 0),
       transactionCount: previousScope.transactionCount - 1,
     })
   }
-  if (after && isFinancialTransaction(after)) {
+  if (after && (isFinancialTransaction(after) || after.kind === "harvest")) {
     const transaction = await ctx.db.get(transactionId)
     if (!transaction)
       throw new Error("Transaction absente lors de son indexation.")
@@ -166,13 +184,48 @@ export async function applyTransactionScopeChange(
           transactionCount: 0,
         })
     await ctx.db.patch(scopeId, {
-      balance: (existing?.balance ?? 0) + after.total,
+      balance:
+        (existing?.balance ?? 0) +
+        (isFinancialTransaction(after) ? after.total : 0),
       transactionCount: (existing?.transactionCount ?? 0) + 1,
     })
-    await changeScopeWeek(ctx, scopeId, after, 1)
-    await ctx.db.patch(transactionId, { visibilityScopeId: scopeId })
+    if (after.kind === "harvest") {
+      const lines = await ctx.db
+        .query("transactionLines")
+        .withIndex("by_transaction", (index) =>
+          index.eq("transactionId", transactionId)
+        )
+        .collect()
+      const harvestScopeContribution = {
+        quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+        lineCount: lines.length,
+        ...calculateHarvestValue(lines),
+      }
+      await ctx.db.patch(transactionId, {
+        visibilityScopeId: scopeId,
+        harvestCharacterKey: harvestCharacterKey(after),
+        harvestScopeContribution,
+      })
+      await applyScopedHarvestSummaryChange(
+        ctx,
+        scopeId,
+        { ...after, harvestScopeContribution },
+        1
+      )
+    } else {
+      await changeScopeWeek(ctx, scopeId, after, 1)
+      await ctx.db.patch(transactionId, {
+        visibilityScopeId: scopeId,
+        harvestCharacterKey: undefined,
+        harvestScopeContribution: undefined,
+      })
+    }
   } else if (after)
-    await ctx.db.patch(transactionId, { visibilityScopeId: undefined })
+    await ctx.db.patch(transactionId, {
+      visibilityScopeId: undefined,
+      harvestCharacterKey: undefined,
+      harvestScopeContribution: undefined,
+    })
   if (previousScope) {
     const remaining = await ctx.db.get(previousScope._id)
     if (remaining?.transactionCount === 0) await ctx.db.delete(remaining._id)
@@ -187,7 +240,7 @@ export async function indexTransactionScope(
   if (
     !transaction ||
     transaction.visibilityScopeId ||
-    !isFinancialTransaction(transaction)
+    (!isFinancialTransaction(transaction) && transaction.kind !== "harvest")
   )
     return
   await applyTransactionScopeChange(ctx, transactionId, undefined, transaction)

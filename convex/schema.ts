@@ -45,6 +45,13 @@ const accountWeekFields = {
   updatedAt: v.number(),
 }
 
+const harvestContributionFields = {
+  quantity: v.number(),
+  lineCount: v.number(),
+  knownValue: v.number(),
+  unpricedLineCount: v.number(),
+}
+
 export default defineSchema({
   readerAccess: defineTable({
     userId: v.string(),
@@ -109,6 +116,24 @@ export default defineSchema({
     startsAt: v.number(),
     harvestCount: v.number(),
   }).index("by_starts_at", ["startsAt"]),
+
+  scopedHarvestSummaries: defineTable({
+    scopeId: v.id("transactionVisibilityScopes"),
+    characterKey: v.string(),
+    actorCharacterId: v.optional(v.id("characters")),
+    actorName: v.string(),
+    weekStartsAt: v.optional(v.number()),
+    harvestCount: v.number(),
+    ...harvestContributionFields,
+    latestOccurredAt: v.number(),
+    latestCreationTime: v.number(),
+  })
+    .index("by_scope_and_week", ["scopeId", "weekStartsAt"])
+    .index("by_scope_and_week_and_character", [
+      "scopeId",
+      "weekStartsAt",
+      "characterKey",
+    ]),
 
   inventorySummaries: defineTable({
     key: v.literal("main"),
@@ -175,6 +200,8 @@ export default defineSchema({
     discount: v.optional(v.number()),
     financial: v.optional(v.boolean()),
     harvestSummaryIndexed: v.optional(v.boolean()),
+    harvestCharacterKey: v.optional(v.string()),
+    harvestScopeContribution: v.optional(v.object(harvestContributionFields)),
     incomingTotal: v.optional(v.number()),
     kind: transactionKind,
     legacyKey: v.optional(v.string()),
@@ -205,6 +232,11 @@ export default defineSchema({
       "occurredAt",
     ])
     .index("by_visibility_scope_and_date", ["visibilityScopeId", "occurredAt"])
+    .index("by_visibility_scope_and_character_and_date", [
+      "visibilityScopeId",
+      "harvestCharacterKey",
+      "occurredAt",
+    ])
     .index("by_legacy_key", ["legacyKey"])
     .index("by_occurred_at", ["occurredAt"])
     .index("by_product_and_date", ["productId", "occurredAt"])

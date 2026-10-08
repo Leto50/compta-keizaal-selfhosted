@@ -2,8 +2,13 @@ import { paginationOptsValidator } from "convex/server"
 import { ConvexError, v } from "convex/values"
 
 import { type Doc, type Id } from "./_generated/dataModel"
-import { mutation, query, type MutationCtx } from "./_generated/server"
-import { requireWriter } from "./lib/auth"
+import {
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server"
+import { requireReadAccess, requireWriter } from "./lib/auth"
 import { loadStockBeforeTransaction } from "./lib/exchange"
 import { applyInventoryProductChanges } from "./lib/inventorySummary"
 import {
@@ -11,12 +16,83 @@ import {
   indexHarvestSummary,
 } from "./lib/harvestSummary"
 import { historySummariesAreReady } from "./lib/historySummaries"
+import { harvestReaderSummariesAreReady } from "./lib/harvestReaderSummary"
+import {
+  applyTransactionScopeChange,
+  indexTransactionScope,
+  loadTransactionScope,
+  scopeProductsAreVisible,
+} from "./lib/transactionScopes"
+import { redactReaderData, type ReaderAccess } from "../shared/reader-access"
 import { assertFiniteRange, assertWholeNumberRange } from "./lib/numbers"
 import { buildTransactionSearchText } from "./lib/transactionSearch"
 import { calculateHarvestValue } from "../shared/harvest-value"
 import { startOfUtcWeek, WEEK_IN_MILLISECONDS } from "../shared/time"
 
 const MAX_QUANTITY = 1_000_000
+
+async function harvestIsVisible(
+  ctx: QueryCtx,
+  access: ReaderAccess | null,
+  harvest: Doc<"transactions">
+) {
+  if (access?.productIds === undefined) return true
+  const scope = harvest.visibilityScopeId
+    ? await ctx.db.get(harvest.visibilityScopeId)
+    : null
+  return scopeProductsAreVisible(
+    ctx,
+    access,
+    scope ?? (await loadTransactionScope(ctx, harvest))
+  )
+}
+
+async function visibleHarvestScopes(ctx: QueryCtx, access: ReaderAccess) {
+  const scopes = await ctx.db
+    .query("transactionVisibilityScopes")
+    .withIndex("by_kind", (index) => index.eq("kind", "harvest"))
+    .collect()
+  const visible = await Promise.all(
+    scopes.map((scope) => scopeProductsAreVisible(ctx, access, scope))
+  )
+  return scopes.filter((_, index) => visible[index])
+}
+
+function groupSummaries(
+  summaries: Pick<
+    Doc<"harvestSummaries">,
+    | "characterKey"
+    | "actorCharacterId"
+    | "actorName"
+    | "harvestCount"
+    | "quantity"
+    | "lineCount"
+    | "knownValue"
+    | "unpricedLineCount"
+  >[],
+  requestedPage: number
+) {
+  summaries.sort(
+    (a, b) =>
+      a.actorName.localeCompare(b.actorName, "fr", { numeric: true }) ||
+      a.characterKey.localeCompare(b.characterKey)
+  )
+  const pageCount = Math.max(1, Math.ceil(summaries.length / 6))
+  const page = Math.min(requestedPage, pageCount - 1)
+  return {
+    page,
+    pageCount,
+    groups: summaries.slice(page * 6, (page + 1) * 6).map((summary) => ({
+      key: summary.characterKey,
+      character: { id: summary.actorCharacterId, name: summary.actorName },
+      harvestCount: summary.harvestCount,
+      quantity: summary.quantity,
+      lineCount: summary.lineCount,
+      knownValue: summary.knownValue,
+      unpricedLineCount: summary.unpricedLineCount,
+    })),
+  }
+}
 
 function assertValidWeek(week: number | undefined) {
   if (
@@ -186,7 +262,7 @@ export const listPage = query({
     weekStartsAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireWriter(ctx)
+    const { access } = await requireReadAccess(ctx, "harvests")
     const week = args.weekStartsAt
     assertValidWeek(week)
     const character = args.character
@@ -232,28 +308,64 @@ export const listPage = query({
         Math.max(1, Math.round(args.paginationOpts.numItems))
       ),
     })
-    return {
-      ...result,
-      page: await Promise.all(
-        result.page.map(async (harvest) => ({
-          ...harvest,
-          lines: await ctx.db
-            .query("transactionLines")
-            .withIndex("by_transaction", (index) =>
-              index.eq("transactionId", harvest._id)
-            )
-            .collect(),
-        }))
-      ),
-    }
+    const visibility = await Promise.all(
+      result.page.map((harvest) => harvestIsVisible(ctx, access, harvest))
+    )
+    return redactReaderData(
+      {
+        ...result,
+        page: await Promise.all(
+          result.page
+            .filter((_, index) => visibility[index])
+            .map(async (harvest) => ({
+              ...harvest,
+              lines: await ctx.db
+                .query("transactionLines")
+                .withIndex("by_transaction", (index) =>
+                  index.eq("transactionId", harvest._id)
+                )
+                .collect(),
+            }))
+        ),
+      },
+      access
+    )
   },
 })
 
 export const listWeeks = query({
   args: {},
   handler: async (ctx) => {
-    await requireWriter(ctx)
-    if (await historySummariesAreReady(ctx)) {
+    const { access } = await requireReadAccess(ctx, "harvests")
+    if (
+      access?.productIds !== undefined &&
+      (await harvestReaderSummariesAreReady(ctx))
+    ) {
+      const scopes = await visibleHarvestScopes(ctx, access)
+      const summaries = (
+        await Promise.all(
+          scopes.map((scope) =>
+            ctx.db
+              .query("scopedHarvestSummaries")
+              .withIndex("by_scope_and_week", (index) =>
+                index.eq("scopeId", scope._id)
+              )
+              .collect()
+          )
+        )
+      ).flat()
+      return [
+        ...new Set(
+          summaries
+            .map((summary) => summary.weekStartsAt)
+            .filter((week): week is number => week !== undefined)
+        ),
+      ].sort((a, b) => b - a)
+    }
+    if (
+      access?.productIds === undefined &&
+      (await historySummariesAreReady(ctx))
+    ) {
       const weeks = await ctx.db
         .query("harvestWeekSummaries")
         .withIndex("by_starts_at")
@@ -265,8 +377,15 @@ export const listWeeks = query({
       .query("transactions")
       .withIndex("by_kind_and_date", (index) => index.eq("kind", "harvest"))
       .collect()
+    const visibility = await Promise.all(
+      harvests.map((harvest) => harvestIsVisible(ctx, access, harvest))
+    )
     return [
-      ...new Set(harvests.map((harvest) => startOfUtcWeek(harvest.occurredAt))),
+      ...new Set(
+        harvests
+          .filter((_, index) => visibility[index])
+          .map((harvest) => startOfUtcWeek(harvest.occurredAt))
+      ),
     ].sort((a, b) => b - a)
   },
 })
@@ -277,37 +396,64 @@ export const listGroups = query({
     weekStartsAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireWriter(ctx)
+    const { access } = await requireReadAccess(ctx, "harvests")
     assertWholeNumberRange(args.page, 0, Number.MAX_SAFE_INTEGER, "La page")
     const week = args.weekStartsAt
     assertValidWeek(week)
-    if (await historySummariesAreReady(ctx)) {
+    if (
+      access?.productIds !== undefined &&
+      (await harvestReaderSummariesAreReady(ctx))
+    ) {
+      const scopes = await visibleHarvestScopes(ctx, access)
+      const summaries = (
+        await Promise.all(
+          scopes.map((scope) =>
+            ctx.db
+              .query("scopedHarvestSummaries")
+              .withIndex("by_scope_and_week", (index) =>
+                index.eq("scopeId", scope._id).eq("weekStartsAt", week)
+              )
+              .collect()
+          )
+        )
+      ).flat()
+      const groups = new Map<string, Doc<"scopedHarvestSummaries">>()
+      for (const summary of summaries) {
+        const group = groups.get(summary.characterKey)
+        if (!group) groups.set(summary.characterKey, { ...summary })
+        else {
+          group.harvestCount += summary.harvestCount
+          group.quantity += summary.quantity
+          group.lineCount += summary.lineCount
+          group.knownValue += summary.knownValue
+          group.unpricedLineCount += summary.unpricedLineCount
+          if (
+            summary.latestOccurredAt > group.latestOccurredAt ||
+            (summary.latestOccurredAt === group.latestOccurredAt &&
+              summary.latestCreationTime > group.latestCreationTime)
+          ) {
+            group.actorName = summary.actorName
+            group.latestOccurredAt = summary.latestOccurredAt
+            group.latestCreationTime = summary.latestCreationTime
+          }
+        }
+      }
+      return redactReaderData(
+        groupSummaries([...groups.values()], args.page),
+        access
+      )
+    }
+    if (
+      access?.productIds === undefined &&
+      (await historySummariesAreReady(ctx))
+    ) {
       const summaries = await ctx.db
         .query("harvestSummaries")
         .withIndex("by_week_and_character", (index) =>
           index.eq("weekStartsAt", week)
         )
         .collect()
-      summaries.sort(
-        (a, b) =>
-          a.actorName.localeCompare(b.actorName, "fr", { numeric: true }) ||
-          a.characterKey.localeCompare(b.characterKey)
-      )
-      const pageCount = Math.max(1, Math.ceil(summaries.length / 6))
-      const page = Math.min(args.page, pageCount - 1)
-      return {
-        page,
-        pageCount,
-        groups: summaries.slice(page * 6, (page + 1) * 6).map((summary) => ({
-          key: summary.characterKey,
-          character: { id: summary.actorCharacterId, name: summary.actorName },
-          harvestCount: summary.harvestCount,
-          quantity: summary.quantity,
-          lineCount: summary.lineCount,
-          knownValue: summary.knownValue,
-          unpricedLineCount: summary.unpricedLineCount,
-        })),
-      }
+      return redactReaderData(groupSummaries(summaries, args.page), access)
     }
     const harvests = await ctx.db
       .query("transactions")
@@ -329,7 +475,10 @@ export const listGroups = query({
         harvests: Doc<"transactions">[]
       }
     >()
-    for (const harvest of harvests) {
+    const visibility = await Promise.all(
+      harvests.map((harvest) => harvestIsVisible(ctx, access, harvest))
+    )
+    for (const harvest of harvests.filter((_, index) => visibility[index])) {
       const character = {
         id: harvest.actorCharacterId,
         name: harvest.actorName,
@@ -350,35 +499,38 @@ export const listGroups = query({
     )
     const pageCount = Math.max(1, Math.ceil(sortedGroups.length / 6))
     const page = Math.min(args.page, pageCount - 1)
-    return {
-      page,
-      pageCount,
-      groups: await Promise.all(
-        sortedGroups.slice(page * 6, (page + 1) * 6).map(async (group) => {
-          // Read every harvest in the group so its summary is independent of detail pagination.
-          const lines = (
-            await Promise.all(
-              group.harvests.map((harvest) =>
-                ctx.db
-                  .query("transactionLines")
-                  .withIndex("by_transaction", (index) =>
-                    index.eq("transactionId", harvest._id)
-                  )
-                  .collect()
+    return redactReaderData(
+      {
+        page,
+        pageCount,
+        groups: await Promise.all(
+          sortedGroups.slice(page * 6, (page + 1) * 6).map(async (group) => {
+            // Read every harvest in the group so its summary is independent of detail pagination.
+            const lines = (
+              await Promise.all(
+                group.harvests.map((harvest) =>
+                  ctx.db
+                    .query("transactionLines")
+                    .withIndex("by_transaction", (index) =>
+                      index.eq("transactionId", harvest._id)
+                    )
+                    .collect()
+                )
               )
-            )
-          ).flat()
-          return {
-            key: group.key,
-            character: group.character,
-            harvestCount: group.harvests.length,
-            quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
-            lineCount: lines.length,
-            ...calculateHarvestValue(lines),
-          }
-        })
-      ),
-    }
+            ).flat()
+            return {
+              key: group.key,
+              character: group.character,
+              harvestCount: group.harvests.length,
+              quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+              lineCount: lines.length,
+              ...calculateHarvestValue(lines),
+            }
+          })
+        ),
+      },
+      access
+    )
   },
 })
 
@@ -410,6 +562,7 @@ export const record = mutation({
     }
     await writeHarvestLines(ctx, transactionId, args.occurredAt, prepared)
     await indexHarvestSummary(ctx, transactionId)
+    await indexTransactionScope(ctx, transactionId)
     await applyInventoryProductChanges(
       ctx,
       prepared.lines.map(({ product, quantity }) => ({
@@ -525,6 +678,12 @@ export const update = mutation({
       ctx,
       { transaction, lines: existingLines },
       { transaction: updatedHarvest, lines: updatedLines }
+    )
+    await applyTransactionScopeChange(
+      ctx,
+      transaction._id,
+      transaction,
+      updatedHarvest
     )
     await applyInventoryProductChanges(ctx, [...changes.values()])
     await ctx.db.insert("auditLogs", {

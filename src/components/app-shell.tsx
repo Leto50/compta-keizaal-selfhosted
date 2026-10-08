@@ -70,7 +70,7 @@ const navigation: readonly NavigationItem[] = [
     to: "/journal",
     sections: ["transactions"],
   },
-  { icon: Leaf, label: "Récoltes", to: "/recoltes", writersOnly: true },
+  { icon: Leaf, label: "Récoltes", to: "/recoltes", sections: ["harvests"] },
   { icon: Landmark, label: "Compte", to: "/compte", sections: ["account"] },
   {
     icon: ClipboardList,

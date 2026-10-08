@@ -984,7 +984,7 @@ describe("récoltes", () => {
     }
   )
 
-  it("réserve la saisie et l’historique aux employés et administrateurs", async () => {
+  it("réserve la saisie aux employés et administrateurs et refuse l’historique aux lecteurs sans droit explicite", async () => {
     const { backend, member, args } = await setup()
     const reader = await asAuthenticatedUser(backend, "reader")
     const admin = await asAuthenticatedUser(backend, "admin")
@@ -998,7 +998,7 @@ describe("récoltes", () => {
       "lecture seule"
     )
     await expect(reader.query(api.harvests.listPage, pageArgs)).rejects.toThrow(
-      "lecture seule"
+      "ne permet pas de consulter"
     )
     const { transactionId } = await member.mutation(api.harvests.record, args)
     expect(

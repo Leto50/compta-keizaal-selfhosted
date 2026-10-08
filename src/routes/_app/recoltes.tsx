@@ -1,15 +1,17 @@
 import { convexQuery } from "@convex-dev/react-query"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, Link, redirect } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 
 import { HarvestDialog } from "@/components/harvest-dialog"
-import { HarvestHistory } from "@/components/harvest-history"
+import {
+  HarvestHistory,
+  type HarvestHistoryProps,
+} from "@/components/harvest-history"
 import { HarvestGroups } from "@/components/harvest-groups"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Select,
   SelectContent,
@@ -19,6 +21,7 @@ import {
 } from "@/components/ui/select"
 import { usePermissions } from "@/hooks/use-permissions"
 import { formatHarvestWeek } from "@/lib/harvest-weeks"
+import { readerRouteAccess, withReaderAccess } from "@/lib/reader-route-access"
 import { api } from "../../../convex/_generated/api"
 import { canWrite } from "../../../shared/account-roles"
 
@@ -28,27 +31,27 @@ const initialPageArgs = {
 }
 
 export const Route = createFileRoute("/_app/recoltes")({
-  beforeLoad: async ({ context }) => {
-    const user = await context.queryClient.fetchQuery({
-      ...convexQuery(api.auth.getCurrentUser, {}),
-      staleTime: 0,
-    })
-    if (!canWrite(user?.role)) {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      throw redirect({ to: "/" })
-    }
-  },
-  component: HarvestAccessGuard,
+  beforeLoad: readerRouteAccess("harvests"),
+  component: withReaderAccess(HarvestPage, "harvests"),
   errorComponent: PageError,
   loader: async ({ context }) => {
+    const user = await context.queryClient.ensureQueryData(
+      convexQuery(api.auth.getCurrentUser, {})
+    )
     await Promise.all([
       context.queryClient.ensureQueryData(
         convexQuery(api.harvests.listPage, initialPageArgs)
       ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.products.list, { category: "ingredient" })
-      ),
-      context.queryClient.ensureQueryData(convexQuery(api.characters.list, {})),
+      canWrite(user?.role)
+        ? context.queryClient.ensureQueryData(
+            convexQuery(api.products.list, { category: "ingredient" })
+          )
+        : undefined,
+      canWrite(user?.role)
+        ? context.queryClient.ensureQueryData(
+            convexQuery(api.characters.list, {})
+          )
+        : undefined,
       context.queryClient.ensureQueryData(
         convexQuery(api.harvests.listWeeks, {})
       ),
@@ -57,36 +60,35 @@ export const Route = createFileRoute("/_app/recoltes")({
   pendingComponent: PageSkeleton,
 })
 
-function HarvestAccessGuard() {
-  const { canWrite, isPending } = usePermissions()
-  if (isPending) return <PageSkeleton />
-  if (!canWrite)
-    return (
-      <Alert>
-        <AlertTitle>Accès non autorisé</AlertTitle>
-        <AlertDescription>
-          Cette rubrique est réservée aux employés et administrateurs.{" "}
-          <Link to="/" className="underline">
-            Retour à l’accueil
-          </Link>
-        </AlertDescription>
-      </Alert>
-    )
-  return <HarvestsPage />
+function HarvestPage() {
+  const { canWrite } = usePermissions()
+  return canWrite ? (
+    <HarvestWriterPage />
+  ) : (
+    <HarvestsPage characters={[]} products={[]} />
+  )
 }
 
-function HarvestsPage() {
-  const [groupBy, setGroupBy] = useState<"none" | "character">("none")
-  const [selectedWeek, setSelectedWeek] = useState("all")
-  const weekStartsAt = selectedWeek === "all" ? undefined : Number(selectedWeek)
-  const { data: weeks } = useSuspenseQuery(
-    convexQuery(api.harvests.listWeeks, {})
-  )
+function HarvestWriterPage() {
   const { data: products } = useSuspenseQuery(
     convexQuery(api.products.list, { category: "ingredient" })
   )
   const { data: characters } = useSuspenseQuery(
     convexQuery(api.characters.list, {})
+  )
+  return <HarvestsPage characters={characters} products={products} />
+}
+
+function HarvestsPage({
+  characters,
+  products,
+}: Pick<HarvestHistoryProps, "characters" | "products">) {
+  const { canWrite } = usePermissions()
+  const [groupBy, setGroupBy] = useState<"none" | "character">("none")
+  const [selectedWeek, setSelectedWeek] = useState("all")
+  const weekStartsAt = selectedWeek === "all" ? undefined : Number(selectedWeek)
+  const { data: weeks } = useSuspenseQuery(
+    convexQuery(api.harvests.listWeeks, {})
   )
 
   return (
@@ -94,7 +96,11 @@ function HarvestsPage() {
       <PageHeader
         eyebrow="Entrées de stock"
         title="Récoltes"
-        action={<HarvestDialog characters={characters} products={products} />}
+        action={
+          canWrite ? (
+            <HarvestDialog characters={characters} products={products} />
+          ) : undefined
+        }
       >
         Qui a récolté quoi, quand et en quelle quantité. Les ingrédients
         collectés rejoignent directement l’inventaire.

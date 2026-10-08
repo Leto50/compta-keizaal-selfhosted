@@ -1019,6 +1019,50 @@ describe("interface lecteur", () => {
     expect(screen.queryByText("Lecteur · lecture seule")).not.toBeNull()
   })
 
+  it.each([undefined, defaultReaderAccess])(
+    "propose Récoltes décoché pour un lecteur avec la configuration %s et enregistre seulement une activation explicite",
+    async (readerAccess) => {
+      state.role = "admin"
+      render(
+        <AccountAccessDialog
+          account={{
+            id: "reader",
+            identifier: "reader",
+            name: "Lecteur",
+            role: "reader",
+            banned: false,
+            readerAccess,
+          }}
+          isLastActiveAdmin={false}
+          trigger={<button>Gérer l’accès test</button>}
+        />
+      )
+      fireEvent.click(
+        screen.getByRole("button", { name: "Gérer l’accès test" })
+      )
+      const checkbox = screen.getByRole<HTMLInputElement>("checkbox", {
+        name: "Récoltes",
+      })
+      expect(checkbox.checked).toBe(false)
+      fireEvent.click(checkbox)
+      fireEvent.click(
+        screen.getByRole("button", { name: "Enregistrer l’accès" })
+      )
+      await waitFor(() =>
+        expect(
+          state.mutations.get("administration:saveAccountAccess")
+        ).toHaveBeenCalledWith({
+          userId: "reader",
+          role: "reader",
+          access: {
+            ...defaultReaderAccess,
+            sections: [...defaultReaderAccess.sections, "harvests"],
+          },
+        })
+      )
+    }
+  )
+
   it("affiche l’inventaire avec ses filtres et sans modification", () => {
     render(page(InventoryRoute))
     expect(screen.queryByText("Blé test")).not.toBeNull()
@@ -1318,6 +1362,133 @@ describe("rubrique récoltes", () => {
   })
   afterEach(() => {
     state.data.set("products:list", originalProducts)
+  })
+
+  it.each([true, false])(
+    "consulte les récoltes avec ce seul droit, sans catalogues ni actions et respecte la visibilité des prix d’achat (%s)",
+    (showPurchasePrices) => {
+      state.role = "reader"
+      state.access = {
+        ...defaultReaderAccess,
+        sections: ["harvests"],
+        operationKinds: [],
+        showPurchasePrices,
+        showSalePrices: false,
+      }
+      state.data.set("harvests:listPage", {
+        page: [
+          {
+            _id: "harvest",
+            actorName: "Mira",
+            occurredAt: Date.UTC(2026, 9, 8, 12),
+            lines: [
+              {
+                _id: "line",
+                productName: "Lys bleu",
+                quantity: 3,
+                purchaseUnitPrice: 4,
+              },
+            ],
+          },
+        ],
+        isDone: true,
+        continueCursor: "done",
+      })
+      state.data.set("harvests:listGroups", {
+        groups: [
+          {
+            key: "mira",
+            character: { name: "Mira" },
+            harvestCount: 1,
+            quantity: 3,
+            knownValue: 12,
+            lineCount: 1,
+            unpricedLineCount: 0,
+          },
+        ],
+        page: 0,
+        pageCount: 1,
+      })
+      const view = render(
+        <TooltipProvider>
+          <AppShell>{page(HarvestsRoute)}</AppShell>
+        </TooltipProvider>
+      )
+      expect(screen.getByRole("link", { name: "Récoltes" })).not.toBeNull()
+      expect(screen.getByText("Lys bleu")).not.toBeNull()
+      expect(screen.queryByRole("columnheader", { name: "Actions" })).toBeNull()
+      expect(
+        screen.queryByRole("columnheader", { name: "Économie estimée" }) !==
+          null
+      ).toBe(showPurchasePrices)
+      expect(
+        screen.queryByRole("button", {
+          name: /Nouvelle récolte|Modifier|Supprimer/,
+        })
+      ).toBeNull()
+      expect(
+        state.queries.some(
+          (query) =>
+            query[1] === "products:list" || query[1] === "characters:list"
+        )
+      ).toBe(false)
+      fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+      fireEvent.click(screen.getByRole("option", { name: "Personnage" }))
+      expect(screen.queryByText("Économie estimée à l’achat") !== null).toBe(
+        showPurchasePrices
+      )
+      if (!showPurchasePrices)
+        expect(
+          screen.queryByText(/septim|Tarif d’achat|Valeur partielle/)
+        ).toBeNull()
+      fireEvent.click(
+        screen.getByRole("button", { name: "Voir les récoltes : Mira" })
+      )
+      expect(screen.getByText("Lys bleu")).not.toBeNull()
+      state.access = { ...state.access, sections: [] }
+      view.rerender(
+        <TooltipProvider>
+          <AppShell>{page(HarvestsRoute)}</AppShell>
+        </TooltipProvider>
+      )
+      expect(screen.queryByText("Lys bleu")).toBeNull()
+      expect(screen.queryByRole("link", { name: "Récoltes" })).toBeNull()
+      expect(screen.getByText("Accès non autorisé")).not.toBeNull()
+    }
+  )
+
+  it("précharge seulement les données de récoltes pour un lecteur autorisé", async () => {
+    const queries: string[] = []
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          queryFn: async ({ queryKey }) => {
+            const name = queryKey[1] as string
+            queries.push(name)
+            if (name === "auth:getCurrentUser")
+              return {
+                role: "reader",
+                readerAccess: {
+                  ...defaultReaderAccess,
+                  sections: ["harvests"],
+                },
+              }
+            if (name === "products:list" || name === "characters:list")
+              throw new Error("Catalogue interdit")
+            return state.data.get(name)
+          },
+        },
+      },
+    })
+    const loader = HarvestsRoute.options.loader as unknown as (options: {
+      context: { queryClient: QueryClient }
+    }) => Promise<unknown>
+    await loader({ context: { queryClient } })
+    expect(queries.sort()).toEqual([
+      "auth:getCurrentUser",
+      "harvests:listPage",
+      "harvests:listWeeks",
+    ])
   })
 
   it.each([false, true])(

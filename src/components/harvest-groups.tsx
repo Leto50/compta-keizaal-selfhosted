@@ -17,6 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { formatNumber, formatQuantity } from "@/lib/format"
+import { usePermissions } from "@/hooks/use-permissions"
 import { api } from "../../convex/_generated/api"
 
 type Group = FunctionReturnType<
@@ -91,6 +92,7 @@ function HarvestGroup({
   products,
   weekStartsAt,
 }: HarvestHistoryProps & Readonly<{ group: Group }>) {
+  const { showPurchasePrices } = usePermissions()
   const [open, setOpen] = useState(false)
   const label = group.character.name
   return (
@@ -115,13 +117,15 @@ function HarvestGroup({
           </span>
           +{formatQuantity(group.quantity)}
         </p>
-        <HarvestValueAmount
-          compact
-          showLabel
-          knownValue={group.knownValue}
-          unpricedLineCount={group.unpricedLineCount}
-          lineCount={group.lineCount}
-        />
+        {showPurchasePrices ? (
+          <HarvestValueAmount
+            compact
+            showLabel
+            knownValue={group.knownValue}
+            unpricedLineCount={group.unpricedLineCount}
+            lineCount={group.lineCount}
+          />
+        ) : null}
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"

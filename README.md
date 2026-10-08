@@ -95,6 +95,7 @@ Après un déploiement manuel de cette version, lancer une fois :
 
 ```bash
 pnpm exec convex run migrations:prepareHistorySummaries --codegen disable
+pnpm exec convex run migrations:prepareHarvestReaderSummaries --codegen disable
 ```
 
 Le déploiement automatique lance cette reprise sur chaque instance. Elle traite
@@ -133,8 +134,16 @@ ni les tarifs historiques, ni les paramètres comptables.
   Masquer un type de prix masque également les montants et totaux dérivés.
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
-- La rubrique « Récoltes », réservée aux employés et administrateurs, permet
+- La rubrique « Récoltes » permet aux employés et administrateurs
   de saisir jusqu’à 50 ingrédients actifs suivis en stock en une seule fois.
+  Sa consultation par les lecteurs nécessite l’activation explicite du droit
+  « Récoltes » dans « Gérer l’accès ». Ce droit est désactivé par défaut pour
+  les nouveaux lecteurs comme pour les lecteurs déjà créés, avec ou sans
+  configuration enregistrée. Le déploiement et la reprise des résumés ne
+  l’activent jamais. Les restrictions sur les produits s’appliquent aussi aux
+  récoltes mixtes, aux groupes et aux semaines visibles. Masquer les prix
+  d’achat masque leur économie estimée. Les lecteurs ne peuvent ni saisir,
+  ni modifier, ni supprimer une récolte.
   L’historique conserve le personnage, le compte ayant saisi la récolte, la date,
   les ingrédients et les quantités. Les stocks sont augmentés atomiquement,
   sans modifier les transactions financières, le compte ou les salaires.

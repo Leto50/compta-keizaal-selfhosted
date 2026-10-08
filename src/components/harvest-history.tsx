@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDate, formatQuantity } from "@/lib/format"
+import { usePermissions } from "@/hooks/use-permissions"
 import { api } from "../../convex/_generated/api"
 
 const PAGE_SIZE = 30
@@ -42,6 +43,7 @@ export function HarvestHistory({
   weekStartsAt,
   label = "Historique des récoltes",
 }: HarvestHistoryProps) {
+  const { canWrite, showPurchasePrices } = usePermissions()
   const [pagination, setPagination] = useState<{
     cursor: string | null
     previousCursors: (string | null)[]
@@ -66,8 +68,9 @@ export function HarvestHistory({
                 : "Aucune récolte sur cette page"}
           </AlertTitle>
           <AlertDescription>
-            Utilisez « Nouvelle récolte » pour ajouter les ingrédients collectés
-            au stock.
+            {canWrite
+              ? "Utilisez « Nouvelle récolte » pour ajouter les ingrédients collectés au stock."
+              : "Aucune récolte accessible avec les filtres sélectionnés."}
           </AlertDescription>
         </Alert>
       ) : (
@@ -83,12 +86,16 @@ export function HarvestHistory({
                 <TableHead scope="col" className="text-right">
                   Quantité
                 </TableHead>
-                <TableHead scope="col" className="pr-4 text-right">
-                  Économie estimée
-                </TableHead>
-                <TableHead scope="col" className="text-right">
-                  Actions
-                </TableHead>
+                {showPurchasePrices ? (
+                  <TableHead scope="col" className="pr-4 text-right">
+                    Économie estimée
+                  </TableHead>
+                ) : null}
+                {canWrite ? (
+                  <TableHead scope="col" className="text-right">
+                    Actions
+                  </TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody className="max-md:block">
@@ -166,19 +173,23 @@ export function HarvestHistory({
                       )
                     )}
                   </TableCell>
-                  <TableCell className="pr-4 text-right whitespace-normal max-md:col-start-2 max-md:row-start-4 max-md:p-0 max-md:pt-2">
-                    <HarvestValueSummary compact lines={harvest.lines} />
-                  </TableCell>
-                  <TableCell className="pr-2 text-right max-md:absolute max-md:top-3 max-md:right-3 max-md:p-0">
-                    <div className="flex justify-end gap-1">
-                      <HarvestDialog
-                        characters={characters}
-                        products={products}
-                        harvest={harvest}
-                      />
-                      <DeleteHarvestDialog harvest={harvest} />
-                    </div>
-                  </TableCell>
+                  {showPurchasePrices ? (
+                    <TableCell className="pr-4 text-right whitespace-normal max-md:col-start-2 max-md:row-start-4 max-md:p-0 max-md:pt-2">
+                      <HarvestValueSummary compact lines={harvest.lines} />
+                    </TableCell>
+                  ) : null}
+                  {canWrite ? (
+                    <TableCell className="pr-2 text-right max-md:absolute max-md:top-3 max-md:right-3 max-md:p-0">
+                      <div className="flex justify-end gap-1">
+                        <HarvestDialog
+                          characters={characters}
+                          products={products}
+                          harvest={harvest}
+                        />
+                        <DeleteHarvestDialog harvest={harvest} />
+                      </div>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

@@ -33,6 +33,7 @@ import {
   resumeHistorySummariesAfterImport,
 } from "./lib/historySummaries"
 import { indexHarvestSummary } from "./lib/harvestSummary"
+import { HARVEST_READER_SUMMARIES_KEY } from "./lib/harvestReaderSummary"
 import {
   applyTransactionScopeChange,
   indexTransactionScope,
@@ -1493,6 +1494,45 @@ export const prepareHistorySummaries = internalMutation({
       await ctx.scheduler.runAfter(
         0,
         internal.migrations.prepareHistorySummaries,
+        {}
+      )
+    return { ready: result.isDone, indexedTransactions: result.page.length }
+  },
+})
+
+export const prepareHarvestReaderSummaries = internalMutation({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<{ ready: boolean; indexedTransactions: number }> => {
+    const state = await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (index) =>
+        index.eq("key", HARVEST_READER_SUMMARIES_KEY)
+      )
+      .unique()
+    if (state?.value === "ready") return { ready: true, indexedTransactions: 0 }
+    const cursor: string | null = state
+      ? (JSON.parse(state.value) as string)
+      : null
+    const result = await ctx.db
+      .query("transactions")
+      .withIndex("by_kind_and_date", (index) => index.eq("kind", "harvest"))
+      .order("asc")
+      .paginate({ cursor, numItems: 10 })
+    for (const transaction of result.page)
+      await indexTransactionScope(ctx, transaction._id)
+    const details = {
+      key: HARVEST_READER_SUMMARIES_KEY,
+      updatedAt: Date.now(),
+      value: result.isDone ? "ready" : JSON.stringify(result.continueCursor),
+    }
+    if (state) await ctx.db.replace(state._id, details)
+    else await ctx.db.insert("systemSettings", details)
+    if (!result.isDone)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.prepareHarvestReaderSummaries,
         {}
       )
     return { ready: result.isDone, indexedTransactions: result.page.length }
