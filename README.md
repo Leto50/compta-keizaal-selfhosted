@@ -83,6 +83,27 @@ pnpm build
 
 ## Règles métier
 
+Les totaux des récoltes et des comptes lecteurs sont enregistrés à chaque
+création, correction ou suppression, sans supprimer les opérations anciennes.
+Les historiques restent paginés et le compte affiche les huit dernières semaines.
+Les résumés des lecteurs sont regroupés par type d’opération et références :
+leurs lectures dépendent des combinaisons de produits présentes, plutôt que du
+nombre total d’opérations. Les restrictions sur les produits et les lots restent
+appliquées côté serveur.
+
+Après un déploiement manuel de cette version, lancer une fois :
+
+```bash
+pnpm exec convex run migrations:prepareHistorySummaries --codegen disable
+```
+
+Le déploiement automatique lance cette reprise sur chaque instance. Elle traite
+au plus dix opérations par mutation et poursuit les lots en arrière-plan. Elle
+peut être relancée après une interruption, sans doubler les totaux. Les écritures
+restent possibles pendant la reprise ; les vues utilisent leur calcul précédent
+jusqu’à ce que les résumés soient complets. La reprise ne modifie ni les stocks,
+ni les tarifs historiques, ni les paramètres comptables.
+
 - Les données métier exigent une session valide. Seul le nom public du site
   est consultable avant la connexion.
 - Un administrateur peut modifier le nom dans « Accès & réglages → Site ».

@@ -6,6 +6,11 @@ import { mutation, query, type MutationCtx } from "./_generated/server"
 import { requireWriter } from "./lib/auth"
 import { loadStockBeforeTransaction } from "./lib/exchange"
 import { applyInventoryProductChanges } from "./lib/inventorySummary"
+import {
+  applyHarvestSummaryChange,
+  indexHarvestSummary,
+} from "./lib/harvestSummary"
+import { historySummariesAreReady } from "./lib/historySummaries"
 import { assertFiniteRange, assertWholeNumberRange } from "./lib/numbers"
 import { buildTransactionSearchText } from "./lib/transactionSearch"
 import { calculateHarvestValue } from "../shared/harvest-value"
@@ -185,19 +190,33 @@ export const listPage = query({
     const week = args.weekStartsAt
     assertValidWeek(week)
     const character = args.character
-    let harvests = character
-      ? ctx.db
-          .query("transactions")
-          .withIndex("by_kind_and_character_and_date", (index) => {
-            const range = index
-              .eq("kind", "harvest")
-              .eq("actorCharacterId", character.id)
-            return week === undefined
-              ? range
-              : range
-                  .gte("occurredAt", week)
-                  .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
-          })
+    const harvests = character
+      ? character.id === undefined
+        ? ctx.db
+            .query("transactions")
+            .withIndex("by_kind_and_character_and_name_and_date", (index) => {
+              const range = index
+                .eq("kind", "harvest")
+                .eq("actorCharacterId", undefined)
+                .eq("actorName", character.name)
+              return week === undefined
+                ? range
+                : range
+                    .gte("occurredAt", week)
+                    .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
+            })
+        : ctx.db
+            .query("transactions")
+            .withIndex("by_kind_and_character_and_date", (index) => {
+              const range = index
+                .eq("kind", "harvest")
+                .eq("actorCharacterId", character.id)
+              return week === undefined
+                ? range
+                : range
+                    .gte("occurredAt", week)
+                    .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
+            })
       : ctx.db.query("transactions").withIndex("by_kind_and_date", (index) => {
           const range = index.eq("kind", "harvest")
           return week === undefined
@@ -206,11 +225,6 @@ export const listPage = query({
                 .gte("occurredAt", week)
                 .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
         })
-    if (character && character.id === undefined) {
-      harvests = harvests.filter((filter) =>
-        filter.eq(filter.field("actorName"), character.name)
-      )
-    }
     const result = await harvests.order("desc").paginate({
       ...args.paginationOpts,
       numItems: Math.min(
@@ -239,6 +253,14 @@ export const listWeeks = query({
   args: {},
   handler: async (ctx) => {
     await requireWriter(ctx)
+    if (await historySummariesAreReady(ctx)) {
+      const weeks = await ctx.db
+        .query("harvestWeekSummaries")
+        .withIndex("by_starts_at")
+        .order("desc")
+        .collect()
+      return weeks.map((week) => week.startsAt)
+    }
     const harvests = await ctx.db
       .query("transactions")
       .withIndex("by_kind_and_date", (index) => index.eq("kind", "harvest"))
@@ -259,6 +281,34 @@ export const listGroups = query({
     assertWholeNumberRange(args.page, 0, Number.MAX_SAFE_INTEGER, "La page")
     const week = args.weekStartsAt
     assertValidWeek(week)
+    if (await historySummariesAreReady(ctx)) {
+      const summaries = await ctx.db
+        .query("harvestSummaries")
+        .withIndex("by_week_and_character", (index) =>
+          index.eq("weekStartsAt", week)
+        )
+        .collect()
+      summaries.sort(
+        (a, b) =>
+          a.actorName.localeCompare(b.actorName, "fr", { numeric: true }) ||
+          a.characterKey.localeCompare(b.characterKey)
+      )
+      const pageCount = Math.max(1, Math.ceil(summaries.length / 6))
+      const page = Math.min(args.page, pageCount - 1)
+      return {
+        page,
+        pageCount,
+        groups: summaries.slice(page * 6, (page + 1) * 6).map((summary) => ({
+          key: summary.characterKey,
+          character: { id: summary.actorCharacterId, name: summary.actorName },
+          harvestCount: summary.harvestCount,
+          quantity: summary.quantity,
+          lineCount: summary.lineCount,
+          knownValue: summary.knownValue,
+          unpricedLineCount: summary.unpricedLineCount,
+        })),
+      }
+    }
     const harvests = await ctx.db
       .query("transactions")
       .withIndex("by_kind_and_date", (index) => {
@@ -359,6 +409,7 @@ export const record = mutation({
       })
     }
     await writeHarvestLines(ctx, transactionId, args.occurredAt, prepared)
+    await indexHarvestSummary(ctx, transactionId)
     await applyInventoryProductChanges(
       ctx,
       prepared.lines.map(({ product, quantity }) => ({
@@ -461,6 +512,19 @@ export const update = mutation({
       args.occurredAt,
       prepared,
       baseStocks
+    )
+    const updatedHarvest = await ctx.db.get(transaction._id)
+    const updatedLines = await ctx.db
+      .query("transactionLines")
+      .withIndex("by_transaction", (index) =>
+        index.eq("transactionId", transaction._id)
+      )
+      .collect()
+    if (!updatedHarvest) throw new Error("Récolte absente après sa correction.")
+    await applyHarvestSummaryChange(
+      ctx,
+      { transaction, lines: existingLines },
+      { transaction: updatedHarvest, lines: updatedLines }
     )
     await applyInventoryProductChanges(ctx, [...changes.values()])
     await ctx.db.insert("auditLogs", {

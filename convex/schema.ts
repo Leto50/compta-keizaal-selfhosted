@@ -26,6 +26,25 @@ export const readerAccessValidator = v.object({
   ),
 })
 
+const accountWeekFields = {
+  actors: v.array(
+    v.object({
+      actorCharacterId: v.optional(v.id("characters")),
+      actorName: v.string(),
+      incoming: v.number(),
+      outgoing: v.number(),
+      salaryRevenue: v.number(),
+      transactionCount: v.number(),
+    })
+  ),
+  balance: v.number(),
+  incoming: v.number(),
+  outgoing: v.number(),
+  startsAt: v.number(),
+  transactionCount: v.number(),
+  updatedAt: v.number(),
+}
+
 export default defineSchema({
   readerAccess: defineTable({
     userId: v.string(),
@@ -53,23 +72,42 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_key", ["key"]),
 
-  accountWeekSummaries: defineTable({
-    actors: v.array(
-      v.object({
-        actorCharacterId: v.optional(v.id("characters")),
-        actorName: v.string(),
-        incoming: v.number(),
-        outgoing: v.number(),
-        salaryRevenue: v.number(),
-        transactionCount: v.number(),
-      })
-    ),
+  accountWeekSummaries: defineTable(accountWeekFields).index("by_starts_at", [
+    "startsAt",
+  ]),
+
+  transactionVisibilityScopes: defineTable({
+    key: v.string(),
+    kind: transactionKind,
+    productIds: v.array(v.id("products")),
+    bundleIds: v.array(v.id("bundles")),
+    hasUnlinkedProducts: v.boolean(),
     balance: v.number(),
-    incoming: v.number(),
-    outgoing: v.number(),
-    startsAt: v.number(),
     transactionCount: v.number(),
-    updatedAt: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_kind", ["kind"]),
+
+  scopedAccountWeekSummaries: defineTable({
+    ...accountWeekFields,
+    scopeId: v.id("transactionVisibilityScopes"),
+  }).index("by_scope_and_week", ["scopeId", "startsAt"]),
+
+  harvestSummaries: defineTable({
+    characterKey: v.string(),
+    actorCharacterId: v.optional(v.id("characters")),
+    actorName: v.string(),
+    weekStartsAt: v.optional(v.number()),
+    harvestCount: v.number(),
+    quantity: v.number(),
+    lineCount: v.number(),
+    knownValue: v.number(),
+    unpricedLineCount: v.number(),
+  }).index("by_week_and_character", ["weekStartsAt", "characterKey"]),
+
+  harvestWeekSummaries: defineTable({
+    startsAt: v.number(),
+    harvestCount: v.number(),
   }).index("by_starts_at", ["startsAt"]),
 
   inventorySummaries: defineTable({
@@ -136,6 +174,7 @@ export default defineSchema({
     counterparty: v.optional(v.string()),
     discount: v.optional(v.number()),
     financial: v.optional(v.boolean()),
+    harvestSummaryIndexed: v.optional(v.boolean()),
     incomingTotal: v.optional(v.number()),
     kind: transactionKind,
     legacyKey: v.optional(v.string()),
@@ -150,6 +189,7 @@ export default defineSchema({
     source: v.union(v.literal("web"), v.literal("workbook")),
     total: v.number(),
     unitPrice: v.optional(v.number()),
+    visibilityScopeId: v.optional(v.id("transactionVisibilityScopes")),
   })
     .index("by_financial_and_date", ["financial", "occurredAt"])
     .index("by_kind_and_date", ["kind", "occurredAt"])
@@ -158,6 +198,13 @@ export default defineSchema({
       "actorCharacterId",
       "occurredAt",
     ])
+    .index("by_kind_and_character_and_name_and_date", [
+      "kind",
+      "actorCharacterId",
+      "actorName",
+      "occurredAt",
+    ])
+    .index("by_visibility_scope_and_date", ["visibilityScopeId", "occurredAt"])
     .index("by_legacy_key", ["legacyKey"])
     .index("by_occurred_at", ["occurredAt"])
     .index("by_product_and_date", ["productId", "occurredAt"])

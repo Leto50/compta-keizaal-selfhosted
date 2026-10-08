@@ -27,6 +27,16 @@ import {
 import { normalizeCatalogName, normalizeName } from "./lib/text"
 import { buildTransactionSearchText } from "./lib/transactionSearch"
 import { rebuildJournalSummary as rebuildJournalSummaryData } from "./lib/journalSummary"
+import { internal } from "./_generated/api"
+import {
+  HISTORY_SUMMARIES_KEY,
+  resumeHistorySummariesAfterImport,
+} from "./lib/historySummaries"
+import { indexHarvestSummary } from "./lib/harvestSummary"
+import {
+  applyTransactionScopeChange,
+  indexTransactionScope,
+} from "./lib/transactionScopes"
 
 const CATALOG_NAMES_MIGRATION_KEY = "catalog-names-v1"
 const EXCHANGE_MIGRATION_KEY = "exchange-model-v5"
@@ -1017,6 +1027,13 @@ export async function convertLegacyOperationsData(ctx: MutationCtx) {
           transactionId: transaction._id,
         })
       }
+      if (transaction.visibilityScopeId)
+        await applyTransactionScopeChange(
+          ctx,
+          transaction._id,
+          transaction,
+          (await ctx.db.get(transaction._id)) ?? undefined
+        )
       continue
     }
 
@@ -1110,6 +1127,13 @@ export async function convertLegacyOperationsData(ctx: MutationCtx) {
         insertedMovements += 1
       }
     }
+    if (transaction.visibilityScopeId)
+      await applyTransactionScopeChange(
+        ctx,
+        transaction._id,
+        transaction,
+        (await ctx.db.get(transaction._id)) ?? undefined
+      )
     convertedTransactions += 1
   }
 
@@ -1130,6 +1154,13 @@ export async function convertLegacyOperationsData(ctx: MutationCtx) {
       productName: orderTransactionLabel(order.kind, order.contactName),
       total: order.kind === "client" ? total : -total,
     })
+    if (transaction.visibilityScopeId)
+      await applyTransactionScopeChange(
+        ctx,
+        transaction._id,
+        transaction,
+        (await ctx.db.get(transaction._id)) ?? undefined
+      )
     normalizedOrders += 1
   }
 
@@ -1265,6 +1296,12 @@ export async function refreshWorkbookTransactionsData(ctx: MutationCtx) {
     removedLines += lines.length
     removedMovements += movements.length
     await ctx.db.delete(transaction._id)
+    await applyTransactionScopeChange(
+      ctx,
+      transaction._id,
+      transaction,
+      undefined
+    )
   }
 
   for (const transaction of seedData.transactions) {
@@ -1306,6 +1343,7 @@ export async function refreshWorkbookTransactionsData(ctx: MutationCtx) {
     .unique()
   if (exchangeMigration) await ctx.db.delete(exchangeMigration._id)
   const conversion = await convertLegacyOperationsData(ctx)
+  await resumeHistorySummariesAfterImport(ctx)
   await rebuildJournalSummaryData(ctx)
   if (await readModelsAreReady(ctx)) {
     await rebuildAccountWeekSummaries(ctx)
@@ -1416,6 +1454,49 @@ export const rebuildJournalSummary = internalMutation({
 export const rebuildReadModels = internalMutation({
   args: {},
   handler: rebuildReadModelsData,
+})
+
+// Each batch is atomic. Records changed while the migration runs are indexed by
+// their normal mutation and skipped here, so retries never double their totals.
+export const prepareHistorySummaries = internalMutation({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<{ ready: boolean; indexedTransactions: number }> => {
+    const state = await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (index) => index.eq("key", HISTORY_SUMMARIES_KEY))
+      .unique()
+    if (state?.value === "ready") return { ready: true, indexedTransactions: 0 }
+    const cursor: string | null = state
+      ? (JSON.parse(state.value) as string)
+      : null
+    const result = await ctx.db
+      .query("transactions")
+      .order("asc")
+      .paginate({ cursor, numItems: 10 })
+    for (const transaction of result.page) {
+      const financial = isFinancialTransaction(transaction)
+      if (transaction.financial !== financial)
+        await ctx.db.patch(transaction._id, { financial })
+      await indexHarvestSummary(ctx, transaction._id)
+      await indexTransactionScope(ctx, transaction._id)
+    }
+    const details = {
+      key: HISTORY_SUMMARIES_KEY,
+      updatedAt: Date.now(),
+      value: result.isDone ? "ready" : JSON.stringify(result.continueCursor),
+    }
+    if (state) await ctx.db.replace(state._id, details)
+    else await ctx.db.insert("systemSettings", details)
+    if (!result.isDone)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.prepareHistorySummaries,
+        {}
+      )
+    return { ready: result.isDone, indexedTransactions: result.page.length }
+  },
 })
 
 export const refreshWorkbookTransactions = internalMutation({

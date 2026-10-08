@@ -151,6 +151,7 @@ jobs:
                   pnpm exec convex env set SITE_URL "$DEPLOY_SITE_URL"
                 fi
                 pnpm exec convex deploy --codegen disable
+                pnpm exec convex run migrations:prepareHistorySummaries --codegen disable
               '
           }
 

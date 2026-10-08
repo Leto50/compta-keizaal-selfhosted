@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { api, components } from "./_generated/api"
+import { api, components, internal } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
 import {
   defaultReaderAccess,
@@ -242,6 +242,7 @@ async function fixture() {
     role: "reader",
     access,
   })
+  await backend.mutation(internal.migrations.prepareHistorySummaries, {})
   return { backend, admin, reader, userId: user._id, ids, access }
 }
 

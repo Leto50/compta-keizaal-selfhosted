@@ -10,6 +10,12 @@ import { calculateRecipeCost } from "./lib/recipeCost"
 import { readModelsAreReady } from "./lib/readModels"
 import { startOfUtcWeek } from "./lib/time"
 import { loadOrdersNeedingAttention } from "./lib/order"
+import { historySummariesAreReady } from "./lib/historySummaries"
+import {
+  readScopedAccountWeeks,
+  readScopedRecentTransactions,
+  visibleTransactionScopes,
+} from "./lib/transactionScopes"
 import {
   readReaderAccess,
   orderIsVisible,
@@ -97,6 +103,7 @@ export const overview = query({
     if (access && hasScopedReaderAccess(access))
       return readerOverview(ctx, access, currentWeekStartsAt, todayStartsAt)
     const readModelsReady = await readModelsAreReady(ctx)
+    const historySummariesReady = await historySummariesAreReady(ctx)
     const storedInventory = readModelsReady
       ? await readInventorySummary(ctx)
       : null
@@ -124,26 +131,36 @@ export const overview = query({
             weeklyBalance: summary?.balance ?? 0,
             weeklyTransactionCount: summary?.transactionCount ?? 0,
           }))
-      : ctx.db
-          .query("transactions")
-          .withIndex("by_occurred_at", (index) =>
-            index.gte("occurredAt", currentWeekStartsAt)
-          )
-          .collect()
-          .then((transactions) => {
-            const financialTransactions = transactions.filter(
-              isFinancialTransaction
+      : historySummariesReady
+        ? readScopedAccountWeeks(
+            ctx,
+            await ctx.db.query("transactionVisibilityScopes").collect(),
+            currentWeekStartsAt,
+            currentWeekStartsAt
+          ).then((weeks) => ({
+            weeklyBalance: weeks[0]?.balance ?? 0,
+            weeklyTransactionCount: weeks[0]?.transactionCount ?? 0,
+          }))
+        : ctx.db
+            .query("transactions")
+            .withIndex("by_occurred_at", (index) =>
+              index.gte("occurredAt", currentWeekStartsAt)
             )
-            return {
-              weeklyBalance: financialTransactions.reduce(
-                (total, transaction) => total + transaction.total,
-                0
-              ),
-              weeklyTransactionCount: financialTransactions.length,
-            }
-          })
+            .collect()
+            .then((transactions) => {
+              const financialTransactions = transactions.filter(
+                isFinancialTransaction
+              )
+              return {
+                weeklyBalance: financialTransactions.reduce(
+                  (total, transaction) => total + transaction.total,
+                  0
+                ),
+                weeklyTransactionCount: financialTransactions.length,
+              }
+            })
     const [recentTransactions, orders, weeklyMetrics] = await Promise.all([
-      readModelsReady
+      readModelsReady || historySummariesReady
         ? ctx.db
             .query("transactions")
             .withIndex("by_financial_and_date", (index) =>
@@ -210,23 +227,43 @@ async function readerOverview(
     (product) =>
       product.tracksStock && product.currentStock <= product.minimumStock
   )
-  const transactions = access.sections.some(
+  const showFinancial = access.sections.some(
     (section) => section === "transactions" || section === "account"
   )
-    ? await visibleTransactions(
-        ctx,
-        access,
-        await ctx.db
-          .query("transactions")
-          .withIndex("by_occurred_at")
-          .order("desc")
-          .collect()
-      )
-    : []
+  const scopes =
+    showFinancial && (await historySummariesAreReady(ctx))
+      ? await visibleTransactionScopes(ctx, access)
+      : null
+  const transactions =
+    showFinancial && !scopes
+      ? await visibleTransactions(
+          ctx,
+          access,
+          await ctx.db
+            .query("transactions")
+            .withIndex("by_occurred_at")
+            .order("desc")
+            .collect()
+        )
+      : []
   const financial = transactions.filter(isFinancialTransaction)
   const weekly = financial.filter(
     (transaction) => transaction.occurredAt >= currentWeekStartsAt
   )
+  const [scopedWeeks, recentTransactions] = scopes
+    ? await Promise.all([
+        readScopedAccountWeeks(
+          ctx,
+          scopes,
+          currentWeekStartsAt,
+          currentWeekStartsAt
+        ),
+        access.sections.includes("transactions")
+          ? readScopedRecentTransactions(ctx, scopes)
+          : [],
+      ])
+    : [null, financial.slice(0, 8)]
+  const scopedWeek = scopedWeeks?.[0]
   const orders = access.sections.includes("orders")
     ? await loadOrdersNeedingAttention(ctx)
     : []
@@ -251,13 +288,14 @@ async function readerOverview(
         todayStartsAt
       ),
       recentTransactions: access.sections.includes("transactions")
-        ? financial.slice(0, 8)
+        ? recentTransactions
         : [],
-      weeklyBalance: weekly.reduce(
-        (sum, transaction) => sum + transaction.total,
-        0
-      ),
-      weeklyTransactionCount: weekly.length,
+      weeklyBalance: scopes
+        ? (scopedWeek?.balance ?? 0)
+        : weekly.reduce((sum, transaction) => sum + transaction.total, 0),
+      weeklyTransactionCount: scopes
+        ? (scopedWeek?.transactionCount ?? 0)
+        : weekly.length,
     },
     access
   )

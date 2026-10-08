@@ -8,9 +8,11 @@ import { startOfUtcWeek, WEEK_IN_MILLISECONDS } from "../shared/time"
 
 const pageArgs = { paginationOpts: { cursor: null, numItems: 30 } }
 
-async function setup() {
+async function setup(summariesReady = false) {
   const backend = createTestBackend()
   const member = await asAuthenticatedUser(backend)
+  if (summariesReady)
+    await backend.mutation(internal.migrations.prepareHistorySummaries, {})
   const ids = await backend.run(async (ctx) => {
     const characterId = await ctx.db.insert("characters", {
       active: true,
@@ -61,7 +63,7 @@ async function stockState(backend: ReturnType<typeof createTestBackend>) {
 
 describe("récoltes", () => {
   it("calcule les totaux d’un groupe sur toutes ses récoltes, au-delà d’une page de détails", async () => {
-    const { backend, member, args, productIds } = await setup()
+    const { backend, member, args, productIds } = await setup(true)
     const week = startOfUtcWeek(args.occurredAt)
     await backend.run(async (ctx) => {
       await ctx.db.patch(productIds[1]!, { purchasePrice: undefined })
@@ -119,7 +121,7 @@ describe("récoltes", () => {
   })
 
   it("filtre les personnages par semaine du lundi au dimanche, y compris au changement d’année", async () => {
-    const { backend, member, args } = await setup()
+    const { backend, member, args } = await setup(true)
     const otherId = await backend.run((ctx) =>
       ctx.db.insert("characters", { active: true, name: "Mira" })
     )
@@ -206,7 +208,7 @@ describe("récoltes", () => {
   })
 
   it("distingue les homonymes et garde ensemble les récoltes d’un personnage renommé ou archivé", async () => {
-    const { backend, member, args } = await setup()
+    const { backend, member, args } = await setup(true)
     await member.mutation(api.harvests.record, args)
     const homonymId = await backend.run(async (ctx) => {
       await ctx.db.patch(args.characterId, { name: "Zélie" })
@@ -246,7 +248,7 @@ describe("récoltes", () => {
   })
 
   it("recalcule les groupes après modification et suppression en conservant le prix historique", async () => {
-    const { backend, member, args, productIds } = await setup()
+    const { backend, member, args, productIds } = await setup(true)
     const oldWeek = startOfUtcWeek(args.occurredAt) - WEEK_IN_MILLISECONDS
     const { transactionId } = await member.mutation(api.harvests.record, {
       ...args,
@@ -292,7 +294,7 @@ describe("récoltes", () => {
   })
 
   it("pagine les groupes dans un ordre stable et refuse les accès et arguments invalides", async () => {
-    const { backend, member, args } = await setup()
+    const { backend, member, args } = await setup(true)
     for (let index = 0; index < 8; index++) {
       const characterId = await backend.run((ctx) =>
         ctx.db.insert("characters", {
