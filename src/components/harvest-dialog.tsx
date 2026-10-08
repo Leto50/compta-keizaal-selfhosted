@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
 import { ProductPicker } from "@/components/product-picker"
+import { HarvestValueSummary } from "@/components/harvest-value-summary"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -314,6 +315,35 @@ export function HarvestDialog({
                 </div>
               )}
             </form.Field>
+            <form.Subscribe selector={(state) => state.values.lines}>
+              {(lines) => {
+                const complete = lines.every(
+                  (line) =>
+                    ingredients.some(
+                      (product) => product._id === line.productId
+                    ) &&
+                    Number.isInteger(Number(line.quantity)) &&
+                    Number(line.quantity) > 0 &&
+                    Number(line.quantity) <= MAX_QUANTITY
+                )
+                return complete ? (
+                  <div className="grid gap-2">
+                    <HarvestValueSummary
+                      lines={lines.map((line) => ({
+                        quantity: Number(line.quantity),
+                        purchaseUnitPrice: ingredients.find(
+                          (product) => product._id === line.productId
+                        )?.purchasePrice,
+                      }))}
+                    />
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Quantités × prix d’achat actuels. Ces tarifs seront
+                      conservés avec la récolte.
+                    </p>
+                  </div>
+                ) : null
+              }}
+            </form.Subscribe>
             <form.Field name="comment">
               {(field) => (
                 <Field data-invalid={!field.state.meta.isValid}>

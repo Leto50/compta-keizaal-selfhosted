@@ -167,6 +167,7 @@ export default defineSchema({
     kind: transactionLineKind,
     productId: v.optional(v.id("products")),
     productName: v.string(),
+    purchaseUnitPrice: v.optional(v.number()),
     quantity: v.number(),
     total: v.number(),
     transactionId: v.id("transactions"),

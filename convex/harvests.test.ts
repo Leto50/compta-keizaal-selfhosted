@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import { api, internal } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
+import { calculateHarvestValue } from "../shared/harvest-value"
+import { defaultReaderAccess, redactReaderData } from "../shared/reader-access"
 
 const pageArgs = { paginationOpts: { cursor: null, numItems: 30 } }
 
@@ -85,6 +87,7 @@ describe("récoltes", () => {
       expect.objectContaining({
         productId: productIds[0],
         productName: "Lys bleu",
+        purchaseUnitPrice: 4,
         quantity: 3,
         direction: "incoming",
         total: 0,
@@ -93,6 +96,7 @@ describe("récoltes", () => {
       expect.objectContaining({
         productId: productIds[1],
         productName: "Sel de feu",
+        purchaseUnitPrice: 4,
         quantity: 4,
         direction: "incoming",
         total: 0,
@@ -129,11 +133,87 @@ describe("récoltes", () => {
       await ctx.db.patch(productIds[0]!, {
         active: false,
         name: "Ingrédient renommé",
+        purchasePrice: 40,
       })
     })
     const page = await member.query(api.harvests.listPage, pageArgs)
     expect(page.page[0]?.actorName).toBe("Alixard Veliane")
     expect(page.page[0]?.lines[0]?.productName).toBe("Lys bleu")
+    expect(calculateHarvestValue(page.page[0]!.lines)).toEqual({
+      knownValue: 28,
+      unpricedLineCount: 0,
+    })
+  })
+
+  it("conserve les tarifs d’achat de la saisie, y compris les fractions, sans compléter les prix absents après coup", async () => {
+    const { backend, member, args, productIds } = await setup()
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[0]!, { purchasePrice: 10 / 3 })
+      await ctx.db.patch(productIds[1]!, { purchasePrice: undefined })
+    })
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[0]!, { purchasePrice: 99 })
+      await ctx.db.patch(productIds[1]!, { purchasePrice: 5 })
+    })
+    const harvest = (await member.query(api.harvests.listPage, pageArgs))
+      .page[0]!
+    expect(harvest._id).toBe(transactionId)
+    expect(harvest.lines[0]?.purchaseUnitPrice).toBe(10 / 3)
+    expect(harvest.lines[1]?.purchaseUnitPrice).toBeUndefined()
+    expect(calculateHarvestValue(harvest.lines)).toEqual({
+      knownValue: 10,
+      unpricedLineCount: 1,
+    })
+    expect(harvest.total).toBe(0)
+    expect(harvest.financial).toBe(false)
+    expect(harvest.lines.map((line) => line.total)).toEqual([0, 0])
+
+    const latest = await member.mutation(api.harvests.record, {
+      ...args,
+      occurredAt: args.occurredAt + 1,
+    })
+    const latestHarvest = (
+      await member.query(api.harvests.listPage, pageArgs)
+    ).page.find((entry) => entry._id === latest.transactionId)!
+    expect(calculateHarvestValue(latestHarvest.lines)).toEqual({
+      knownValue: 317,
+      unpricedLineCount: 0,
+    })
+  })
+
+  it("distingue un tarif nul d’un tarif inconnu et conserve la compatibilité des anciennes récoltes", async () => {
+    const { backend, member, args, productIds } = await setup()
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[0]!, { purchasePrice: 0 })
+      await ctx.db.patch(productIds[1]!, { purchasePrice: undefined })
+    })
+    await member.mutation(api.harvests.record, args)
+    const harvest = (await member.query(api.harvests.listPage, pageArgs))
+      .page[0]!
+    expect(harvest.lines[0]?.purchaseUnitPrice).toBe(0)
+    expect(calculateHarvestValue(harvest.lines)).toEqual({
+      knownValue: 0,
+      unpricedLineCount: 1,
+    })
+    await backend.run((ctx) =>
+      ctx.db.patch(harvest.lines[0]!._id, { purchaseUnitPrice: undefined })
+    )
+    const legacy = (await member.query(api.harvests.listPage, pageArgs))
+      .page[0]!
+    expect(calculateHarvestValue(legacy.lines)).toEqual({
+      knownValue: 0,
+      unpricedLineCount: 2,
+    })
+  })
+
+  it("classe le tarif d’achat conservé parmi les prix protégés des lecteurs", () => {
+    expect(
+      redactReaderData(
+        { purchaseUnitPrice: 4 },
+        { ...defaultReaderAccess, showPurchasePrices: false }
+      )
+    ).toEqual({ purchaseUnitPrice: 0 })
   })
 
   it.each([0, -1, 1.5, 1_000_001, NaN, Infinity])(

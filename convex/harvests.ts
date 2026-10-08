@@ -134,6 +134,9 @@ export const record = mutation({
         kind: "product",
         productId: product._id,
         productName: product.name,
+        ...(product.purchasePrice === undefined
+          ? {}
+          : { purchaseUnitPrice: product.purchasePrice }),
         quantity,
         total: 0,
         transactionId,

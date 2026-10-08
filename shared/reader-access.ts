@@ -95,6 +95,7 @@ export function hasScopedReaderAccess(access: ReaderAccess | null): boolean {
 
 const priceFields = new Set([
   "purchasePrice",
+  "purchaseUnitPrice",
   "salePrice",
   "price",
   "unitPrice",
@@ -145,7 +146,7 @@ export function redactReaderData<T>(value: T, access: ReaderAccess | null): T {
         !access.showPrices || access.showPurchasePrices === false
       const saleHidden = !access.showPrices || access.showSalePrices === false
       const hidePrice =
-        key === "purchasePrice" || key === "cost"
+        key === "purchasePrice" || key === "purchaseUnitPrice" || key === "cost"
           ? purchaseHidden
           : key === "salePrice" || key === "price"
             ? saleHidden

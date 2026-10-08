@@ -117,6 +117,11 @@ pnpm build
   L’historique conserve le personnage, le compte ayant saisi la récolte, la date,
   les ingrédients et les quantités. Les stocks sont augmentés atomiquement,
   sans modifier les transactions financières, le compte ou les salaires.
+  L’économie estimée correspond aux quantités multipliées par les prix d’achat
+  conservés au moment de la saisie. Elle apparaît dans le formulaire et
+  l’historique. Les ingrédients sans tarif sont signalés ; une valeur partielle
+  n’est pas présentée comme le total de la récolte. Les anciennes récoltes sans
+  prix enregistrés restent sans estimation complète.
   Une récolte saisie par erreur peut être supprimée : les quantités sont retirées
   du stock et l’action est auditée. La suppression est refusée si elle rendrait
   un stock négatif.

@@ -5,6 +5,7 @@ import { Leaf } from "lucide-react"
 import { useState } from "react"
 
 import { DeleteHarvestDialog, HarvestDialog } from "@/components/harvest-dialog"
+import { HarvestValueSummary } from "@/components/harvest-value-summary"
 import { PageError } from "@/components/page-error"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
@@ -138,6 +139,9 @@ function HarvestsPage() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-3">
+                <HarvestValueSummary lines={harvest.lines} />
+              </div>
               {harvest.comment ? (
                 <p className="mt-3 text-sm break-words whitespace-pre-wrap text-muted-foreground">
                   {harvest.comment}

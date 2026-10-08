@@ -35,6 +35,7 @@ import { asAuthenticatedUser, createTestBackend } from "../convex/test.helpers"
 import { AppShell } from "./components/app-shell"
 import { RecipeDialog } from "./components/recipe-dialog"
 import { RecipeCategoryManagerDialog } from "./components/recipe-category-manager-dialog"
+import { HarvestValueSummary } from "./components/harvest-value-summary"
 import { SiteMetadata } from "./components/site-metadata"
 import { TooltipProvider } from "./components/ui/tooltip"
 import { Route as DashboardRoute } from "./routes/_app/index"
@@ -1393,6 +1394,8 @@ describe("rubrique récoltes", () => {
     fireEvent.change(screen.getByRole("spinbutton", { name: "Quantité 2" }), {
       target: { value: "4" },
     })
+    expect(screen.getByText("Économie estimée à l’achat")).not.toBeNull()
+    expect(screen.getByText("7 sept.")).not.toBeNull()
     fireEvent.change(
       screen.getByRole("textbox", { name: "Commentaire (facultatif)" }),
       { target: { value: "  Blancherive  " } }
@@ -1426,7 +1429,14 @@ describe("rubrique récoltes", () => {
           actorName: "Alixard Veliane",
           occurredAt,
           comment: "Autour de Blancherive",
-          lines: [{ _id: "line", productName: products[0]!.name, quantity: 3 }],
+          lines: [
+            {
+              _id: "line",
+              productName: products[0]!.name,
+              quantity: 3,
+              purchaseUnitPrice: 4,
+            },
+          ],
         },
       ],
       isDone: false,
@@ -1436,6 +1446,8 @@ describe("rubrique récoltes", () => {
     expect(screen.queryByText("Alixard Veliane")).not.toBeNull()
     expect(screen.queryByText("+3 unités")).not.toBeNull()
     expect(screen.queryByText("Autour de Blancherive")).not.toBeNull()
+    expect(screen.getByText("Économie estimée à l’achat")).not.toBeNull()
+    expect(screen.getByText("12 sept.")).not.toBeNull()
     expect(
       screen.getByRole<HTMLButtonElement>("button", { name: "Suivante" })
         .disabled
@@ -1463,4 +1475,41 @@ describe("rubrique récoltes", () => {
     )
     expect(screen.queryByRole("alertdialog")).not.toBeNull()
   })
+
+  it.each([
+    {
+      lines: [{ quantity: 3, purchaseUnitPrice: 1 / 3 }],
+      label: "Économie estimée à l’achat",
+      value: "1 sept.",
+      incomplete: false,
+    },
+    {
+      lines: [{ quantity: 3, purchaseUnitPrice: 4 }, { quantity: 1 }],
+      label: "Valeur connue à l’achat",
+      value: "12 sept.",
+      incomplete: true,
+    },
+    {
+      lines: [{ quantity: 3 }],
+      label: "Valeur connue à l’achat",
+      value: "Non renseignée",
+      incomplete: true,
+    },
+    {
+      lines: [{ quantity: 3, purchaseUnitPrice: 0 }],
+      label: "Économie estimée à l’achat",
+      value: "0 sept.",
+      incomplete: false,
+    },
+  ])(
+    "affiche la valeur $value et signale les estimations incomplètes",
+    ({ lines, label, value, incomplete }) => {
+      render(<HarvestValueSummary lines={lines} />)
+      expect(screen.getByText(label)).not.toBeNull()
+      expect(screen.getByText(value)).not.toBeNull()
+      expect(screen.queryByText(/Estimation incomplète/) !== null).toBe(
+        incomplete
+      )
+    }
+  )
 })
