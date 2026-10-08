@@ -60,6 +60,7 @@ const state = vi.hoisted<{
   role: string | undefined
   access: ReaderAccess | undefined
   search: Record<string, unknown>
+  queries: unknown[][]
 }>(() => ({
   data: new Map<string, unknown>(),
   mutations: new Map<string, ReturnType<typeof vi.fn>>(),
@@ -67,6 +68,7 @@ const state = vi.hoisted<{
   role: "reader",
   access: undefined,
   search: {},
+  queries: [],
 }))
 
 const originalFonts = Object.getOwnPropertyDescriptor(document, "fonts")
@@ -95,9 +97,10 @@ vi.mock("convex/react", () => ({
 
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...(await importOriginal<typeof ReactQuery>()),
-  useSuspenseQuery: ({ queryKey }: { queryKey: [string, string] }) => ({
-    data: state.data.get(queryKey[1]),
-  }),
+  useSuspenseQuery: ({ queryKey }: { queryKey: [string, string, unknown] }) => {
+    state.queries.push(queryKey)
+    return { data: state.data.get(queryKey[1]) }
+  },
 }))
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
@@ -245,6 +248,7 @@ beforeEach(() => {
   state.search = {}
   state.pathname = "/inventaire"
   state.mutations.clear()
+  state.queries = []
   state.data.set("administration:getSiteName", DEFAULT_SITE_NAME)
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
@@ -1280,6 +1284,10 @@ describe("rubrique récoltes", () => {
   let originalProducts: unknown
   beforeEach(() => {
     state.role = "user"
+    state.data.set("harvests:listWeeks", [
+      Date.UTC(2026, 9, 5),
+      Date.UTC(2026, 8, 28),
+    ])
     originalProducts = state.data.get("products:list")
     const ingredient = (originalProducts as Doc<"products">[])[0]!
     state.data.set("products:list", [
@@ -1310,6 +1318,163 @@ describe("rubrique récoltes", () => {
   })
   afterEach(() => {
     state.data.set("products:list", originalProducts)
+  })
+
+  it.each([false, true])(
+    "regroupe par personnage avec un filtre de semaine indépendant (filtre actif : %s)",
+    async (filtered) => {
+      const characters = state.data.get(
+        "characters:list"
+      ) as Doc<"characters">[]
+      const products = state.data.get("products:list") as Doc<"products">[]
+      const character = { id: characters[0]!._id, name: characters[0]!.name }
+      const weekStartsAt = filtered ? Date.UTC(2026, 9, 5) : undefined
+      state.data.set("harvests:listGroups", {
+        page: 0,
+        pageCount: 1,
+        groups: [
+          {
+            key: "group",
+            character,
+            harvestCount: 32,
+            quantity: 224,
+            knownValue: 384,
+            lineCount: 64,
+            unpricedLineCount: 32,
+          },
+        ],
+      })
+      state.data.set("harvests:listPage", {
+        page: [
+          {
+            _id: "harvest",
+            actorCharacterId: characters[0]!._id,
+            actorName: characters[0]!.name,
+            occurredAt: Date.UTC(2026, 9, 8, 12),
+            lines: [
+              {
+                _id: "line",
+                productId: products[0]!._id,
+                productName: products[0]!.name,
+                quantity: 3,
+                purchaseUnitPrice: 4,
+              },
+            ],
+          },
+        ],
+        isDone: false,
+        continueCursor: "more-harvests",
+      })
+      render(page(HarvestsRoute))
+      if (filtered) {
+        fireEvent.click(screen.getByRole("combobox", { name: "Semaine" }))
+        fireEvent.click(
+          screen.getByRole("option", { name: "Du 05/10/2026 au 11/10/2026" })
+        )
+      }
+      fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+      expect(screen.queryByRole("option", { name: "Semaine" })).toBeNull()
+      expect(
+        screen.queryByRole("option", { name: "Semaine et personnage" })
+      ).toBeNull()
+      fireEvent.click(screen.getByRole("option", { name: "Personnage" }))
+      expect(state.queries).toContainEqual([
+        "convexQuery",
+        "harvests:listGroups",
+        { weekStartsAt, page: 0 },
+      ])
+      expect(screen.getByText("32 récoltes")).not.toBeNull()
+      expect(screen.getByText("384 sept.")).not.toBeNull()
+      expect(screen.getByText("Partielle · 32 prix manquants")).not.toBeNull()
+      expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
+        character.name
+      )
+      expect(screen.queryByRole("table")).toBeNull()
+      fireEvent.click(
+        screen.getByRole("button", { name: /Voir les récoltes :/ })
+      )
+      expect(screen.getByRole("table", { name: /Récoltes :/ })).not.toBeNull()
+      expect(state.queries).toContainEqual([
+        "convexQuery",
+        "harvests:listPage",
+        {
+          character,
+          weekStartsAt,
+          paginationOpts: { numItems: 30, cursor: null },
+        },
+      ])
+      fireEvent.click(screen.getAllByRole("button", { name: "Suivante" })[0]!)
+      expect(state.queries).toContainEqual([
+        "convexQuery",
+        "harvests:listPage",
+        {
+          character,
+          weekStartsAt,
+          paginationOpts: { numItems: 30, cursor: "more-harvests" },
+        },
+      ])
+      expect(screen.getByText("384 sept.")).not.toBeNull()
+      fireEvent.click(
+        screen.getByRole("button", { name: /Modifier la récolte de/ })
+      )
+      expect(screen.getByRole("dialog")).not.toBeNull()
+      fireEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Annuler",
+        })
+      )
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+      fireEvent.click(
+        screen.getByRole("button", { name: /Masquer les récoltes :/ })
+      )
+      expect(screen.queryByRole("table")).toBeNull()
+    }
+  )
+
+  it("réinitialise les pages au changement de semaine et conserve le filtre au changement d’affichage", () => {
+    const weekStartsAt = Date.UTC(2026, 9, 5)
+    state.data.set("harvests:listGroups", { page: 0, pageCount: 2, groups: [] })
+    render(page(HarvestsRoute))
+    fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+    fireEvent.click(screen.getByRole("option", { name: "Personnage" }))
+    fireEvent.click(screen.getByRole("button", { name: "Suivante" }))
+    expect(state.queries).toContainEqual([
+      "convexQuery",
+      "harvests:listGroups",
+      { weekStartsAt: undefined, page: 1 },
+    ])
+    fireEvent.click(screen.getByRole("combobox", { name: "Semaine" }))
+    fireEvent.click(
+      screen.getByRole("option", { name: "Du 05/10/2026 au 11/10/2026" })
+    )
+    expect(state.queries.at(-1)).toEqual([
+      "convexQuery",
+      "harvests:listGroups",
+      { weekStartsAt, page: 0 },
+    ])
+    fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+    fireEvent.click(screen.getByRole("option", { name: "Aucun regroupement" }))
+    expect(screen.getByText("Aucune récolte cette semaine")).not.toBeNull()
+    expect(state.queries.at(-1)).toEqual([
+      "convexQuery",
+      "harvests:listPage",
+      {
+        character: undefined,
+        weekStartsAt,
+        paginationOpts: { cursor: null, numItems: 30 },
+      },
+    ])
+    fireEvent.click(screen.getByRole("combobox", { name: "Semaine" }))
+    fireEvent.click(screen.getByRole("option", { name: "Toutes les semaines" }))
+    expect(state.queries.at(-1)).toEqual([
+      "convexQuery",
+      "harvests:listPage",
+      {
+        character: undefined,
+        weekStartsAt: undefined,
+        paginationOpts: { cursor: null, numItems: 30 },
+      },
+    ])
   })
 
   it("affiche la rubrique aux employés et la retire lors d’une rétrogradation", () => {

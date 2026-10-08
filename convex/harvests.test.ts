@@ -4,6 +4,7 @@ import { api, internal } from "./_generated/api"
 import { asAuthenticatedUser, createTestBackend } from "./test.helpers"
 import { calculateHarvestValue } from "../shared/harvest-value"
 import { defaultReaderAccess, redactReaderData } from "../shared/reader-access"
+import { startOfUtcWeek, WEEK_IN_MILLISECONDS } from "../shared/time"
 
 const pageArgs = { paginationOpts: { cursor: null, numItems: 30 } }
 
@@ -59,6 +60,332 @@ async function stockState(backend: ReturnType<typeof createTestBackend>) {
 }
 
 describe("récoltes", () => {
+  it("calcule les totaux d’un groupe sur toutes ses récoltes, au-delà d’une page de détails", async () => {
+    const { backend, member, args, productIds } = await setup()
+    const week = startOfUtcWeek(args.occurredAt)
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[1]!, { purchasePrice: undefined })
+    })
+    for (let index = 0; index < 32; index++) {
+      await member.mutation(api.harvests.record, {
+        ...args,
+        occurredAt: week + index,
+      })
+    }
+    await member.mutation(api.harvests.record, {
+      ...args,
+      occurredAt: week - WEEK_IN_MILLISECONDS,
+    })
+    await member.mutation(api.transactions.recordTrade, {
+      characterId: args.characterId,
+      occurredAt: week,
+      kind: "purchase",
+      lines: [{ kind: "product", productId: productIds[0]!, quantity: 1 }],
+    })
+    const grouped = await member.query(api.harvests.listGroups, {
+      page: 0,
+      weekStartsAt: week,
+    })
+    expect(grouped.groups).toHaveLength(1)
+    expect(grouped.groups[0]).toMatchObject({
+      character: { id: args.characterId, name: "Alixard Veliane" },
+      harvestCount: 32,
+      quantity: 224,
+      lineCount: 64,
+      knownValue: 384,
+      unpricedLineCount: 32,
+    })
+    const first = await member.query(api.harvests.listPage, {
+      ...pageArgs,
+      weekStartsAt: week,
+      character: grouped.groups[0]!.character,
+    })
+    expect(first.page).toHaveLength(30)
+    expect(first.isDone).toBe(false)
+    const last = await member.query(api.harvests.listPage, {
+      weekStartsAt: week,
+      character: grouped.groups[0]!.character,
+      paginationOpts: { numItems: 30, cursor: first.continueCursor },
+    })
+    expect(last.page).toHaveLength(2)
+    expect(last.isDone).toBe(true)
+    expect(
+      new Set([...first.page, ...last.page].map((harvest) => harvest._id)).size
+    ).toBe(32)
+    expect(
+      (await member.query(api.harvests.listGroups, { page: 0 })).groups[0]
+        ?.harvestCount
+    ).toBe(33)
+  })
+
+  it("filtre les personnages par semaine du lundi au dimanche, y compris au changement d’année", async () => {
+    const { backend, member, args } = await setup()
+    const otherId = await backend.run((ctx) =>
+      ctx.db.insert("characters", { active: true, name: "Mira" })
+    )
+    const monday = Date.UTC(2025, 11, 29)
+    const dates = [
+      monday - 1,
+      monday,
+      monday + WEEK_IN_MILLISECONDS - 1,
+      monday + WEEK_IN_MILLISECONDS,
+    ]
+    for (const occurredAt of dates)
+      await member.mutation(api.harvests.record, { ...args, occurredAt })
+    await member.mutation(api.harvests.record, {
+      ...args,
+      characterId: otherId,
+      occurredAt: monday,
+    })
+    expect(await member.query(api.harvests.listWeeks, {})).toEqual([
+      monday + WEEK_IN_MILLISECONDS,
+      monday,
+      monday - WEEK_IN_MILLISECONDS,
+    ])
+    const weekPage = await member.query(api.harvests.listPage, {
+      ...pageArgs,
+      weekStartsAt: monday,
+    })
+    expect(weekPage.page.map((harvest) => harvest.occurredAt)).toEqual([
+      monday + WEEK_IN_MILLISECONDS - 1,
+      monday,
+      monday,
+    ])
+    const result = await member.query(api.harvests.listGroups, {
+      page: 0,
+      weekStartsAt: monday,
+    })
+    expect(
+      result.groups.map((group) => [
+        group.character.name,
+        group.harvestCount,
+        group.quantity,
+        group.knownValue,
+      ])
+    ).toEqual([
+      ["Alixard Veliane", 2, 14, 56],
+      ["Mira", 1, 7, 28],
+    ])
+    for (const group of result.groups) {
+      const details = await member.query(api.harvests.listPage, {
+        ...pageArgs,
+        character: group.character,
+        weekStartsAt: monday,
+      })
+      expect(details.page).toHaveLength(group.harvestCount)
+      expect(
+        details.page.every(
+          (harvest) =>
+            harvest.actorCharacterId === group.character.id &&
+            startOfUtcWeek(harvest.occurredAt) === monday
+        )
+      ).toBe(true)
+    }
+    expect(
+      (await member.query(api.harvests.listGroups, { page: 0 })).groups.map(
+        (group) => group.harvestCount
+      )
+    ).toEqual([4, 1])
+    const emptyWeek = monday - 2 * WEEK_IN_MILLISECONDS
+    expect(
+      (
+        await member.query(api.harvests.listGroups, {
+          page: 0,
+          weekStartsAt: emptyWeek,
+        })
+      ).groups
+    ).toEqual([])
+    expect(
+      (
+        await member.query(api.harvests.listPage, {
+          ...pageArgs,
+          weekStartsAt: emptyWeek,
+        })
+      ).page
+    ).toEqual([])
+  })
+
+  it("distingue les homonymes et garde ensemble les récoltes d’un personnage renommé ou archivé", async () => {
+    const { backend, member, args } = await setup()
+    await member.mutation(api.harvests.record, args)
+    const homonymId = await backend.run(async (ctx) => {
+      await ctx.db.patch(args.characterId, { name: "Zélie" })
+      return ctx.db.insert("characters", {
+        active: true,
+        name: "Alixard Veliane",
+      })
+    })
+    await member.mutation(api.harvests.record, {
+      ...args,
+      occurredAt: args.occurredAt + 1,
+    })
+    await member.mutation(api.harvests.record, {
+      ...args,
+      characterId: homonymId,
+    })
+    await backend.run((ctx) =>
+      ctx.db.patch(args.characterId, { active: false })
+    )
+    const result = await member.query(api.harvests.listGroups, {
+      page: 0,
+    })
+    expect(
+      result.groups.map((group) => [group.character?.name, group.harvestCount])
+    ).toEqual([
+      ["Alixard Veliane", 1],
+      ["Zélie", 2],
+    ])
+    const details = await member.query(api.harvests.listPage, {
+      ...pageArgs,
+      character: result.groups[1]!.character,
+    })
+    expect(details.page.map((harvest) => harvest.actorName)).toEqual([
+      "Zélie",
+      "Alixard Veliane",
+    ])
+  })
+
+  it("recalcule les groupes après modification et suppression en conservant le prix historique", async () => {
+    const { backend, member, args, productIds } = await setup()
+    const oldWeek = startOfUtcWeek(args.occurredAt) - WEEK_IN_MILLISECONDS
+    const { transactionId } = await member.mutation(api.harvests.record, {
+      ...args,
+      occurredAt: oldWeek,
+    })
+    const otherId = await backend.run(async (ctx) => {
+      await ctx.db.patch(productIds[0]!, { purchasePrice: 100 })
+      return ctx.db.insert("characters", { active: true, name: "Mira" })
+    })
+    await member.mutation(api.harvests.update, {
+      ...args,
+      transactionId,
+      characterId: otherId,
+      lines: [{ productId: productIds[0]!, quantity: 2 }],
+    })
+    const result = await member.query(api.harvests.listGroups, {
+      page: 0,
+    })
+    expect(
+      (
+        await member.query(api.harvests.listGroups, {
+          page: 0,
+          weekStartsAt: oldWeek,
+        })
+      ).groups
+    ).toEqual([])
+    expect(await member.query(api.harvests.listWeeks, {})).toEqual([
+      startOfUtcWeek(args.occurredAt),
+    ])
+    expect(result.groups).toHaveLength(1)
+    expect(result.groups[0]).toMatchObject({
+      character: { id: otherId },
+      harvestCount: 1,
+      quantity: 2,
+      knownValue: 8,
+    })
+    await member.mutation(api.transactions.remove, { transactionId })
+    expect(await member.query(api.harvests.listGroups, { page: 5 })).toEqual({
+      groups: [],
+      page: 0,
+      pageCount: 1,
+    })
+  })
+
+  it("pagine les groupes dans un ordre stable et refuse les accès et arguments invalides", async () => {
+    const { backend, member, args } = await setup()
+    for (let index = 0; index < 8; index++) {
+      const characterId = await backend.run((ctx) =>
+        ctx.db.insert("characters", {
+          active: true,
+          name: `Personnage ${index + 1}`,
+        })
+      )
+      await member.mutation(api.harvests.record, { ...args, characterId })
+    }
+    const first = await member.query(api.harvests.listGroups, {
+      page: 0,
+    })
+    const last = await member.query(api.harvests.listGroups, {
+      page: 1,
+    })
+    expect(first).toMatchObject({ page: 0, pageCount: 2 })
+    expect(first.groups).toHaveLength(6)
+    expect(last.groups.map((group) => group.character?.name)).toEqual([
+      "Personnage 7",
+      "Personnage 8",
+    ])
+    expect(
+      (
+        await member.query(api.harvests.listGroups, {
+          page: 20,
+        })
+      ).page
+    ).toBe(1)
+    for (const page of [-1, 0.5, Number.POSITIVE_INFINITY])
+      await expect(
+        member.query(api.harvests.listGroups, { page })
+      ).rejects.toThrow()
+    await expect(
+      member.query(api.harvests.listPage, {
+        ...pageArgs,
+        weekStartsAt: Date.UTC(2026, 0, 1),
+      })
+    ).rejects.toThrow("Semaine invalide")
+    await expect(
+      member.query(api.harvests.listGroups, {
+        page: 0,
+        weekStartsAt: Date.UTC(2026, 0, 1),
+      })
+    ).rejects.toThrow("Semaine invalide")
+    const reader = await asAuthenticatedUser(backend, "reader")
+    for (const client of [backend, reader]) {
+      await expect(client.query(api.harvests.listWeeks, {})).rejects.toThrow()
+      await expect(
+        client.query(api.harvests.listGroups, { page: 0 })
+      ).rejects.toThrow()
+      await expect(
+        client.query(api.harvests.listPage, {
+          ...pageArgs,
+          character: { id: args.characterId, name: "Alixard Veliane" },
+        })
+      ).rejects.toThrow()
+    }
+  })
+
+  it("conserve les groupes des anciennes récoltes sans identifiant de personnage ni prix connu", async () => {
+    const { backend, member, args } = await setup()
+    const { transactionId } = await member.mutation(api.harvests.record, args)
+    await backend.run(async (ctx) => {
+      await ctx.db.patch(transactionId, { actorCharacterId: undefined })
+      const lines = await ctx.db
+        .query("transactionLines")
+        .withIndex("by_transaction", (index) =>
+          index.eq("transactionId", transactionId)
+        )
+        .collect()
+      for (const line of lines)
+        await ctx.db.patch(line._id, { purchaseUnitPrice: undefined })
+    })
+    await member.mutation(api.harvests.record, args)
+    const result = await member.query(api.harvests.listGroups, {
+      page: 0,
+    })
+    expect(result.groups).toHaveLength(2)
+    const legacy = result.groups.find(
+      (group) => group.character?.id === undefined
+    )!
+    expect(legacy).toMatchObject({
+      harvestCount: 1,
+      knownValue: 0,
+      unpricedLineCount: 2,
+    })
+    const details = await member.query(api.harvests.listPage, {
+      ...pageArgs,
+      character: legacy.character,
+    })
+    expect(details.page.map((harvest) => harvest._id)).toEqual([transactionId])
+  })
+
   it("modifie une récolte, remplace ses ingrédients et conserve ses prix et son auteur d’origine", async () => {
     const { backend, member, args, productIds } = await setup()
     const admin = await asAuthenticatedUser(backend, "admin")

@@ -8,8 +8,22 @@ import { loadStockBeforeTransaction } from "./lib/exchange"
 import { applyInventoryProductChanges } from "./lib/inventorySummary"
 import { assertFiniteRange, assertWholeNumberRange } from "./lib/numbers"
 import { buildTransactionSearchText } from "./lib/transactionSearch"
+import { calculateHarvestValue } from "../shared/harvest-value"
+import { startOfUtcWeek, WEEK_IN_MILLISECONDS } from "../shared/time"
 
 const MAX_QUANTITY = 1_000_000
+
+function assertValidWeek(week: number | undefined) {
+  if (
+    week !== undefined &&
+    (!Number.isFinite(week) || startOfUtcWeek(week) !== week)
+  ) {
+    throw new ConvexError({
+      code: "INVALID_INPUT",
+      message: "Semaine invalide.",
+    })
+  }
+}
 
 const harvestArgs = {
   characterId: v.id("characters"),
@@ -159,20 +173,51 @@ async function writeHarvestLines(
 }
 
 export const listPage = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    character: v.optional(
+      v.object({ id: v.optional(v.id("characters")), name: v.string() })
+    ),
+    paginationOpts: paginationOptsValidator,
+    weekStartsAt: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
     await requireWriter(ctx)
-    const result = await ctx.db
-      .query("transactions")
-      .withIndex("by_kind_and_date", (index) => index.eq("kind", "harvest"))
-      .order("desc")
-      .paginate({
-        ...args.paginationOpts,
-        numItems: Math.min(
-          50,
-          Math.max(1, Math.round(args.paginationOpts.numItems))
-        ),
-      })
+    const week = args.weekStartsAt
+    assertValidWeek(week)
+    const character = args.character
+    let harvests = character
+      ? ctx.db
+          .query("transactions")
+          .withIndex("by_kind_and_character_and_date", (index) => {
+            const range = index
+              .eq("kind", "harvest")
+              .eq("actorCharacterId", character.id)
+            return week === undefined
+              ? range
+              : range
+                  .gte("occurredAt", week)
+                  .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
+          })
+      : ctx.db.query("transactions").withIndex("by_kind_and_date", (index) => {
+          const range = index.eq("kind", "harvest")
+          return week === undefined
+            ? range
+            : range
+                .gte("occurredAt", week)
+                .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
+        })
+    if (character && character.id === undefined) {
+      harvests = harvests.filter((filter) =>
+        filter.eq(filter.field("actorName"), character.name)
+      )
+    }
+    const result = await harvests.order("desc").paginate({
+      ...args.paginationOpts,
+      numItems: Math.min(
+        50,
+        Math.max(1, Math.round(args.paginationOpts.numItems))
+      ),
+    })
     return {
       ...result,
       page: await Promise.all(
@@ -185,6 +230,103 @@ export const listPage = query({
             )
             .collect(),
         }))
+      ),
+    }
+  },
+})
+
+export const listWeeks = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireWriter(ctx)
+    const harvests = await ctx.db
+      .query("transactions")
+      .withIndex("by_kind_and_date", (index) => index.eq("kind", "harvest"))
+      .collect()
+    return [
+      ...new Set(harvests.map((harvest) => startOfUtcWeek(harvest.occurredAt))),
+    ].sort((a, b) => b - a)
+  },
+})
+
+export const listGroups = query({
+  args: {
+    page: v.number(),
+    weekStartsAt: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireWriter(ctx)
+    assertWholeNumberRange(args.page, 0, Number.MAX_SAFE_INTEGER, "La page")
+    const week = args.weekStartsAt
+    assertValidWeek(week)
+    const harvests = await ctx.db
+      .query("transactions")
+      .withIndex("by_kind_and_date", (index) => {
+        const range = index.eq("kind", "harvest")
+        return week === undefined
+          ? range
+          : range
+              .gte("occurredAt", week)
+              .lt("occurredAt", week + WEEK_IN_MILLISECONDS)
+      })
+      .order("desc")
+      .collect()
+    const groups = new Map<
+      string,
+      {
+        key: string
+        character: { id?: Id<"characters">; name: string }
+        harvests: Doc<"transactions">[]
+      }
+    >()
+    for (const harvest of harvests) {
+      const character = {
+        id: harvest.actorCharacterId,
+        name: harvest.actorName,
+      }
+      const key = JSON.stringify([
+        character.id,
+        character.id === undefined ? character.name : undefined,
+      ])
+      const group = groups.get(key)
+      if (group) group.harvests.push(harvest)
+      else groups.set(key, { key, character, harvests: [harvest] })
+    }
+    const sortedGroups = [...groups.values()].sort(
+      (a, b) =>
+        a.character.name.localeCompare(b.character.name, "fr", {
+          numeric: true,
+        }) || a.key.localeCompare(b.key)
+    )
+    const pageCount = Math.max(1, Math.ceil(sortedGroups.length / 6))
+    const page = Math.min(args.page, pageCount - 1)
+    return {
+      page,
+      pageCount,
+      groups: await Promise.all(
+        sortedGroups.slice(page * 6, (page + 1) * 6).map(async (group) => {
+          // Read every harvest in the group so its summary is independent of detail pagination.
+          const lines = (
+            await Promise.all(
+              group.harvests.map((harvest) =>
+                ctx.db
+                  .query("transactionLines")
+                  .withIndex("by_transaction", (index) =>
+                    index.eq("transactionId", harvest._id)
+                  )
+                  .collect()
+              )
+            )
+          ).flat()
+          return {
+            key: group.key,
+            character: group.character,
+            harvestCount: group.harvests.length,
+            quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+            lineCount: lines.length,
+            ...calculateHarvestValue(lines),
+          }
+        })
       ),
     }
   },

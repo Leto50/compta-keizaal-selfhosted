@@ -10,7 +10,30 @@ export function HarvestValueSummary({
   lines,
 }: Readonly<{ compact?: boolean; lines: readonly HarvestValueLine[] }>) {
   const { knownValue, unpricedLineCount } = calculateHarvestValue(lines)
-  const hasKnownPrices = unpricedLineCount < lines.length
+  return (
+    <HarvestValueAmount
+      compact={compact}
+      knownValue={knownValue}
+      unpricedLineCount={unpricedLineCount}
+      lineCount={lines.length}
+    />
+  )
+}
+
+export function HarvestValueAmount({
+  compact = false,
+  knownValue,
+  unpricedLineCount,
+  lineCount,
+  showLabel = false,
+}: Readonly<{
+  compact?: boolean
+  knownValue: number
+  unpricedLineCount: number
+  lineCount: number
+  showLabel?: boolean
+}>) {
+  const hasKnownPrices = unpricedLineCount < lineCount
 
   return (
     <div
@@ -28,7 +51,9 @@ export function HarvestValueSummary({
       >
         <p
           className={
-            compact ? "text-xs text-muted-foreground md:sr-only" : undefined
+            compact
+              ? cn("text-xs text-muted-foreground", !showLabel && "md:sr-only")
+              : undefined
           }
         >
           {unpricedLineCount === 0

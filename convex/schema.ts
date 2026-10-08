@@ -153,6 +153,11 @@ export default defineSchema({
   })
     .index("by_financial_and_date", ["financial", "occurredAt"])
     .index("by_kind_and_date", ["kind", "occurredAt"])
+    .index("by_kind_and_character_and_date", [
+      "kind",
+      "actorCharacterId",
+      "occurredAt",
+    ])
     .index("by_legacy_key", ["legacyKey"])
     .index("by_occurred_at", ["occurredAt"])
     .index("by_product_and_date", ["productId", "occurredAt"])
