@@ -11,6 +11,7 @@ export const transactionKind = v.union(
   v.literal("adjustment"),
   v.literal("bundle"),
   v.literal("exchange"),
+  v.literal("harvest"),
   v.literal("order"),
   v.literal("production"),
   v.literal("purchase"),

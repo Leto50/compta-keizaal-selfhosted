@@ -158,7 +158,8 @@ export const overview = query({
             .filter((filter) =>
               filter.and(
                 filter.neq(filter.field("kind"), "adjustment"),
-                filter.neq(filter.field("kind"), "production")
+                filter.neq(filter.field("kind"), "production"),
+                filter.neq(filter.field("kind"), "harvest")
               )
             )
             .take(8),

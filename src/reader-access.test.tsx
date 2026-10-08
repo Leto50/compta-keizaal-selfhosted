@@ -45,6 +45,7 @@ import { Route as RecipesRoute } from "./routes/_app/recettes"
 import { Route as AccountRoute } from "./routes/_app/compte"
 import { Route as AdministrationRoute } from "./routes/_app/administration"
 import { Route as CharactersRoute } from "./routes/_app/personnages"
+import { Route as HarvestsRoute } from "./routes/_app/recoltes"
 import { Route as AuthenticationRoute } from "./routes/connexion"
 import { DEFAULT_SITE_NAME } from "../shared/site-name"
 import { defaultReaderAccess, type ReaderAccess } from "../shared/reader-access"
@@ -1008,6 +1009,7 @@ describe("interface lecteur", () => {
     expect(screen.queryByRole("link", { name: "Inventaire" })).not.toBeNull()
     expect(screen.queryByRole("link", { name: "Accès & réglages" })).toBeNull()
     expect(screen.queryByRole("link", { name: "Personnages" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Récoltes" })).toBeNull()
     expect(screen.queryByText("Lecteur · lecture seule")).not.toBeNull()
   })
 
@@ -1270,4 +1272,195 @@ describe("interface lecteur", () => {
       await expect(guard(options)).resolves.toBeUndefined()
     }
   )
+})
+
+describe("rubrique récoltes", () => {
+  let originalProducts: unknown
+  beforeEach(() => {
+    state.role = "user"
+    originalProducts = state.data.get("products:list")
+    const ingredient = (originalProducts as Doc<"products">[])[0]!
+    state.data.set("products:list", [
+      ingredient,
+      {
+        ...ingredient,
+        _id: "salt" as Doc<"products">["_id"],
+        name: "Sel de feu",
+      },
+      {
+        ...ingredient,
+        _id: "potion" as Doc<"products">["_id"],
+        name: "Potion exclue",
+        category: "potion",
+      },
+      {
+        ...ingredient,
+        _id: "archived" as Doc<"products">["_id"],
+        name: "Ingrédient exclu",
+        active: false,
+      },
+    ])
+    state.data.set("harvests:listPage", {
+      page: [],
+      isDone: true,
+      continueCursor: "done",
+    })
+  })
+  afterEach(() => {
+    state.data.set("products:list", originalProducts)
+  })
+
+  it("affiche la rubrique aux employés et la retire lors d’une rétrogradation", () => {
+    const view = render(
+      <TooltipProvider>
+        <AppShell>{page(HarvestsRoute)}</AppShell>
+      </TooltipProvider>
+    )
+    expect(screen.getByRole("link", { name: "Récoltes" })).not.toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "J’ai récolté" }))
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+    state.role = "reader"
+    view.rerender(
+      <TooltipProvider>
+        <AppShell>{page(HarvestsRoute)}</AppShell>
+      </TooltipProvider>
+    )
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(screen.queryByRole("link", { name: "Récoltes" })).toBeNull()
+    expect(screen.queryByText("Accès non autorisé")).not.toBeNull()
+  })
+
+  it("redirige un lecteur même si le cache contient encore un rôle employé", async () => {
+    const guard = HarvestsRoute.options.beforeLoad as unknown as (options: {
+      context: { queryClient: QueryClient }
+    }) => Promise<unknown>
+    let currentRole = "reader"
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { queryFn: async () => ({ role: currentRole }) },
+      },
+    })
+    const key = convexQuery(api.auth.getCurrentUser, {}).queryKey
+    queryClient.setQueryData(key, { role: "user" })
+    await expect(guard({ context: { queryClient } })).rejects.toMatchObject({
+      options: { to: "/" },
+    })
+    currentRole = "user"
+    queryClient.setQueryData(key, { role: "reader" })
+    await expect(guard({ context: { queryClient } })).resolves.toBeUndefined()
+  })
+
+  it("valide les champs requis sans enregistrer une récolte incomplète", async () => {
+    render(page(HarvestsRoute))
+    fireEvent.click(screen.getByRole("button", { name: "J’ai récolté" }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer la récolte" })
+    )
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("combobox", { name: "Personnage" })
+          .getAttribute("aria-invalid")
+      ).toBe("true")
+    )
+    expect(
+      screen
+        .getByRole("combobox", { name: "Ingrédient 1" })
+        .getAttribute("aria-invalid")
+    ).toBe("true")
+    expect(state.mutations.get("harvests:record")).not.toHaveBeenCalled()
+  })
+
+  it("enregistre plusieurs ingrédients, exclut les produits indisponibles et empêche les doublons", async () => {
+    render(page(HarvestsRoute))
+    fireEvent.click(screen.getByRole("button", { name: "J’ai récolté" }))
+    fireEvent.click(screen.getByRole("combobox", { name: "Personnage" }))
+    fireEvent.click(screen.getByRole("option", { name: "Personnage test" }))
+    fireEvent.click(screen.getByRole("combobox", { name: "Ingrédient 1" }))
+    expect(
+      screen.queryByRole("option", { name: /Potion exclue|Ingrédient exclu/ })
+    ).toBeNull()
+    fireEvent.click(screen.getByRole("option", { name: /Blé test/ }))
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Quantité 1" }), {
+      target: { value: "3" },
+    })
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ajouter un ingrédient" })
+    )
+    fireEvent.click(screen.getByRole("combobox", { name: "Ingrédient 2" }))
+    expect(screen.queryByRole("option", { name: /Blé test/ })).toBeNull()
+    fireEvent.click(screen.getByRole("option", { name: /Sel de feu/ }))
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Quantité 2" }), {
+      target: { value: "4" },
+    })
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Commentaire (facultatif)" }),
+      { target: { value: "  Blancherive  " } }
+    )
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer la récolte" })
+    )
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const characters = state.data.get("characters:list") as Doc<"characters">[]
+    await waitFor(() =>
+      expect(state.mutations.get("harvests:record")).toHaveBeenCalledWith({
+        characterId: characters[0]!._id,
+        comment: "Blancherive",
+        occurredAt: expect.any(Number) as number,
+        lines: [
+          { productId: products[0]!._id, quantity: 3 },
+          { productId: "salt", quantity: 4 },
+        ],
+      })
+    )
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  })
+
+  it("affiche les récoltes et ne ferme pas la confirmation quand la suppression échoue", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const occurredAt = new Date(2026, 9, 8, 12).getTime()
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorName: "Alixard Veliane",
+          occurredAt,
+          comment: "Autour de Blancherive",
+          lines: [{ _id: "line", productName: products[0]!.name, quantity: 3 }],
+        },
+      ],
+      isDone: false,
+      continueCursor: "next",
+    })
+    render(page(HarvestsRoute))
+    expect(screen.queryByText("Alixard Veliane")).not.toBeNull()
+    expect(screen.queryByText("+3 unités")).not.toBeNull()
+    expect(screen.queryByText("Autour de Blancherive")).not.toBeNull()
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Suivante" })
+        .disabled
+    ).toBe(false)
+    fireEvent.click(
+      screen.getByRole("button", { name: /Supprimer la récolte de/ })
+    )
+    state.mutations
+      .get("transactions:remove")!
+      .mockRejectedValueOnce(new Error("Stock insuffisant"))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Supprimer la récolte" })
+    )
+    await waitFor(() =>
+      expect(state.mutations.get("transactions:remove")).toHaveBeenCalledWith({
+        transactionId: "harvest",
+      })
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLButtonElement>("button", {
+          name: "Supprimer la récolte",
+        }).disabled
+      ).toBe(false)
+    )
+    expect(screen.queryByRole("alertdialog")).not.toBeNull()
+  })
 })

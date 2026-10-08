@@ -30,7 +30,11 @@ const SALARY_TRANSACTION_KINDS = new Set<Doc<"transactions">["kind"]>([
 export function isFinancialTransaction(
   transaction: Pick<Doc<"transactions">, "kind">
 ) {
-  return transaction.kind !== "adjustment" && transaction.kind !== "production"
+  return (
+    transaction.kind !== "adjustment" &&
+    transaction.kind !== "production" &&
+    transaction.kind !== "harvest"
+  )
 }
 
 export function transactionFlows(

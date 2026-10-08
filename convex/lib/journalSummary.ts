@@ -2,6 +2,7 @@ import { type Doc } from "../_generated/dataModel"
 import { type MutationCtx, type QueryCtx } from "../_generated/server"
 import {
   applyAccountWeekSummaryChange,
+  isFinancialTransaction,
   type AccountSummaryTransaction,
 } from "./accountSummary"
 
@@ -10,9 +11,7 @@ type FinancialTransaction = Pick<Doc<"transactions">, "kind" | "total">
 export function journalContribution(
   transaction: FinancialTransaction | undefined
 ): number {
-  return transaction &&
-    transaction.kind !== "adjustment" &&
-    transaction.kind !== "production"
+  return transaction && isFinancialTransaction(transaction)
     ? transaction.total
     : 0
 }

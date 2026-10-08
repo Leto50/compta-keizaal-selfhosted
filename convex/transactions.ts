@@ -169,7 +169,8 @@ export const listPage = query({
           searchQuery = searchQuery.filter((filter) =>
             filter.and(
               filter.neq(filter.field("kind"), "adjustment"),
-              filter.neq(filter.field("kind"), "production")
+              filter.neq(filter.field("kind"), "production"),
+              filter.neq(filter.field("kind"), "harvest")
             )
           )
         }
@@ -264,7 +265,8 @@ export const listPage = query({
         filteredQuery = filteredQuery.filter((filter) =>
           filter.and(
             filter.neq(filter.field("kind"), "adjustment"),
-            filter.neq(filter.field("kind"), "production")
+            filter.neq(filter.field("kind"), "production"),
+            filter.neq(filter.field("kind"), "harvest")
           )
         )
       }
@@ -887,6 +889,13 @@ export const updateExchange = mutation({
       throw new ConvexError({
         code: "INVALID_OPERATION",
         message: "Une production utilise son formulaire dédié.",
+      })
+    }
+    if (transaction.kind === "harvest") {
+      throw new ConvexError({
+        code: "INVALID_OPERATION",
+        message:
+          "Supprimez la récolte depuis sa rubrique avant de la ressaisir.",
       })
     }
     const character = await ctx.db.get(args.characterId)

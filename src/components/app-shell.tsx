@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Landmark,
   LayoutDashboard,
+  Leaf,
   LogOut,
   ScrollText,
   ShieldCheck,
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/sidebar"
 
 interface NavigationItem {
+  writersOnly?: boolean
   sections?: ReaderSection[]
   icon: LucideIcon
   label: string
@@ -50,6 +52,7 @@ interface NavigationItem {
     | "/inventaire"
     | "/journal"
     | "/personnages"
+    | "/recoltes"
     | "/recettes"
 }
 
@@ -67,6 +70,7 @@ const navigation: readonly NavigationItem[] = [
     to: "/journal",
     sections: ["transactions"],
   },
+  { icon: Leaf, label: "Récoltes", to: "/recoltes", writersOnly: true },
   { icon: Landmark, label: "Compte", to: "/compte", sections: ["account"] },
   {
     icon: ClipboardList,
@@ -83,7 +87,7 @@ const navigation: readonly NavigationItem[] = [
 ]
 
 function Navigation() {
-  const { canRead } = usePermissions()
+  const { canRead, canWrite } = usePermissions()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -97,7 +101,11 @@ function Navigation() {
       <SidebarGroupContent>
         <SidebarMenu className="gap-1">
           {navigation
-            .filter((item) => !item.sections || item.sections.some(canRead))
+            .filter(
+              (item) =>
+                (!item.writersOnly || canWrite) &&
+                (!item.sections || item.sections.some(canRead))
+            )
             .map((item) => {
               const Icon = item.icon
               const isActive =

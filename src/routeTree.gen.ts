@@ -19,6 +19,7 @@ import { Route as AppInventaireRouteImport } from './routes/_app/inventaire'
 import { Route as AppJournalRouteImport } from './routes/_app/journal'
 import { Route as AppPersonnagesRouteImport } from './routes/_app/personnages'
 import { Route as AppRecettesRouteImport } from './routes/_app/recettes'
+import { Route as AppRecoltesRouteImport } from './routes/_app/recoltes'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AppRoute = AppRouteImport.update({
@@ -70,6 +71,11 @@ const AppRecettesRoute = AppRecettesRouteImport.update({
   path: '/recettes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRecoltesRoute = AppRecoltesRouteImport.update({
+  id: '/recoltes',
+  path: '/recoltes',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/journal': typeof AppJournalRoute
   '/personnages': typeof AppPersonnagesRoute
   '/recettes': typeof AppRecettesRoute
+  '/recoltes': typeof AppRecoltesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/journal': typeof AppJournalRoute
   '/personnages': typeof AppPersonnagesRoute
   '/recettes': typeof AppRecettesRoute
+  '/recoltes': typeof AppRecoltesRoute
   '/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_app/journal': typeof AppJournalRoute
   '/_app/personnages': typeof AppPersonnagesRoute
   '/_app/recettes': typeof AppRecettesRoute
+  '/_app/recoltes': typeof AppRecoltesRoute
   '/_app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/journal'
     | '/personnages'
     | '/recettes'
+    | '/recoltes'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/journal'
     | '/personnages'
     | '/recettes'
+    | '/recoltes'
     | '/'
     | '/api/auth/$'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_app/journal'
     | '/_app/personnages'
     | '/_app/recettes'
+    | '/_app/recoltes'
     | '/_app/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -232,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecettesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/recoltes': {
+      id: '/_app/recoltes'
+      path: '/recoltes'
+      fullPath: '/recoltes'
+      preLoaderRoute: typeof AppRecoltesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -250,6 +269,7 @@ interface AppRouteChildren {
   AppJournalRoute: typeof AppJournalRoute
   AppPersonnagesRoute: typeof AppPersonnagesRoute
   AppRecettesRoute: typeof AppRecettesRoute
+  AppRecoltesRoute: typeof AppRecoltesRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -261,6 +281,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppJournalRoute: AppJournalRoute,
   AppPersonnagesRoute: AppPersonnagesRoute,
   AppRecettesRoute: AppRecettesRoute,
+  AppRecoltesRoute: AppRecoltesRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

@@ -102,6 +102,35 @@ export const operationDateInput = requiredDateInput.refine((value) => {
   return date.getTime() <= endOfToday.getTime()
 }, "La date ne peut pas être située dans le futur.")
 
+export const harvestFormSchema = z
+  .object({
+    characterId: requiredText("Le personnage", 100),
+    comment: optionalText("Le commentaire", 500),
+    date: operationDateInput,
+    lines: z
+      .array(
+        z.object({
+          productId: requiredText("L’ingrédient", 100),
+          quantity: wholeNumberInput("La quantité", 1, MAX_QUANTITY),
+        })
+      )
+      .min(1, "Ajoutez au moins un ingrédient.")
+      .max(MAX_DYNAMIC_LINES, "Une récolte est limitée à 50 ingrédients."),
+  })
+  .superRefine((value, context) => {
+    const references = new Set<string>()
+    value.lines.forEach((line, index) => {
+      if (line.productId && references.has(line.productId)) {
+        context.addIssue({
+          code: "custom",
+          message: "Cet ingrédient figure déjà dans la récolte.",
+          path: ["lines", index, "productId"],
+        })
+      }
+      references.add(line.productId)
+    })
+  })
+
 export const priceDraftSchema = z
   .object({
     septims: z.string(),

@@ -112,6 +112,14 @@ pnpm build
   Masquer un type de prix masque également les montants et totaux dérivés.
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
+- La rubrique « Récoltes », réservée aux employés et administrateurs, permet
+  de saisir jusqu’à 50 ingrédients actifs suivis en stock en une seule fois.
+  L’historique conserve le personnage, le compte ayant saisi la récolte, la date,
+  les ingrédients et les quantités. Les stocks sont augmentés atomiquement,
+  sans modifier les transactions financières, le compte ou les salaires.
+  Une récolte saisie par erreur peut être supprimée : les quantités sont retirées
+  du stock et l’action est auditée. La suppression est refusée si elle rendrait
+  un stock négatif.
 - Les catégories de recettes sont conservées dans un registre indépendant. Une
   catégorie reste disponible sans recette ; son renommage met à jour les recettes
   actives et archivées. Sa suppression est refusée tant qu’une recette l’utilise.
