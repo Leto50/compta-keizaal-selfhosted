@@ -12,6 +12,7 @@ import {
   type FunctionReference,
   type FunctionReturnType,
 } from "convex/server"
+import { ConvexError } from "convex/values"
 import { type ComponentType, type ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import type * as ReactQuery from "@tanstack/react-query"
@@ -35,6 +36,7 @@ import { asAuthenticatedUser, createTestBackend } from "../convex/test.helpers"
 import { AppShell } from "./components/app-shell"
 import { RecipeDialog } from "./components/recipe-dialog"
 import { RecipeCategoryManagerDialog } from "./components/recipe-category-manager-dialog"
+import { HarvestValueSummary } from "./components/harvest-value-summary"
 import { SiteMetadata } from "./components/site-metadata"
 import { TooltipProvider } from "./components/ui/tooltip"
 import { Route as DashboardRoute } from "./routes/_app/index"
@@ -45,6 +47,7 @@ import { Route as RecipesRoute } from "./routes/_app/recettes"
 import { Route as AccountRoute } from "./routes/_app/compte"
 import { Route as AdministrationRoute } from "./routes/_app/administration"
 import { Route as CharactersRoute } from "./routes/_app/personnages"
+import { Route as HarvestsRoute } from "./routes/_app/recoltes"
 import { Route as AuthenticationRoute } from "./routes/connexion"
 import { DEFAULT_SITE_NAME } from "../shared/site-name"
 import { defaultReaderAccess, type ReaderAccess } from "../shared/reader-access"
@@ -57,6 +60,7 @@ const state = vi.hoisted<{
   role: string | undefined
   access: ReaderAccess | undefined
   search: Record<string, unknown>
+  queries: unknown[][]
 }>(() => ({
   data: new Map<string, unknown>(),
   mutations: new Map<string, ReturnType<typeof vi.fn>>(),
@@ -64,6 +68,7 @@ const state = vi.hoisted<{
   role: "reader",
   access: undefined,
   search: {},
+  queries: [],
 }))
 
 const originalFonts = Object.getOwnPropertyDescriptor(document, "fonts")
@@ -92,9 +97,10 @@ vi.mock("convex/react", () => ({
 
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...(await importOriginal<typeof ReactQuery>()),
-  useSuspenseQuery: ({ queryKey }: { queryKey: [string, string] }) => ({
-    data: state.data.get(queryKey[1]),
-  }),
+  useSuspenseQuery: ({ queryKey }: { queryKey: [string, string, unknown] }) => {
+    state.queries.push(queryKey)
+    return { data: state.data.get(queryKey[1]) }
+  },
 }))
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({
@@ -242,6 +248,7 @@ beforeEach(() => {
   state.search = {}
   state.pathname = "/inventaire"
   state.mutations.clear()
+  state.queries = []
   state.data.set("administration:getSiteName", DEFAULT_SITE_NAME)
   vi.stubGlobal("matchMedia", () => ({
     matches: false,
@@ -1008,8 +1015,53 @@ describe("interface lecteur", () => {
     expect(screen.queryByRole("link", { name: "Inventaire" })).not.toBeNull()
     expect(screen.queryByRole("link", { name: "Accès & réglages" })).toBeNull()
     expect(screen.queryByRole("link", { name: "Personnages" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Récoltes" })).toBeNull()
     expect(screen.queryByText("Lecteur · lecture seule")).not.toBeNull()
   })
+
+  it.each([undefined, defaultReaderAccess])(
+    "propose Récoltes décoché pour un lecteur avec la configuration %s et enregistre seulement une activation explicite",
+    async (readerAccess) => {
+      state.role = "admin"
+      render(
+        <AccountAccessDialog
+          account={{
+            id: "reader",
+            identifier: "reader",
+            name: "Lecteur",
+            role: "reader",
+            banned: false,
+            readerAccess,
+          }}
+          isLastActiveAdmin={false}
+          trigger={<button>Gérer l’accès test</button>}
+        />
+      )
+      fireEvent.click(
+        screen.getByRole("button", { name: "Gérer l’accès test" })
+      )
+      const checkbox = screen.getByRole<HTMLInputElement>("checkbox", {
+        name: "Récoltes",
+      })
+      expect(checkbox.checked).toBe(false)
+      fireEvent.click(checkbox)
+      fireEvent.click(
+        screen.getByRole("button", { name: "Enregistrer l’accès" })
+      )
+      await waitFor(() =>
+        expect(
+          state.mutations.get("administration:saveAccountAccess")
+        ).toHaveBeenCalledWith({
+          userId: "reader",
+          role: "reader",
+          access: {
+            ...defaultReaderAccess,
+            sections: [...defaultReaderAccess.sections, "harvests"],
+          },
+        })
+      )
+    }
+  )
 
   it("affiche l’inventaire avec ses filtres et sans modification", () => {
     render(page(InventoryRoute))
@@ -1268,6 +1320,758 @@ describe("interface lecteur", () => {
         { role: "reader" }
       )
       await expect(guard(options)).resolves.toBeUndefined()
+    }
+  )
+})
+
+describe("rubrique récoltes", () => {
+  let originalProducts: unknown
+  beforeEach(() => {
+    state.role = "user"
+    state.data.set("harvests:listWeeks", [
+      Date.UTC(2026, 9, 5),
+      Date.UTC(2026, 8, 28),
+    ])
+    originalProducts = state.data.get("products:list")
+    const ingredient = (originalProducts as Doc<"products">[])[0]!
+    state.data.set("products:list", [
+      ingredient,
+      {
+        ...ingredient,
+        _id: "salt" as Doc<"products">["_id"],
+        name: "Sel de feu",
+      },
+      {
+        ...ingredient,
+        _id: "potion" as Doc<"products">["_id"],
+        name: "Potion exclue",
+        category: "potion",
+      },
+      {
+        ...ingredient,
+        _id: "archived" as Doc<"products">["_id"],
+        name: "Ingrédient exclu",
+        active: false,
+      },
+    ])
+    state.data.set("harvests:listPage", {
+      page: [],
+      isDone: true,
+      continueCursor: "done",
+    })
+  })
+  afterEach(() => {
+    state.data.set("products:list", originalProducts)
+  })
+
+  it.each([true, false])(
+    "consulte les récoltes avec ce seul droit, sans catalogues ni actions et respecte la visibilité des prix d’achat (%s)",
+    (showPurchasePrices) => {
+      state.role = "reader"
+      state.access = {
+        ...defaultReaderAccess,
+        sections: ["harvests"],
+        operationKinds: [],
+        showPurchasePrices,
+        showSalePrices: false,
+      }
+      state.data.set("harvests:listPage", {
+        page: [
+          {
+            _id: "harvest",
+            actorName: "Mira",
+            occurredAt: Date.UTC(2026, 9, 8, 12),
+            lines: [
+              {
+                _id: "line",
+                productName: "Lys bleu",
+                quantity: 3,
+                purchaseUnitPrice: 4,
+              },
+            ],
+          },
+        ],
+        isDone: true,
+        continueCursor: "done",
+      })
+      state.data.set("harvests:listGroups", {
+        groups: [
+          {
+            key: "mira",
+            character: { name: "Mira" },
+            harvestCount: 1,
+            quantity: 3,
+            knownValue: 12,
+            lineCount: 1,
+            unpricedLineCount: 0,
+          },
+        ],
+        page: 0,
+        pageCount: 1,
+      })
+      const view = render(
+        <TooltipProvider>
+          <AppShell>{page(HarvestsRoute)}</AppShell>
+        </TooltipProvider>
+      )
+      expect(screen.getByRole("link", { name: "Récoltes" })).not.toBeNull()
+      expect(screen.getByText("Lys bleu")).not.toBeNull()
+      expect(screen.queryByRole("columnheader", { name: "Actions" })).toBeNull()
+      expect(
+        screen.queryByRole("columnheader", { name: "Économie estimée" }) !==
+          null
+      ).toBe(showPurchasePrices)
+      expect(
+        screen.queryByRole("button", {
+          name: /Nouvelle récolte|Modifier|Supprimer/,
+        })
+      ).toBeNull()
+      expect(
+        state.queries.some(
+          (query) =>
+            query[1] === "products:list" || query[1] === "characters:list"
+        )
+      ).toBe(false)
+      fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+      fireEvent.click(screen.getByRole("option", { name: "Personnage" }))
+      expect(screen.queryByText("Économie estimée à l’achat") !== null).toBe(
+        showPurchasePrices
+      )
+      if (!showPurchasePrices)
+        expect(
+          screen.queryByText(/septim|Tarif d’achat|Valeur partielle/)
+        ).toBeNull()
+      fireEvent.click(
+        screen.getByRole("button", { name: "Voir les récoltes : Mira" })
+      )
+      expect(screen.getByText("Lys bleu")).not.toBeNull()
+      state.access = { ...state.access, sections: [] }
+      view.rerender(
+        <TooltipProvider>
+          <AppShell>{page(HarvestsRoute)}</AppShell>
+        </TooltipProvider>
+      )
+      expect(screen.queryByText("Lys bleu")).toBeNull()
+      expect(screen.queryByRole("link", { name: "Récoltes" })).toBeNull()
+      expect(screen.getByText("Accès non autorisé")).not.toBeNull()
+    }
+  )
+
+  it("précharge seulement les données de récoltes pour un lecteur autorisé", async () => {
+    const queries: string[] = []
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          queryFn: async ({ queryKey }) => {
+            const name = queryKey[1] as string
+            queries.push(name)
+            if (name === "auth:getCurrentUser")
+              return {
+                role: "reader",
+                readerAccess: {
+                  ...defaultReaderAccess,
+                  sections: ["harvests"],
+                },
+              }
+            if (name === "products:list" || name === "characters:list")
+              throw new Error("Catalogue interdit")
+            return state.data.get(name)
+          },
+        },
+      },
+    })
+    const loader = HarvestsRoute.options.loader as unknown as (options: {
+      context: { queryClient: QueryClient }
+    }) => Promise<unknown>
+    await loader({ context: { queryClient } })
+    expect(queries.sort()).toEqual([
+      "auth:getCurrentUser",
+      "harvests:listPage",
+      "harvests:listWeeks",
+    ])
+  })
+
+  it.each([false, true])(
+    "regroupe par personnage avec un filtre de semaine indépendant (filtre actif : %s)",
+    async (filtered) => {
+      const characters = state.data.get(
+        "characters:list"
+      ) as Doc<"characters">[]
+      const products = state.data.get("products:list") as Doc<"products">[]
+      const character = { id: characters[0]!._id, name: characters[0]!.name }
+      const weekStartsAt = filtered ? Date.UTC(2026, 9, 5) : undefined
+      state.data.set("harvests:listGroups", {
+        page: 0,
+        pageCount: 1,
+        groups: [
+          {
+            key: "group",
+            character,
+            harvestCount: 32,
+            quantity: 224,
+            knownValue: 384,
+            lineCount: 64,
+            unpricedLineCount: 32,
+          },
+        ],
+      })
+      state.data.set("harvests:listPage", {
+        page: [
+          {
+            _id: "harvest",
+            actorCharacterId: characters[0]!._id,
+            actorName: characters[0]!.name,
+            occurredAt: Date.UTC(2026, 9, 8, 12),
+            lines: [
+              {
+                _id: "line",
+                productId: products[0]!._id,
+                productName: products[0]!.name,
+                quantity: 3,
+                purchaseUnitPrice: 4,
+              },
+            ],
+          },
+        ],
+        isDone: false,
+        continueCursor: "more-harvests",
+      })
+      render(page(HarvestsRoute))
+      if (filtered) {
+        fireEvent.click(screen.getByRole("combobox", { name: "Semaine" }))
+        fireEvent.click(
+          screen.getByRole("option", { name: "Du 05/10/2026 au 11/10/2026" })
+        )
+      }
+      fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+      expect(screen.queryByRole("option", { name: "Semaine" })).toBeNull()
+      expect(
+        screen.queryByRole("option", { name: "Semaine et personnage" })
+      ).toBeNull()
+      fireEvent.click(screen.getByRole("option", { name: "Personnage" }))
+      expect(state.queries).toContainEqual([
+        "convexQuery",
+        "harvests:listGroups",
+        { weekStartsAt, page: 0 },
+      ])
+      expect(screen.getByText("32 récoltes")).not.toBeNull()
+      expect(screen.getByText("384 sept.")).not.toBeNull()
+      expect(screen.getByText("Partielle · 32 prix manquants")).not.toBeNull()
+      expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(
+        character.name
+      )
+      expect(screen.queryByRole("table")).toBeNull()
+      fireEvent.click(
+        screen.getByRole("button", { name: /Voir les récoltes :/ })
+      )
+      expect(screen.getByRole("table", { name: /Récoltes :/ })).not.toBeNull()
+      expect(state.queries).toContainEqual([
+        "convexQuery",
+        "harvests:listPage",
+        {
+          character,
+          weekStartsAt,
+          paginationOpts: { numItems: 30, cursor: null },
+        },
+      ])
+      fireEvent.click(screen.getAllByRole("button", { name: "Suivante" })[0]!)
+      expect(state.queries).toContainEqual([
+        "convexQuery",
+        "harvests:listPage",
+        {
+          character,
+          weekStartsAt,
+          paginationOpts: { numItems: 30, cursor: "more-harvests" },
+        },
+      ])
+      expect(screen.getByText("384 sept.")).not.toBeNull()
+      fireEvent.click(
+        screen.getByRole("button", { name: /Modifier la récolte de/ })
+      )
+      expect(screen.getByRole("dialog")).not.toBeNull()
+      fireEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Annuler",
+        })
+      )
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+      fireEvent.click(
+        screen.getByRole("button", { name: /Masquer les récoltes :/ })
+      )
+      expect(screen.queryByRole("table")).toBeNull()
+    }
+  )
+
+  it("réinitialise les pages au changement de semaine et conserve le filtre au changement d’affichage", () => {
+    const weekStartsAt = Date.UTC(2026, 9, 5)
+    state.data.set("harvests:listGroups", { page: 0, pageCount: 2, groups: [] })
+    render(page(HarvestsRoute))
+    fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+    fireEvent.click(screen.getByRole("option", { name: "Personnage" }))
+    fireEvent.click(screen.getByRole("button", { name: "Suivante" }))
+    expect(state.queries).toContainEqual([
+      "convexQuery",
+      "harvests:listGroups",
+      { weekStartsAt: undefined, page: 1 },
+    ])
+    fireEvent.click(screen.getByRole("combobox", { name: "Semaine" }))
+    fireEvent.click(
+      screen.getByRole("option", { name: "Du 05/10/2026 au 11/10/2026" })
+    )
+    expect(state.queries.at(-1)).toEqual([
+      "convexQuery",
+      "harvests:listGroups",
+      { weekStartsAt, page: 0 },
+    ])
+    fireEvent.click(screen.getByRole("combobox", { name: "Regrouper par" }))
+    fireEvent.click(screen.getByRole("option", { name: "Aucun regroupement" }))
+    expect(screen.getByText("Aucune récolte cette semaine")).not.toBeNull()
+    expect(state.queries.at(-1)).toEqual([
+      "convexQuery",
+      "harvests:listPage",
+      {
+        character: undefined,
+        weekStartsAt,
+        paginationOpts: { cursor: null, numItems: 30 },
+      },
+    ])
+    fireEvent.click(screen.getByRole("combobox", { name: "Semaine" }))
+    fireEvent.click(screen.getByRole("option", { name: "Toutes les semaines" }))
+    expect(state.queries.at(-1)).toEqual([
+      "convexQuery",
+      "harvests:listPage",
+      {
+        character: undefined,
+        weekStartsAt: undefined,
+        paginationOpts: { cursor: null, numItems: 30 },
+      },
+    ])
+  })
+
+  it("affiche la rubrique aux employés et la retire lors d’une rétrogradation", () => {
+    const view = render(
+      <TooltipProvider>
+        <AppShell>{page(HarvestsRoute)}</AppShell>
+      </TooltipProvider>
+    )
+    expect(screen.getByRole("link", { name: "Récoltes" })).not.toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle récolte" }))
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+    state.role = "reader"
+    view.rerender(
+      <TooltipProvider>
+        <AppShell>{page(HarvestsRoute)}</AppShell>
+      </TooltipProvider>
+    )
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(screen.queryByRole("link", { name: "Récoltes" })).toBeNull()
+    expect(screen.queryByText("Accès non autorisé")).not.toBeNull()
+  })
+
+  it("redirige un lecteur même si le cache contient encore un rôle employé", async () => {
+    const guard = HarvestsRoute.options.beforeLoad as unknown as (options: {
+      context: { queryClient: QueryClient }
+    }) => Promise<unknown>
+    let currentRole = "reader"
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { queryFn: async () => ({ role: currentRole }) },
+      },
+    })
+    const key = convexQuery(api.auth.getCurrentUser, {}).queryKey
+    queryClient.setQueryData(key, { role: "user" })
+    await expect(guard({ context: { queryClient } })).rejects.toMatchObject({
+      options: { to: "/" },
+    })
+    currentRole = "user"
+    queryClient.setQueryData(key, { role: "reader" })
+    await expect(guard({ context: { queryClient } })).resolves.toBeUndefined()
+  })
+
+  it("préremplit la modification, conserve les tarifs et enregistre sans créer une seconde récolte", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const characters = state.data.get("characters:list") as Doc<"characters">[]
+    const occurredAt = new Date(2026, 9, 8, 12, 41).getTime()
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorCharacterId: characters[0]!._id,
+          actorName: characters[0]!.name,
+          occurredAt,
+          comment: "Ancien lieu",
+          lines: [
+            {
+              _id: "line",
+              productId: products[0]!._id,
+              productName: products[0]!.name,
+              quantity: 3,
+              purchaseUnitPrice: 4,
+            },
+          ],
+        },
+      ],
+      isDone: true,
+      continueCursor: "done",
+    })
+    render(page(HarvestsRoute))
+    fireEvent.click(
+      screen.getByRole("button", { name: /Modifier la récolte de/ })
+    )
+    const dialog = within(screen.getByRole("dialog"))
+    expect(
+      dialog.getByRole("heading", { name: "Modifier la récolte" })
+    ).not.toBeNull()
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Personnage" })
+        .textContent
+    ).toContain(characters[0]!.name)
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Ingrédient 1" })
+        .textContent
+    ).toContain(products[0]!.name)
+    expect(
+      dialog.getByRole<HTMLInputElement>("spinbutton", { name: "Quantité 1" })
+        .value
+    ).toBe("3")
+    expect(
+      dialog.getByRole<HTMLTextAreaElement>("textbox", {
+        name: "Commentaire (facultatif)",
+      }).value
+    ).toBe("Ancien lieu")
+    expect(dialog.getByText("12 sept.")).not.toBeNull()
+    fireEvent.change(dialog.getByRole("spinbutton", { name: "Quantité 1" }), {
+      target: { value: "5" },
+    })
+    expect(dialog.getByText("20 sept.")).not.toBeNull()
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Ajouter un ingrédient" })
+    )
+    fireEvent.click(dialog.getByRole("combobox", { name: "Ingrédient 2" }))
+    fireEvent.click(screen.getByRole("option", { name: /Sel de feu/ }))
+    fireEvent.change(dialog.getByRole("spinbutton", { name: "Quantité 2" }), {
+      target: { value: "2" },
+    })
+    expect(dialog.getByText("22 sept.")).not.toBeNull()
+    fireEvent.change(
+      dialog.getByRole("textbox", { name: "Commentaire (facultatif)" }),
+      { target: { value: "" } }
+    )
+    let finishUpdate!: () => void
+    state.mutations.get("harvests:update")!.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        finishUpdate = resolve
+      })
+    )
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Enregistrer les modifications" })
+    )
+    await waitFor(() =>
+      expect(state.mutations.get("harvests:update")).toHaveBeenCalledWith({
+        transactionId: "harvest",
+        characterId: characters[0]!._id,
+        occurredAt,
+        lines: [
+          { productId: products[0]!._id, quantity: 5 },
+          { productId: "salt", quantity: 2 },
+        ],
+      })
+    )
+    expect(
+      dialog
+        .getByRole<HTMLInputElement>("spinbutton", { name: "Quantité 1" })
+        .matches(":disabled")
+    ).toBe(true)
+    expect(
+      dialog.getByRole<HTMLButtonElement>("button", {
+        name: "Enregistrer les modifications",
+      }).disabled
+    ).toBe(true)
+    fireEvent.keyDown(document, { key: "Escape" })
+    expect(screen.queryByRole("dialog")).not.toBeNull()
+    finishUpdate()
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    expect(state.mutations.get("harvests:record")).not.toHaveBeenCalled()
+  })
+
+  it("conserve les informations et affiche l’erreur lorsque la correction de stock est refusée", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const characters = state.data.get("characters:list") as Doc<"characters">[]
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorCharacterId: characters[0]!._id,
+          actorName: characters[0]!.name,
+          occurredAt: Date.now(),
+          lines: [
+            {
+              _id: "line",
+              productId: products[0]!._id,
+              productName: products[0]!.name,
+              quantity: 3,
+              purchaseUnitPrice: 4,
+            },
+          ],
+        },
+      ],
+      isDone: true,
+      continueCursor: "done",
+    })
+    render(page(HarvestsRoute))
+    fireEvent.click(
+      screen.getByRole("button", { name: /Modifier la récolte de/ })
+    )
+    const dialog = within(screen.getByRole("dialog"))
+    fireEvent.change(dialog.getByRole("spinbutton", { name: "Quantité 1" }), {
+      target: { value: "1" },
+    })
+    state.mutations.get("harvests:update")!.mockRejectedValueOnce(
+      new ConvexError({
+        code: "INSUFFICIENT_STOCK",
+        message: "Le stock deviendrait négatif.",
+      })
+    )
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Enregistrer les modifications" })
+    )
+    await waitFor(() =>
+      expect(dialog.getByText("Le stock deviendrait négatif.")).not.toBeNull()
+    )
+    expect(
+      dialog.getByRole<HTMLInputElement>("spinbutton", { name: "Quantité 1" })
+        .value
+    ).toBe("1")
+    expect(
+      dialog.getByRole<HTMLButtonElement>("button", {
+        name: "Enregistrer les modifications",
+      }).disabled
+    ).toBe(false)
+    fireEvent.click(
+      dialog.getByRole("button", { name: "Enregistrer les modifications" })
+    )
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+    expect(state.mutations.get("harvests:update")).toHaveBeenCalledTimes(2)
+  })
+
+  it("préremplit les références archivées et garde une valeur inconnue malgré les tarifs actuels", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorCharacterId: "archived-character",
+          actorName: "Personnage archivé",
+          occurredAt: Date.now(),
+          lines: [
+            {
+              _id: "line",
+              productId: "archived-product",
+              productName: "Ingrédient archivé",
+              quantity: 3,
+            },
+            {
+              _id: "known-product",
+              productId: products[0]!._id,
+              productName: products[0]!.name,
+              quantity: 1,
+            },
+          ],
+        },
+      ],
+      isDone: true,
+      continueCursor: "done",
+    })
+    render(page(HarvestsRoute))
+    fireEvent.click(
+      screen.getByRole("button", { name: /Modifier la récolte de/ })
+    )
+    const dialog = within(screen.getByRole("dialog"))
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Personnage" })
+        .textContent
+    ).toContain("Personnage archivé")
+    expect(
+      dialog.getByRole<HTMLButtonElement>("combobox", { name: "Ingrédient 1" })
+        .textContent
+    ).toContain("Ingrédient archivé")
+    expect(dialog.getByText("Non renseignée")).not.toBeNull()
+    expect(dialog.getByText(/2 ingrédients sans prix d’achat/)).not.toBeNull()
+    fireEvent.click(dialog.getByRole("button", { name: "Annuler" }))
+    expect(state.mutations.get("harvests:update")).not.toHaveBeenCalled()
+  })
+
+  it("valide les champs requis sans enregistrer une récolte incomplète", async () => {
+    render(page(HarvestsRoute))
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle récolte" }))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer la récolte" })
+    )
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole("combobox", { name: "Personnage" })
+          .getAttribute("aria-invalid")
+      ).toBe("true")
+    )
+    expect(
+      screen
+        .getByRole("combobox", { name: "Ingrédient 1" })
+        .getAttribute("aria-invalid")
+    ).toBe("true")
+    expect(state.mutations.get("harvests:record")).not.toHaveBeenCalled()
+  })
+
+  it("enregistre plusieurs ingrédients, exclut les produits indisponibles et empêche les doublons", async () => {
+    render(page(HarvestsRoute))
+    fireEvent.click(screen.getByRole("button", { name: "Nouvelle récolte" }))
+    fireEvent.click(screen.getByRole("combobox", { name: "Personnage" }))
+    fireEvent.click(screen.getByRole("option", { name: "Personnage test" }))
+    fireEvent.click(screen.getByRole("combobox", { name: "Ingrédient 1" }))
+    expect(
+      screen.queryByRole("option", { name: /Potion exclue|Ingrédient exclu/ })
+    ).toBeNull()
+    fireEvent.click(screen.getByRole("option", { name: /Blé test/ }))
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Quantité 1" }), {
+      target: { value: "3" },
+    })
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ajouter un ingrédient" })
+    )
+    fireEvent.click(screen.getByRole("combobox", { name: "Ingrédient 2" }))
+    expect(screen.queryByRole("option", { name: /Blé test/ })).toBeNull()
+    fireEvent.click(screen.getByRole("option", { name: /Sel de feu/ }))
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Quantité 2" }), {
+      target: { value: "4" },
+    })
+    expect(screen.getByText("Économie estimée à l’achat")).not.toBeNull()
+    expect(screen.getByText("7 sept.")).not.toBeNull()
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Commentaire (facultatif)" }),
+      { target: { value: "  Blancherive  " } }
+    )
+    fireEvent.click(
+      screen.getByRole("button", { name: "Enregistrer la récolte" })
+    )
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const characters = state.data.get("characters:list") as Doc<"characters">[]
+    await waitFor(() =>
+      expect(state.mutations.get("harvests:record")).toHaveBeenCalledWith({
+        characterId: characters[0]!._id,
+        comment: "Blancherive",
+        occurredAt: expect.any(Number) as number,
+        lines: [
+          { productId: products[0]!._id, quantity: 3 },
+          { productId: "salt", quantity: 4 },
+        ],
+      })
+    )
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull())
+  })
+
+  it("affiche les récoltes et ne ferme pas la confirmation quand la suppression échoue", async () => {
+    const products = state.data.get("products:list") as Doc<"products">[]
+    const occurredAt = new Date(2026, 9, 8, 12).getTime()
+    state.data.set("harvests:listPage", {
+      page: [
+        {
+          _id: "harvest",
+          actorName: "Alixard Veliane",
+          occurredAt,
+          comment: "Autour de Blancherive",
+          lines: [
+            {
+              _id: "line",
+              productName: products[0]!.name,
+              quantity: 3,
+              purchaseUnitPrice: 4,
+            },
+          ],
+        },
+      ],
+      isDone: false,
+      continueCursor: "next",
+    })
+    render(page(HarvestsRoute))
+    expect(screen.queryByText("Alixard Veliane")).not.toBeNull()
+    expect(screen.queryByText("+3 unités")).not.toBeNull()
+    expect(
+      screen.getByRole("table", { name: "Historique des récoltes" })
+    ).not.toBeNull()
+    expect(screen.queryByText("Autour de Blancherive")).toBeNull()
+    const detail = screen.getByRole("button", {
+      name: /Voir le détail de la récolte de/,
+    })
+    expect(detail.getAttribute("aria-expanded")).toBe("false")
+    fireEvent.click(detail)
+    expect(detail.getAttribute("aria-expanded")).toBe("true")
+    expect(screen.getByText("Autour de Blancherive")).not.toBeNull()
+    fireEvent.click(detail)
+    expect(screen.queryByText("Autour de Blancherive")).toBeNull()
+    expect(screen.getByText("Économie estimée à l’achat")).not.toBeNull()
+    expect(screen.getByText("12 sept.")).not.toBeNull()
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Suivante" })
+        .disabled
+    ).toBe(false)
+    fireEvent.click(
+      screen.getByRole("button", { name: /Supprimer la récolte de/ })
+    )
+    state.mutations
+      .get("transactions:remove")!
+      .mockRejectedValueOnce(new Error("Stock insuffisant"))
+    fireEvent.click(
+      screen.getByRole("button", { name: "Supprimer la récolte" })
+    )
+    await waitFor(() =>
+      expect(state.mutations.get("transactions:remove")).toHaveBeenCalledWith({
+        transactionId: "harvest",
+      })
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole<HTMLButtonElement>("button", {
+          name: "Supprimer la récolte",
+        }).disabled
+      ).toBe(false)
+    )
+    expect(screen.queryByRole("alertdialog")).not.toBeNull()
+  })
+
+  it.each([
+    {
+      lines: [{ quantity: 3, purchaseUnitPrice: 1 / 3 }],
+      label: "Économie estimée à l’achat",
+      value: "1 sept.",
+      incomplete: false,
+    },
+    {
+      lines: [{ quantity: 3, purchaseUnitPrice: 4 }, { quantity: 1 }],
+      label: "Valeur connue à l’achat",
+      value: "12 sept.",
+      incomplete: true,
+    },
+    {
+      lines: [{ quantity: 3 }],
+      label: "Valeur connue à l’achat",
+      value: "Non renseignée",
+      incomplete: true,
+    },
+    {
+      lines: [{ quantity: 3, purchaseUnitPrice: 0 }],
+      label: "Économie estimée à l’achat",
+      value: "0 sept.",
+      incomplete: false,
+    },
+  ])(
+    "affiche la valeur $value et signale les estimations incomplètes",
+    ({ lines, label, value, incomplete }) => {
+      render(<HarvestValueSummary lines={lines} />)
+      expect(screen.getByText(label)).not.toBeNull()
+      expect(screen.getByText(value)).not.toBeNull()
+      expect(screen.queryByText(/Estimation incomplète/) !== null).toBe(
+        incomplete
+      )
     }
   )
 })

@@ -21,6 +21,8 @@ import {
 import { orderTransactionLabel, withOrderTotal } from "./lib/order"
 import { applyJournalBalanceChange } from "./lib/journalSummary"
 import { applyInventoryProductChanges } from "./lib/inventorySummary"
+import { applyHarvestSummaryChange } from "./lib/harvestSummary"
+import { historySummariesAreReady } from "./lib/historySummaries"
 import { prepareProduction } from "./lib/production"
 import { readModelsAreReady } from "./lib/readModels"
 import { normalizeName } from "./lib/text"
@@ -123,7 +125,8 @@ export const listPage = query({
   },
   handler: async (ctx, args) => {
     const { user, access } = await requireReadAccess(ctx, "transactions")
-    const readModelsReady = await readModelsAreReady(ctx)
+    const readModelsReady =
+      (await readModelsAreReady(ctx)) || (await historySummariesAreReady(ctx))
     const from = args.from
     const to = args.to
     if (
@@ -169,7 +172,8 @@ export const listPage = query({
           searchQuery = searchQuery.filter((filter) =>
             filter.and(
               filter.neq(filter.field("kind"), "adjustment"),
-              filter.neq(filter.field("kind"), "production")
+              filter.neq(filter.field("kind"), "production"),
+              filter.neq(filter.field("kind"), "harvest")
             )
           )
         }
@@ -264,7 +268,8 @@ export const listPage = query({
         filteredQuery = filteredQuery.filter((filter) =>
           filter.and(
             filter.neq(filter.field("kind"), "adjustment"),
-            filter.neq(filter.field("kind"), "production")
+            filter.neq(filter.field("kind"), "production"),
+            filter.neq(filter.field("kind"), "harvest")
           )
         )
       }
@@ -433,7 +438,12 @@ export const recordExchange = mutation({
       entityId: transactionId,
       entityType: "transaction",
     })
-    await applyJournalBalanceChange(ctx, undefined, transactionDetails)
+    await applyJournalBalanceChange(
+      ctx,
+      transactionId,
+      undefined,
+      transactionDetails
+    )
 
     return {
       incomingTotal: prepared.incomingTotal,
@@ -703,7 +713,12 @@ export const recordTrade = mutation({
       entityId: transactionId,
       entityType: "transaction",
     })
-    await applyJournalBalanceChange(ctx, undefined, transactionDetails)
+    await applyJournalBalanceChange(
+      ctx,
+      transactionId,
+      undefined,
+      transactionDetails
+    )
 
     return { total, transactionId }
   },
@@ -857,7 +872,12 @@ export const record = mutation({
       entityId: transactionId,
       entityType: "transaction",
     })
-    await applyJournalBalanceChange(ctx, undefined, transactionDetails)
+    await applyJournalBalanceChange(
+      ctx,
+      transactionId,
+      undefined,
+      transactionDetails
+    )
 
     return { resultingStock, transactionId }
   },
@@ -887,6 +907,13 @@ export const updateExchange = mutation({
       throw new ConvexError({
         code: "INVALID_OPERATION",
         message: "Une production utilise son formulaire dédié.",
+      })
+    }
+    if (transaction.kind === "harvest") {
+      throw new ConvexError({
+        code: "INVALID_OPERATION",
+        message:
+          "Modifiez la récolte depuis sa rubrique avec son formulaire dédié.",
       })
     }
     const character = await ctx.db.get(args.characterId)
@@ -1128,7 +1155,12 @@ export const updateExchange = mutation({
       entityId: transaction._id,
       entityType: "transaction",
     })
-    await applyJournalBalanceChange(ctx, transaction, updatedTransaction)
+    await applyJournalBalanceChange(
+      ctx,
+      transaction._id,
+      transaction,
+      updatedTransaction
+    )
 
     return {
       incomingTotal: prepared.incomingTotal,
@@ -1193,7 +1225,14 @@ export const remove = mutation({
       }))
     )
     await ctx.db.delete(transaction._id)
-    await applyJournalBalanceChange(ctx, transaction, undefined)
+    if (transaction.kind === "harvest")
+      await applyHarvestSummaryChange(ctx, { transaction, lines }, undefined)
+    await applyJournalBalanceChange(
+      ctx,
+      transaction._id,
+      transaction,
+      undefined
+    )
     if (linkedOrder) {
       await ctx.db.patch(linkedOrder._id, {
         processedAt: undefined,
@@ -1578,7 +1617,7 @@ export const update = mutation({
       entityId: transaction._id,
       entityType: "transaction",
     })
-    await applyJournalBalanceChange(ctx, transaction, details)
+    await applyJournalBalanceChange(ctx, transaction._id, transaction, details)
     return { total: details.total, transactionId: transaction._id }
   },
 })

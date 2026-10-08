@@ -7,6 +7,7 @@ import {
   readerVisibleOperationKinds,
   type ReaderAccess,
 } from "../../shared/reader-access"
+import { scopeIsVisible } from "./transactionScopes"
 
 export async function readReaderAccess(
   ctx: QueryCtx | MutationCtx,
@@ -48,7 +49,15 @@ export async function transactionIsVisible(
   transaction: Doc<"transactions">
 ): Promise<boolean> {
   if (!access) return true
-  if (transaction.kind === "adjustment" || transaction.kind === "production")
+  if (transaction.visibilityScopeId) {
+    const scope = await ctx.db.get(transaction.visibilityScopeId)
+    if (scope) return scopeIsVisible(ctx, access, scope)
+  }
+  if (
+    transaction.kind === "adjustment" ||
+    transaction.kind === "production" ||
+    transaction.kind === "harvest"
+  )
     return false
   if (!access.operationKinds.includes(transaction.kind)) return false
   if (!access.productIds) return true
