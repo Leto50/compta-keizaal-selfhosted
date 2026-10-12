@@ -64,6 +64,10 @@ export function ReaderAccessFields({
           />
         ))}
       </div>
+      <p className="text-xs text-muted-foreground">
+        L’accès aux récoltes doit être accordé explicitement. Il permet
+        uniquement leur consultation.
+      </p>
       <div className="grid gap-2 border-t border-border/60 pt-3">
         <Check
           checked={value.showPrices}

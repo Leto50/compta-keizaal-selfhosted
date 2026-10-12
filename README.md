@@ -83,6 +83,28 @@ pnpm build
 
 ## Règles métier
 
+Les totaux des récoltes et des comptes lecteurs sont enregistrés à chaque
+création, correction ou suppression, sans supprimer les opérations anciennes.
+Les historiques restent paginés et le compte affiche les huit dernières semaines.
+Les résumés des lecteurs sont regroupés par type d’opération et références :
+leurs lectures dépendent des combinaisons de produits présentes, plutôt que du
+nombre total d’opérations. Les restrictions sur les produits et les lots restent
+appliquées côté serveur.
+
+Après un déploiement manuel de cette version, lancer une fois :
+
+```bash
+pnpm exec convex run migrations:prepareHistorySummaries --codegen disable
+pnpm exec convex run migrations:prepareHarvestReaderSummaries --codegen disable
+```
+
+Le déploiement automatique lance cette reprise sur chaque instance. Elle traite
+au plus dix opérations par mutation et poursuit les lots en arrière-plan. Elle
+peut être relancée après une interruption, sans doubler les totaux. Les écritures
+restent possibles pendant la reprise ; les vues utilisent leur calcul précédent
+jusqu’à ce que les résumés soient complets. La reprise ne modifie ni les stocks,
+ni les tarifs historiques, ni les paramètres comptables.
+
 - Les données métier exigent une session valide. Seul le nom public du site
   est consultable avant la connexion.
 - Un administrateur peut modifier le nom dans « Accès & réglages → Site ».
@@ -112,6 +134,33 @@ pnpm build
   Masquer un type de prix masque également les montants et totaux dérivés.
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
+- La rubrique « Récoltes » permet aux employés et administrateurs
+  de saisir jusqu’à 50 ingrédients actifs suivis en stock en une seule fois.
+  Sa consultation par les lecteurs nécessite l’activation explicite du droit
+  « Récoltes » dans « Gérer l’accès ». Ce droit est désactivé par défaut pour
+  les nouveaux lecteurs comme pour les lecteurs déjà créés, avec ou sans
+  configuration enregistrée. Le déploiement et la reprise des résumés ne
+  l’activent jamais. Les restrictions sur les produits s’appliquent aussi aux
+  récoltes mixtes, aux groupes et aux semaines visibles. Masquer les prix
+  d’achat masque leur économie estimée. Les lecteurs ne peuvent ni saisir,
+  ni modifier, ni supprimer une récolte.
+  L’historique conserve le personnage, le compte ayant saisi la récolte, la date,
+  les ingrédients et les quantités. Les stocks sont augmentés atomiquement,
+  sans modifier les transactions financières, le compte ou les salaires.
+  L’économie estimée correspond aux quantités multipliées par les prix d’achat
+  conservés au moment de la saisie. Elle apparaît dans le formulaire et
+  l’historique. Les ingrédients sans tarif sont signalés ; une valeur partielle
+  n’est pas présentée comme le total de la récolte. Les anciennes récoltes sans
+  prix enregistrés restent sans estimation complète.
+  Une récolte peut être modifiée depuis l’historique : personnage, date,
+  commentaire, ingrédients et quantités. La correction ajuste les stocks par
+  différence, conserve les tarifs des ingrédients déjà présents et utilise
+  les prix actuels pour les nouveaux ingrédients. Elle est refusée si un stock
+  deviendrait négatif. L’auteur de la saisie est conservé et la modification
+  est auditée avec le compte de son auteur.
+  Une récolte saisie par erreur peut être supprimée : les quantités sont retirées
+  du stock et l’action est auditée. La suppression est refusée si elle rendrait
+  un stock négatif.
 - Les catégories de recettes sont conservées dans un registre indépendant. Une
   catégorie reste disponible sans recette ; son renommage met à jour les recettes
   actives et archivées. Sa suppression est refusée tant qu’une recette l’utilise.

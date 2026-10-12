@@ -218,7 +218,6 @@ async function synchronizeLinkedTransaction(
       : {}),
   }
   await ctx.db.replace(transaction._id, updatedTransaction)
-  await applyJournalBalanceChange(ctx, transaction, updatedTransaction)
   for (const line of prepared.lines) {
     await ctx.db.insert("transactionLines", {
       ...(line.bundleId ? { bundleId: line.bundleId } : {}),
@@ -245,6 +244,12 @@ async function synchronizeLinkedTransaction(
       transactionId: transaction._id,
     })
   }
+  await applyJournalBalanceChange(
+    ctx,
+    transaction._id,
+    transaction,
+    updatedTransaction
+  )
   return prepared
 }
 
@@ -742,7 +747,12 @@ export const process = mutation({
         occurredAt: updatedTransaction.occurredAt,
         searchText: updatedTransaction.searchText,
       })
-      await applyJournalBalanceChange(ctx, transaction, updatedTransaction)
+      await applyJournalBalanceChange(
+        ctx,
+        transaction._id,
+        transaction,
+        updatedTransaction
+      )
       await Promise.all(
         movements.map((movement) =>
           ctx.db.patch(movement._id, { occurredAt: args.occurredAt })
@@ -853,7 +863,12 @@ export const process = mutation({
       ...(order.kind === "supplier" ? { status: "delivered" as const } : {}),
       transactionId,
     })
-    await applyJournalBalanceChange(ctx, undefined, transactionDetails)
+    await applyJournalBalanceChange(
+      ctx,
+      transactionId,
+      undefined,
+      transactionDetails
+    )
     await ctx.db.insert("auditLogs", {
       action:
         order.kind === "client" ? "order.payment_recorded" : "order.received",

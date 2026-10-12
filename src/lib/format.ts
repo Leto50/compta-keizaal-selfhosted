@@ -62,6 +62,7 @@ export const operationLabels = {
   adjustment: "Ajustement",
   bundle: "Lot",
   exchange: "Échange",
+  harvest: "Récolte",
   order: "Commande",
   production: "Production",
   purchase: "Achat",

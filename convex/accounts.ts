@@ -16,6 +16,11 @@ import { visibleTransactions } from "./lib/readerAccess"
 import { assertFiniteRange, assertWholeNumberRange } from "./lib/numbers"
 import { readJournalBalance } from "./lib/journalSummary"
 import { readModelsAreReady } from "./lib/readModels"
+import { historySummariesAreReady } from "./lib/historySummaries"
+import {
+  readScopedAccountWeeks,
+  visibleTransactionScopes,
+} from "./lib/transactionScopes"
 import {
   DAY_IN_MILLISECONDS,
   startOfUtcWeek,
@@ -81,43 +86,63 @@ export const overview = query({
       currentWeekStartsAt - (WEEK_COUNT - 1) * WEEK_IN_MILLISECONDS
     const readModelsReady = await readModelsAreReady(ctx)
     const scoped = hasScopedReaderAccess(access)
-    const scopedTransactions = scoped
-      ? await visibleTransactions(
+    const scopes =
+      (scoped || !readModelsReady) && (await historySummariesAreReady(ctx))
+        ? scoped
+          ? await visibleTransactionScopes(ctx, access!)
+          : await ctx.db.query("transactionVisibilityScopes").collect()
+        : null
+    const scopedTransactions =
+      scoped && !scopes
+        ? await visibleTransactions(
+            ctx,
+            access,
+            await ctx.db.query("transactions").collect()
+          )
+        : null
+    const summariesPromise = scopes
+      ? readScopedAccountWeeks(
           ctx,
-          access,
-          await ctx.db.query("transactions").collect()
+          scopes,
+          firstWeekStartsAt,
+          currentWeekStartsAt
         )
-      : null
-    const summariesPromise = scopedTransactions
-      ? Promise.resolve(
-          buildAccountWeekSummaries(
-            scopedTransactions.filter(
-              (transaction) => transaction.occurredAt >= firstWeekStartsAt
+      : scopedTransactions
+        ? Promise.resolve(
+            buildAccountWeekSummaries(
+              scopedTransactions.filter(
+                (transaction) => transaction.occurredAt >= firstWeekStartsAt
+              )
             )
           )
-        )
-      : readModelsReady
-        ? readAccountWeekSummaries(ctx, firstWeekStartsAt, currentWeekStartsAt)
-        : ctx.db
-            .query("transactions")
-            .withIndex("by_occurred_at", (index) =>
-              index.gte("occurredAt", firstWeekStartsAt)
+        : readModelsReady
+          ? readAccountWeekSummaries(
+              ctx,
+              firstWeekStartsAt,
+              currentWeekStartsAt
             )
-            .collect()
-            .then(buildAccountWeekSummaries)
+          : ctx.db
+              .query("transactions")
+              .withIndex("by_occurred_at", (index) =>
+                index.gte("occurredAt", firstWeekStartsAt)
+              )
+              .collect()
+              .then(buildAccountWeekSummaries)
     const [storedSettings, summaries, journalBalance] = await Promise.all([
       ctx.db
         .query("accountSettings")
         .withIndex("by_key", (index) => index.eq("key", "main"))
         .unique(),
       summariesPromise,
-      scopedTransactions
-        ? Promise.resolve(
-            scopedTransactions
-              .filter(isFinancialTransaction)
-              .reduce((sum, transaction) => sum + transaction.total, 0)
-          )
-        : readJournalBalance(ctx),
+      scopes
+        ? Promise.resolve(scopes.reduce((sum, scope) => sum + scope.balance, 0))
+        : scopedTransactions
+          ? Promise.resolve(
+              scopedTransactions
+                .filter(isFinancialTransaction)
+                .reduce((sum, transaction) => sum + transaction.total, 0)
+            )
+          : readJournalBalance(ctx),
     ])
     const settings = storedSettings ?? DEFAULT_SETTINGS
     const salaryRate = settings.salaryRate ?? DEFAULT_SETTINGS.salaryRate
