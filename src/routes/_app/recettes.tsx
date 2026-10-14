@@ -279,7 +279,7 @@ function RecipesPage() {
 
       {view === "recipes" ? (
         <section aria-labelledby="recipes-title" className="mt-7">
-          <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
                 {visibleRecipes.length} recettes
@@ -340,7 +340,7 @@ function RecipesPage() {
         </section>
       ) : (
         <section aria-labelledby="bundles-title" className="mt-7">
-          <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
                 Vente groupée

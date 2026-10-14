@@ -158,7 +158,7 @@ export function ContactManagerDialog() {
                       const pending = pendingId === contact._id
                       return (
                         <div
-                          className="flex min-w-0 items-center gap-2 border-b border-border/60 py-2 last:border-b-0"
+                          className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border/60 py-2 last:border-b-0 sm:flex-nowrap"
                           key={contact._id}
                         >
                           {editing ? (
@@ -226,7 +226,7 @@ export function ContactManagerDialog() {
                             </form>
                           ) : (
                             <>
-                              <span className="min-w-0 flex-1 truncate font-medium">
+                              <span className="min-w-0 flex-1 truncate font-medium max-sm:basis-full max-sm:break-words max-sm:whitespace-normal">
                                 {contact.name}
                               </span>
                               <Badge variant="outline">

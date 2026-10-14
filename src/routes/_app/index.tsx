@@ -267,7 +267,7 @@ function DashboardPage() {
 
       <section aria-labelledby="recent-activity-title" className="mt-6">
         <Card className="border border-[#644c2c]/35 bg-[#f9f0db]/45 py-0 shadow-[inset_0_0_24px_rgba(107,79,40,0.03)] ring-0">
-          <CardHeader className="border-b border-border/60">
+          <CardHeader className="border-b border-border/60 max-sm:has-data-[slot=card-action]:grid-cols-1">
             <CardTitle
               className="font-display text-xl font-[580] text-[#3b2f22]"
               id="recent-activity-title"
@@ -275,7 +275,7 @@ function DashboardPage() {
               Dernières transactions
             </CardTitle>
             <CardDescription>Les derniers flux financiers</CardDescription>
-            <CardAction>
+            <CardAction className="max-sm:col-start-1 max-sm:row-span-1 max-sm:row-start-auto max-sm:justify-self-start">
               <Button asChild size="sm" variant="ghost">
                 <Link to="/journal">
                   Voir le journal
