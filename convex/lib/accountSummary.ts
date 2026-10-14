@@ -7,6 +7,7 @@ export type AccountSummaryTransaction = Pick<
   Doc<"transactions">,
   | "actorCharacterId"
   | "actorName"
+  | "exchangeSalaryIncluded"
   | "incomingTotal"
   | "kind"
   | "occurredAt"
@@ -25,6 +26,7 @@ type WeekSummary = Omit<
 
 const SALARY_TRANSACTION_KINDS = new Set<Doc<"transactions">["kind"]>([
   "bundle",
+  "exchange",
   "sale",
   "service",
 ])
@@ -53,6 +55,11 @@ export function transactionFlows(
 
 export function salaryRevenue(transaction: AccountSummaryTransaction): number {
   if (transaction.orderId || !SALARY_TRANSACTION_KINDS.has(transaction.kind)) {
+    return 0
+  }
+  // Old exchanges contributed no salary. Keep that baseline until they are
+  // migrated so concurrent corrections and removals subtract the right amount.
+  if (transaction.kind === "exchange" && !transaction.exchangeSalaryIncluded) {
     return 0
   }
   return Math.max(transactionFlows(transaction).incoming, 0)

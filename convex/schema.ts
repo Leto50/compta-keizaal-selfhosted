@@ -198,6 +198,7 @@ export default defineSchema({
     comment: v.optional(v.string()),
     counterparty: v.optional(v.string()),
     discount: v.optional(v.number()),
+    exchangeSalaryIncluded: v.optional(v.boolean()),
     financial: v.optional(v.boolean()),
     harvestSummaryIndexed: v.optional(v.boolean()),
     harvestCharacterKey: v.optional(v.string()),

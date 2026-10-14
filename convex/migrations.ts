@@ -4,6 +4,7 @@ import seedData from "../data/inventaire.seed.json"
 import { type Doc, type Id } from "./_generated/dataModel"
 import { internalMutation, type MutationCtx } from "./_generated/server"
 import {
+  applyAccountWeekSummaryChange,
   isFinancialTransaction,
   rebuildAccountWeekSummaries,
 } from "./lib/accountSummary"
@@ -41,6 +42,7 @@ import {
 
 const CATALOG_NAMES_MIGRATION_KEY = "catalog-names-v1"
 const EXCHANGE_MIGRATION_KEY = "exchange-model-v5"
+const EXCHANGE_SALARIES_MIGRATION_KEY = "exchange-salaries-v1"
 const CONTACTS_MIGRATION_KEY = "contacts-v1"
 const PRODUCT_CATEGORY_MIGRATION_KEY = "product-categories-v1"
 const PRODUCT_CRAFTABILITY_MIGRATION_KEY = "product-craftability-v1"
@@ -1455,6 +1457,58 @@ export const rebuildJournalSummary = internalMutation({
 export const rebuildReadModels = internalMutation({
   args: {},
   handler: rebuildReadModelsData,
+})
+
+export const prepareExchangeSalaries = internalMutation({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<{ ready: boolean; migratedTransactions: number }> => {
+    const state = await ctx.db
+      .query("systemSettings")
+      .withIndex("by_key", (index) =>
+        index.eq("key", EXCHANGE_SALARIES_MIGRATION_KEY)
+      )
+      .unique()
+    if (state?.value === "ready")
+      return { ready: true, migratedTransactions: 0 }
+    const cursor: string | null = state
+      ? (JSON.parse(state.value) as string)
+      : null
+    const result = await ctx.db
+      .query("transactions")
+      .withIndex("by_kind_and_date", (index) => index.eq("kind", "exchange"))
+      .order("asc")
+      .paginate({ cursor, numItems: 10 })
+    let migratedTransactions = 0
+    for (const transaction of result.page) {
+      if (transaction.exchangeSalaryIncluded) continue
+      const updated = { ...transaction, exchangeSalaryIncluded: true }
+      await ctx.db.patch(transaction._id, { exchangeSalaryIncluded: true })
+      await applyAccountWeekSummaryChange(ctx, transaction, updated)
+      await applyTransactionScopeChange(
+        ctx,
+        transaction._id,
+        transaction,
+        updated
+      )
+      migratedTransactions += 1
+    }
+    const details = {
+      key: EXCHANGE_SALARIES_MIGRATION_KEY,
+      updatedAt: Date.now(),
+      value: result.isDone ? "ready" : JSON.stringify(result.continueCursor),
+    }
+    if (state) await ctx.db.replace(state._id, details)
+    else await ctx.db.insert("systemSettings", details)
+    if (!result.isDone)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.migrations.prepareExchangeSalaries,
+        {}
+      )
+    return { ready: result.isDone, migratedTransactions }
+  },
 })
 
 // Each batch is atomic. Records changed while the migration runs are indexed by
