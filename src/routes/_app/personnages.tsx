@@ -46,9 +46,9 @@ function CharactersPage() {
     <div className="animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
       <PageHeader
         action={
-          <div className="flex items-center gap-2">
-            <CharacterArchivesDialog />
+          <div className="grid gap-2 sm:flex sm:items-center">
             <CharacterDialog />
+            <CharacterArchivesDialog />
           </div>
         }
         eyebrow="Administration"

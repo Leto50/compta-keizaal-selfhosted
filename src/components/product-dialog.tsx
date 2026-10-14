@@ -442,7 +442,7 @@ export function ProductDialog({
                 </AlertDialog>
               ) : null}
             </div>
-            <div className="grid w-full gap-2 sm:flex sm:w-auto sm:justify-end">
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end">
               <Button
                 onClick={() => setOpen(false)}
                 type="button"

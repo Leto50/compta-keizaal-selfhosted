@@ -1,13 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import {
-  BookOpenText,
-  CircleAlert,
-  Pencil,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react"
+import { BookOpenText, CircleAlert, Pencil, Search } from "lucide-react"
 import { useState } from "react"
 
 import { PageError } from "@/components/page-error"
@@ -245,11 +239,11 @@ function InventoryPage() {
     <div className="animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
       <PageHeader
         action={
-          <div className="flex flex-wrap justify-end gap-2">
-            <ProductArchivesDialog />
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
             {canWrite ? (
               <ProductDialog onWriteRecipe={setRecipeProductId} />
             ) : null}
+            <ProductArchivesDialog />
           </div>
         }
         eyebrow="Gestion des stocks"
@@ -306,15 +300,15 @@ function InventoryPage() {
               Stocks faibles
             </Button>
           ) : null}
-          <Tabs onValueChange={handleCategoryChange} value={category}>
+          <Tabs
+            className="max-sm:w-full"
+            onValueChange={handleCategoryChange}
+            value={category}
+          >
             <TabsList
               aria-label="Catégories de l'inventaire"
-              className="h-auto flex-wrap justify-start bg-[#6e5330]/8"
+              className="h-auto flex-wrap justify-start bg-[#6e5330]/8 max-sm:grid max-sm:w-full max-sm:grid-cols-2"
             >
-              <SlidersHorizontal
-                aria-hidden="true"
-                className="mx-1 size-4 shrink-0 text-muted-foreground"
-              />
               {categoryFilters.map((filter) => (
                 <TabsTrigger
                   className="min-h-7 px-2.5 data-active:bg-primary data-active:text-primary-foreground"
@@ -534,7 +528,9 @@ function InventoryRow({
         )}
       >
         <div className="flex min-w-0 items-center max-md:flex-wrap">
-          <span className="truncate">{product.name}</span>
+          <span className="min-w-0 truncate max-md:break-words max-md:whitespace-normal">
+            {product.name}
+          </span>
           {hasRecipe ? (
             <Button
               asChild

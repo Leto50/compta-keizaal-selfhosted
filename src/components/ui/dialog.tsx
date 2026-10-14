@@ -62,7 +62,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-xs/relaxed text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 grid-cols-1 gap-4 rounded-xl bg-popover p-4 text-xs/relaxed text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -72,7 +72,7 @@ function DialogContent({
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
             <Button
               variant="ghost"
-              className="absolute top-2 right-2"
+              className="absolute top-2 right-2 max-sm:sticky max-sm:top-0 max-sm:z-10 max-sm:col-start-1 max-sm:row-start-1 max-sm:-mt-2 max-sm:-mr-2 max-sm:self-start max-sm:justify-self-end max-sm:rounded-full max-sm:bg-inherit max-sm:shadow-sm max-sm:ring-1 max-sm:ring-border"
               size="icon-sm"
             >
               <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
@@ -89,7 +89,10 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-1", className)}
+      className={cn(
+        "flex flex-col gap-1 max-sm:col-start-1 max-sm:row-start-1 max-sm:pr-12",
+        className
+      )}
       {...props}
     />
   )

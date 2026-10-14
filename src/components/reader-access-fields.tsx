@@ -199,7 +199,7 @@ function Check({
   onChange: (checked: boolean) => void
 }>) {
   return (
-    <label className="flex cursor-pointer items-start gap-2 text-sm leading-5">
+    <label className="flex cursor-pointer items-start gap-2 text-sm leading-5 max-md:min-h-11 max-md:items-center">
       <input
         className="mt-0.5 size-4 shrink-0 accent-primary"
         type="checkbox"

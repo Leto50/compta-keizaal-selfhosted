@@ -231,14 +231,14 @@ function AccountPage() {
                 : "Le chiffre, les achats et le solde de chaque membre de la boutique."
               : "Le nombre d’opérations autorisées pour chaque membre de la boutique."}
           </CardDescription>
-          <CardAction className="flex flex-wrap justify-end gap-2 max-sm:col-span-2 max-sm:row-start-3">
+          <CardAction className="flex flex-wrap justify-end gap-2 max-sm:col-span-2 max-sm:row-start-3 max-sm:w-full">
             <Select
               onValueChange={setSelectedWeekStartsAt}
               value={selectedWeek?.startsAt.toString() ?? ""}
             >
               <SelectTrigger
                 aria-label="Semaine détaillée"
-                className="w-52 max-w-full bg-background/50"
+                className="w-52 max-w-full bg-background/50 max-sm:w-full"
               >
                 <SelectValue placeholder="Choisir une semaine" />
               </SelectTrigger>
@@ -262,7 +262,7 @@ function AccountPage() {
             >
               <SelectTrigger
                 aria-label="Trier l’activité par personnage"
-                className="w-52 max-w-full bg-background/50 md:hidden"
+                className="w-52 max-w-full bg-background/50 max-sm:w-full md:hidden"
               >
                 <SelectValue />
               </SelectTrigger>

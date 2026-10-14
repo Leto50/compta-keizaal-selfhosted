@@ -346,7 +346,7 @@ export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
         className="border-sidebar-border bg-[linear-gradient(150deg,rgba(48,44,35,0.96),rgba(25,24,20,0.99))]"
         collapsible="icon"
       >
-        <SidebarHeader className="px-4 pt-5 group-data-[collapsible=icon]:px-2">
+        <SidebarHeader className="px-4 pt-5 group-data-[collapsible=icon]:px-2 max-md:pr-16">
           <Brand />
         </SidebarHeader>
         <SidebarSeparator />

@@ -298,8 +298,7 @@ function OrdersPage() {
       <PageHeader
         action={
           canWrite ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <ContactManagerDialog />
+            <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
               <OrderDialog
                 characters={characters}
                 contacts={contacts}
@@ -307,6 +306,7 @@ function OrdersPage() {
                 products={products}
                 recipes={recipes}
               />
+              <ContactManagerDialog />
             </div>
           ) : null
         }
@@ -535,23 +535,28 @@ function OrderEntry({
       </CardHeader>
 
       <CardContent className="grid gap-4">
-        <Table>
-          <TableBody>
+        <Table className="max-sm:block">
+          <TableBody className="max-sm:block">
             {order.lines.map((line) => (
-              <TableRow className="border-border/60" key={line._id}>
-                <TableCell className="max-w-48 pl-0">
-                  <p className="truncate font-semibold">{line.productName}</p>
+              <TableRow
+                className="border-border/60 max-sm:grid max-sm:grid-cols-2"
+                key={line._id}
+              >
+                <TableCell className="max-w-48 pl-0 max-sm:col-span-2 max-sm:max-w-none max-sm:whitespace-normal">
+                  <p className="truncate font-semibold max-sm:break-words max-sm:whitespace-normal">
+                    {line.productName}
+                  </p>
                   {showPrices && line.unitPrice !== undefined ? (
                     <p className="text-xs text-muted-foreground">
                       {formatUnitPrice(line.unitPrice)}
                     </p>
                   ) : null}
                 </TableCell>
-                <TableCell className="w-16 tabular-nums">
+                <TableCell className="w-16 tabular-nums max-sm:w-auto max-sm:pt-0 max-sm:pl-0">
                   × {formatNumber(line.quantity)}
                 </TableCell>
                 {showPrices ? (
-                  <TableCell className="w-28 pr-0 text-right font-semibold tabular-nums">
+                  <TableCell className="w-28 pr-0 text-right font-semibold tabular-nums max-sm:w-auto max-sm:pt-0">
                     {line.total === undefined ? "—" : formatSeptims(line.total)}
                   </TableCell>
                 ) : null}

@@ -600,17 +600,22 @@ function AdministrationPage() {
       <Tabs className="mt-6" onValueChange={setView} value={view}>
         <TabsList
           aria-label="Sections de l’administration"
-          className="w-full flex-wrap border border-[#5b462b]/25 bg-[#e4d3b4]/55 p-1 group-data-horizontal/tabs:h-auto sm:w-auto"
+          className="w-full flex-wrap border border-[#5b462b]/25 bg-[#e4d3b4]/55 p-1 group-data-horizontal/tabs:h-auto max-sm:grid max-sm:grid-cols-3 sm:w-auto"
         >
-          <TabsTrigger className="h-8 px-3 sm:px-4" value="accounts">
+          <TabsTrigger className="h-8 px-2 sm:px-4" value="accounts">
             <ShieldCheck aria-hidden="true" />
             Comptes
           </TabsTrigger>
-          <TabsTrigger className="h-8 px-3 sm:px-4" value="audit">
+          <TabsTrigger
+            aria-label="Historique d’audit"
+            className="h-8 px-2 sm:px-4"
+            value="audit"
+          >
             <ListChecks aria-hidden="true" />
-            Historique d’audit
+            <span className="sm:hidden">Audit</span>
+            <span className="hidden sm:inline">Historique d’audit</span>
           </TabsTrigger>
-          <TabsTrigger className="h-8 px-3 sm:px-4" value="site">
+          <TabsTrigger className="h-8 px-2 sm:px-4" value="site">
             <Settings2 aria-hidden="true" />
             Site
           </TabsTrigger>

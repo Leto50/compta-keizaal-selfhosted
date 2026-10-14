@@ -296,7 +296,7 @@ export function RecipeDialog({
         </DialogHeader>
 
         <form
-          className="grid gap-5"
+          className="grid min-w-0 grid-cols-1 gap-5"
           noValidate
           onSubmit={(event) => {
             event.preventDefault()
@@ -524,7 +524,7 @@ export function RecipeDialog({
           </form.Field>
 
           <Separator />
-          <div className="grid gap-3">
+          <div className="grid min-w-0 grid-cols-1 gap-3">
             <div className="flex items-end justify-between gap-3">
               <div>
                 <FieldLabel>Ingrédients</FieldLabel>
@@ -546,7 +546,7 @@ export function RecipeDialog({
 
             {formValues.ingredients.map((ingredient, index) => (
               <div
-                className="flex items-end gap-2 border-l-2 border-primary/35 pl-3"
+                className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-2 border-l-2 border-primary/35 pl-3 sm:flex"
                 key={ingredient.key}
               >
                 <form.Field name={`ingredients[${index}].productId`}>
@@ -554,10 +554,14 @@ export function RecipeDialog({
                     const invalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
-                      <Field className="min-w-0 flex-1" data-invalid={invalid}>
+                      <Field
+                        className="min-w-0 max-sm:col-span-2 sm:flex-1"
+                        data-invalid={invalid}
+                      >
                         <FieldLabel>Ingrédient {index + 1}</FieldLabel>
                         <ProductPicker
                           ariaInvalid={invalid}
+                          ariaLabel={`Ingrédient ${index + 1}`}
                           name={field.name}
                           onBlur={field.handleBlur}
                           onChange={(value) =>
@@ -580,7 +584,7 @@ export function RecipeDialog({
                     const invalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
-                      <Field className="w-24" data-invalid={invalid}>
+                      <Field className="min-w-0 sm:w-24" data-invalid={invalid}>
                         <FieldLabel
                           htmlFor={`${fieldId}-quantity-${ingredient.key}`}
                         >
@@ -690,7 +694,7 @@ export function RecipeDialog({
                 </AlertDialog>
               ) : null}
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 onClick={() => handleOpenChange(false)}
                 type="button"
