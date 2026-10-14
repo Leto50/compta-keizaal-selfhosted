@@ -715,7 +715,15 @@ export function OperationDialog({
         { message: "Choisissez un personnage.", path: ["characterId"] }
       ),
     },
-    onSubmitInvalid: () => {
+    onSubmitInvalid: ({ formApi, value }) => {
+      const invalidLine = value.tradeLines.find(
+        (_, index) =>
+          formApi.state.fieldMeta[`tradeLines[${index}].quantity`]?.isValid ===
+            false ||
+          formApi.state.fieldMeta[`tradeLines[${index}].unitPrice`]?.isValid ===
+            false
+      )
+      if (invalidLine) setActiveTradeDirection(invalidLine.direction)
       setInvalidSubmitCount((count) => count + 1)
     },
     onSubmit: async ({ value }) => {
@@ -1354,9 +1362,8 @@ export function OperationDialog({
                             }
                             bundles={bundles}
                             className={cn(
-                              activeTradeDirection === "outgoing"
-                                ? "max-md:order-first"
-                                : !hasOutgoingLines && "max-md:hidden"
+                              activeTradeDirection !== "outgoing" &&
+                                "max-md:hidden"
                             )}
                             direction="outgoing"
                             lines={formValues.tradeLines}
@@ -1384,9 +1391,8 @@ export function OperationDialog({
                             }
                             bundles={bundles}
                             className={cn(
-                              activeTradeDirection === "incoming"
-                                ? "max-md:order-first"
-                                : !hasIncomingLines && "max-md:hidden"
+                              activeTradeDirection !== "incoming" &&
+                                "max-md:hidden"
                             )}
                             direction="incoming"
                             lines={formValues.tradeLines}

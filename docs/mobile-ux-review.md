@@ -60,21 +60,26 @@ pas la base originale.
 | Stock                    | Les trois enregistrements font passer le Breuvage guerrier de 6 à 3 unités et le blé de 913 à 920 unités. Les valeurs finales ont été contrôlées dans l’inventaire.                                                                  |
 | Correction et répétition | Une validation sans personnage ramène au sélecteur et conserve les quantités et le prix. Après un enregistrement réussi, la réouverture présente un panier vide et conserve le dernier personnage malgré le rechargement des listes. |
 
-Sur mobile, le choix « Vente » ou « Achat » présente d’abord le panier choisi.
-Un panier contenant déjà des articles reste visible lorsque l’autre est choisi,
-pour permettre un échange mixte sans cacher les lignes à enregistrer. La
+Sur mobile, le choix « Vente » ou « Achat » affiche uniquement le panier choisi,
+même lorsque les deux paniers contiennent des articles. Les saisies de l’autre
+panier sont conservées. Le récapitulatif commun et le bouton de validation
+utilisent toujours le solde des ventes moins les achats. La commutation a été
+contrôlée avec une vente de 25 septims et un achat de 3 septims : le solde de
+22 septims reste identique dans les deux vues. Un achat de 30 septims ramène ce
+solde à 5 septims à payer, également depuis la vue vente. La
 recherche dispose de la largeur de l’écran ; les prix du catalogue et la quantité
 initiale de 1 sont préremplis et restent modifiables. Les détails facultatifs sont
 repliés et le montant à encaisser ou à payer est explicite avant la validation.
 
-Huit tests de composant vérifient les données envoyées pour les achats, ventes
+Neuf tests de composant vérifient les données envoyées pour les achats, ventes
 et échanges mixtes, la correction des champs invalides, le panier d’achat vide,
-le blocage d’une vente dépassant le stock et la réouverture après succès. Ils
+le blocage d’une vente dépassant le stock, la réouverture après succès et
+l’ouverture du panier contenant un champ invalide avant sa correction. Ils
 complètent les essais dans le navigateur ; ils ne vérifient pas l’apparence.
 
 ## Vérification et limites
 
-`pnpm check` et `pnpm build` passent. Les 451 tests couvrent les règles métier,
+`pnpm check` et `pnpm build` passent. Les 452 tests couvrent les règles métier,
 les permissions et les composants existants ; ils ne constituent pas une preuve
 de qualité visuelle.
 

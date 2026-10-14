@@ -178,6 +178,14 @@ describe("enregistrement des achats et ventes", () => {
     })[1]
     if (!incomingQuantity) throw new Error("La quantité de l’achat manque.")
     fireEvent.change(incomingQuantity, { target: { value: "2" } })
+    fireEvent.click(screen.getByRole("button", { name: "Vente" }))
+    expect(screen.getByRole("alert").textContent).toContain(
+      "À encaisser : 1 sept."
+    )
+    fireEvent.click(screen.getByRole("button", { name: "Achat" }))
+    expect(screen.getByRole("alert").textContent).toContain(
+      "À encaisser : 1 sept."
+    )
     await chooseCharacter()
     fireEvent.click(screen.getByRole("button", { name: "Encaisser 1 sept." }))
     await waitFor(() =>
@@ -284,6 +292,22 @@ describe("enregistrement des achats et ventes", () => {
     })
     expect(submit.disabled).toBe(true)
     fireEvent.click(submit)
+    expect(mutations.recordExchange).not.toHaveBeenCalled()
+  })
+
+  it("ouvre le panier contenant une erreur avant de ramener au champ invalide", async () => {
+    start()
+    await add("outgoing")
+    const quantity = screen.getByRole("spinbutton", { name: "Quantité" })
+    fireEvent.change(quantity, { target: { value: "0" } })
+    fireEvent.click(screen.getByRole("button", { name: "Achat" }))
+    await add("incoming")
+    await chooseCharacter()
+    fireEvent.click(screen.getByRole("button", { name: "Payer 3 sept." }))
+    await waitFor(() => expect(document.activeElement).toBe(quantity))
+    expect(
+      screen.getByRole("button", { name: "Vente" }).getAttribute("aria-pressed")
+    ).toBe("true")
     expect(mutations.recordExchange).not.toHaveBeenCalled()
   })
 })
