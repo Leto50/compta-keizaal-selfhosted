@@ -279,7 +279,7 @@ function RecipesPage() {
 
       {view === "recipes" ? (
         <section aria-labelledby="recipes-title" className="mt-7">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div className="mb-4 grid gap-4 lg:flex lg:items-start lg:justify-between">
             <div>
               <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
                 {visibleRecipes.length} recettes
@@ -291,7 +291,13 @@ function RecipesPage() {
                 Recettes
               </h2>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end [&>button]:w-full lg:[&>button]:w-auto [&>button:first-child]:col-span-2">
+              {canWrite ? (
+                <RecipeDialog
+                  linkedProductIds={linkedProductIds}
+                  products={products}
+                />
+              ) : null}
               <RecipeArchivesDialog />
               {canWrite ? (
                 <RecipeCategoryManagerDialog
@@ -307,13 +313,6 @@ function RecipesPage() {
                   }}
                 />
               ) : null}
-              {canWrite ? (
-                <RecipeDialog
-                  linkedProductIds={linkedProductIds}
-                  products={products}
-                />
-              ) : null}
-              <BookMarked aria-hidden="true" className="size-5 text-primary" />
             </div>
           </div>
           {visibleRecipes.length > 0 ? (
@@ -340,7 +339,7 @@ function RecipesPage() {
         </section>
       ) : (
         <section aria-labelledby="bundles-title" className="mt-7">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div className="mb-4 grid gap-4 lg:flex lg:items-start lg:justify-between">
             <div>
               <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
                 Vente groupée
@@ -352,10 +351,9 @@ function RecipesPage() {
                 Lots préparés
               </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <BundleArchivesDialog />
+            <div className="grid gap-2 lg:flex lg:items-center lg:justify-end [&>button]:w-full lg:[&>button]:w-auto">
               {canWrite ? <BundleDialog products={products} /> : null}
-              <PackageOpen aria-hidden="true" className="size-5 text-primary" />
+              <BundleArchivesDialog />
             </div>
           </div>
           {visibleBundles.length > 0 ? (
