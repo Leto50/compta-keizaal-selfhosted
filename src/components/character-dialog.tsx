@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -116,106 +117,112 @@ export function CharacterDialog({
             opération de jeu.
           </DialogDescription>
         </DialogHeader>
-
-        <form
-          className="grid gap-5"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <form.Field name="name">
-            {(field) => {
-              const invalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field data-invalid={invalid}>
-                  <FieldLabel htmlFor={`${fieldId}-name`}>
-                    Nom du personnage
-                  </FieldLabel>
-                  <Input
-                    aria-invalid={invalid}
-                    autoComplete="off"
-                    id={`${fieldId}-name`}
-                    maxLength={100}
-                    name="character-name"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="Nom utilisé en jeu"
-                    required
-                    value={field.state.value}
-                  />
-                  {invalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
+        <DialogBody>
+          <form
+            className="grid gap-5"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
             }}
-          </form.Field>
+          >
+            <form.Field name="name">
+              {(field) => {
+                const invalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={invalid}>
+                    <FieldLabel htmlFor={`${fieldId}-name`}>
+                      Nom du personnage
+                    </FieldLabel>
+                    <Input
+                      aria-invalid={invalid}
+                      autoComplete="off"
+                      id={`${fieldId}-name`}
+                      maxLength={100}
+                      name="character-name"
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Nom utilisé en jeu"
+                      required
+                      value={field.state.value}
+                    />
+                    {invalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : null}
+                  </Field>
+                )
+              }}
+            </form.Field>
 
-          <DialogFooter className="gap-2 sm:justify-between">
-            <div>
-              {character ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="ghost">
-                      <Archive aria-hidden="true" />
-                      Archiver
+            <DialogFooter className="gap-2 sm:justify-between">
+              <div>
+                {character ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="ghost">
+                        <Archive aria-hidden="true" />
+                        Archiver
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Archiver « {character.name} » ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Ce personnage ne sera plus proposé dans les nouvelles
+                          opérations. Son nom restera dans l’historique.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Conserver</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            void archiveCharacter()
+                          }}
+                        >
+                          Archiver le personnage
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : null}
+              </div>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  onClick={() => setOpen(false)}
+                  type="button"
+                  variant="ghost"
+                >
+                  Annuler
+                </Button>
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                  {(isSubmitting) => (
+                    <Button
+                      disabled={isSubmitting || isArchiving}
+                      type="submit"
+                    >
+                      {isSubmitting ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : character ? (
+                        <Pencil aria-hidden="true" />
+                      ) : (
+                        <UserRoundPlus aria-hidden="true" />
+                      )}
+                      {character ? "Enregistrer" : "Créer le personnage"}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Archiver « {character.name} » ?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Ce personnage ne sera plus proposé dans les nouvelles
-                        opérations. Son nom restera dans l’historique.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Conserver</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          void archiveCharacter()
-                        }}
-                      >
-                        Archiver le personnage
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : null}
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                onClick={() => setOpen(false)}
-                type="button"
-                variant="ghost"
-              >
-                Annuler
-              </Button>
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || isArchiving} type="submit">
-                    {isSubmitting ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : character ? (
-                      <Pencil aria-hidden="true" />
-                    ) : (
-                      <UserRoundPlus aria-hidden="true" />
-                    )}
-                    {character ? "Enregistrer" : "Créer le personnage"}
-                  </Button>
-                )}
-              </form.Subscribe>
-            </div>
-          </DialogFooter>
-        </form>
+                  )}
+                </form.Subscribe>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
@@ -267,54 +274,55 @@ export function CharacterArchivesDialog() {
             opérations.
           </DialogDescription>
         </DialogHeader>
-
-        {archivedCharacters === undefined ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Chargement des archives…
-          </p>
-        ) : archivedCharacters.length === 0 ? (
-          <Alert className="border-primary/20 bg-primary/[0.04]">
-            <ArchiveRestore aria-hidden="true" />
-            <AlertTitle>Aucun personnage archivé</AlertTitle>
-            <AlertDescription>
-              Les personnages retirés apparaîtront ici.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <ScrollArea className="max-h-80 pr-3">
-            <div className="grid divide-y divide-border/70">
-              {archivedCharacters.map((character) => (
-                <div
-                  className="flex items-center justify-between gap-3 py-3"
-                  key={character._id}
-                >
-                  <p className="truncate text-sm font-semibold">
-                    {character.name}
-                  </p>
-                  <Button
-                    disabled={restoringId !== undefined}
-                    onClick={() => {
-                      void restoreCharacter(character)
-                    }}
-                    size="sm"
-                    type="button"
-                    variant="outline"
+        <DialogBody>
+          {archivedCharacters === undefined ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Chargement des archives…
+            </p>
+          ) : archivedCharacters.length === 0 ? (
+            <Alert className="border-primary/20 bg-primary/[0.04]">
+              <ArchiveRestore aria-hidden="true" />
+              <AlertTitle>Aucun personnage archivé</AlertTitle>
+              <AlertDescription>
+                Les personnages retirés apparaîtront ici.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <ScrollArea className="max-h-80 pr-3">
+              <div className="grid divide-y divide-border/70">
+                {archivedCharacters.map((character) => (
+                  <div
+                    className="flex items-center justify-between gap-3 py-3"
+                    key={character._id}
                   >
-                    {restoringId === character._id ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : (
-                      <ArchiveRestore aria-hidden="true" />
-                    )}
-                    Réactiver
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+                    <p className="truncate text-sm font-semibold">
+                      {character.name}
+                    </p>
+                    <Button
+                      disabled={restoringId !== undefined}
+                      onClick={() => {
+                        void restoreCharacter(character)
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {restoringId === character._id ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" />
+                      )}
+                      Réactiver
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

@@ -15,7 +15,14 @@ import {
   ShoppingBasket,
   Trash2,
 } from "lucide-react"
-import { useId, useState, type ReactElement, type ReactNode } from "react"
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react"
 import { toast } from "sonner"
 
 import { DatePicker } from "@/components/date-picker"
@@ -44,6 +51,7 @@ import {
 } from "@/components/ui/command"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -307,12 +315,14 @@ function ProductPicker({
 }
 
 function TradeReferencePicker({
+  ariaInvalid = false,
   bundles,
   direction,
   onSelect,
   products,
   usedReferences,
 }: Readonly<{
+  ariaInvalid?: boolean
   bundles: readonly Bundle[]
   direction: TradeDirection
   onSelect: (line: TradeLine) => void
@@ -348,6 +358,12 @@ function TradeReferencePicker({
     >
       <PopoverTrigger asChild>
         <Button
+          aria-invalid={ariaInvalid}
+          aria-label={
+            direction === "outgoing"
+              ? "Ajouter un article à la vente"
+              : "Ajouter un produit à l’achat"
+          }
           aria-expanded={open}
           className="h-10 w-full justify-between bg-background/50 px-3 text-left text-sm font-normal"
           id={triggerId}
@@ -357,7 +373,7 @@ function TradeReferencePicker({
         >
           <span className="truncate">
             {direction === "outgoing"
-              ? "Ajouter un produit, un service ou un lot…"
+              ? "Ajouter un article…"
               : "Ajouter un produit acheté…"}
           </span>
           <ChevronsUpDown aria-hidden="true" className="size-3.5" />
@@ -365,7 +381,7 @@ function TradeReferencePicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] rounded-[0.2rem] border-[#6a5436] bg-[#f4e8cf] p-0"
+        className="w-[var(--radix-popover-trigger-width)] rounded-[0.2rem] border-[#6a5436] bg-[#f4e8cf] p-0 max-md:w-[calc(100vw-2rem)]"
       >
         <Command
           className="rounded-[0.2rem] bg-transparent"
@@ -416,7 +432,7 @@ function TradeReferencePicker({
                       ) : (
                         <ShoppingBasket aria-hidden="true" />
                       )}
-                      <span className="min-w-0 flex-1 truncate">
+                      <span className="min-w-0 flex-1 truncate max-md:break-words max-md:whitespace-normal">
                         {product.name}
                       </span>
                       {product.tracksStock ? (
@@ -452,7 +468,7 @@ function TradeReferencePicker({
                     value={`outgoing:bundle:${bundle._id}`}
                   >
                     <PackageOpen aria-hidden="true" />
-                    <span className="min-w-0 flex-1 truncate">
+                    <span className="min-w-0 flex-1 truncate max-md:break-words max-md:whitespace-normal">
                       {bundle.name}
                     </span>
                     <span className="text-[0.68rem] text-muted-foreground">
@@ -470,7 +486,9 @@ function TradeReferencePicker({
 }
 
 function TradeCart({
+  ariaInvalid = false,
   bundles,
+  className,
   direction,
   lines,
   onAdd,
@@ -479,7 +497,9 @@ function TradeCart({
   products,
   renderLineFields,
 }: Readonly<{
+  ariaInvalid?: boolean
   bundles: readonly Bundle[]
+  className?: string
   direction: TradeDirection
   lines: readonly TradeLine[]
   onAdd: (line: TradeLine) => void
@@ -495,7 +515,12 @@ function TradeCart({
   const outgoing = direction === "outgoing"
 
   return (
-    <Card className="gap-0 rounded-none border-[#5b462b]/30 bg-background/25 py-0 ring-0">
+    <Card
+      className={cn(
+        "gap-0 rounded-none border-[#5b462b]/30 bg-background/25 py-0 ring-0",
+        className
+      )}
+    >
       <CardHeader className="gap-1 border-b border-border/60 p-4">
         <CardTitle className="flex items-center gap-2 font-display text-lg font-medium">
           {outgoing ? (
@@ -513,6 +538,7 @@ function TradeCart({
       </CardHeader>
       <CardContent className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3 p-4">
         <TradeReferencePicker
+          ariaInvalid={ariaInvalid}
           bundles={bundles}
           direction={direction}
           onSelect={onAdd}
@@ -539,7 +565,7 @@ function TradeCart({
                 <div className="grid gap-3 py-3" key={inputPrefix}>
                   <div className="flex min-w-0 items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
+                      <p className="truncate text-sm font-semibold max-md:break-words max-md:whitespace-normal">
                         {line.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -640,13 +666,31 @@ export function OperationDialog({
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
   const [detailsOpen, setDetailsOpen] = useState(Boolean(transaction))
+  const [activeTradeDirection, setActiveTradeDirection] = useState(
+    getDefaultDirection(initialKind)
+  )
+  const [lastCharacterId, setLastCharacterId] = useState("")
+  const [invalidSubmitCount, setInvalidSubmitCount] = useState(0)
+  const formElement = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    if (invalidSubmitCount === 0) return
+    const invalidField = formElement.current?.querySelector<HTMLElement>(
+      '[aria-invalid="true"]'
+    )
+    const target =
+      invalidField ??
+      formElement.current?.querySelector<HTMLElement>('[role="combobox"]')
+    target?.focus()
+    target?.scrollIntoView({ block: "center", behavior: "smooth" })
+  }, [invalidSubmitCount])
 
   function operationValues() {
     return {
       agreedTotal: transaction?.orderId
         ? Math.abs(transaction.total).toString()
         : "",
-      characterId: transaction?.actorCharacterId ?? "",
+      characterId: transaction?.actorCharacterId ?? lastCharacterId,
       comment: transaction?.comment ?? "",
       counterparty: transaction?.counterparty ?? "",
       discount: transaction?.discount?.toString() ?? "",
@@ -663,7 +707,17 @@ export function OperationDialog({
 
   const form = useForm({
     defaultValues: operationValues(),
-    validators: { onSubmit: operationFormSchema },
+    validators: {
+      onSubmit: operationFormSchema.refine(
+        (value) =>
+          !value.characterId ||
+          characters.some((character) => character._id === value.characterId),
+        { message: "Choisissez un personnage.", path: ["characterId"] }
+      ),
+    },
+    onSubmitInvalid: () => {
+      setInvalidSubmitCount((count) => count + 1)
+    },
     onSubmit: async ({ value }) => {
       const character = characters.find(
         (entry) => entry._id === value.characterId
@@ -724,6 +778,7 @@ export function OperationDialog({
               ? "Production enregistrée : ingrédients consommés et stock mis à jour."
               : "Échange enregistré."
         )
+        setLastCharacterId(character._id)
         if (controlledOpen === undefined) setInternalOpen(false)
         onOpenChange?.(false)
       } catch (error) {
@@ -891,6 +946,11 @@ export function OperationDialog({
     if (nextOpen && !open) {
       form.reset(operationValues())
       setDetailsOpen(Boolean(transaction))
+      setActiveTradeDirection(
+        getDefaultDirection(
+          transaction?.kind === "purchase" ? "purchase" : initialKind
+        )
+      )
     }
     if (controlledOpen === undefined) setInternalOpen(nextOpen)
     onOpenChange?.(nextOpen)
@@ -974,6 +1034,7 @@ export function OperationDialog({
                   aria-invalid={invalid}
                   id={`${inputPrefix}-quantity`}
                   min="1"
+                  inputMode="numeric"
                   name={field.name}
                   onBlur={field.handleBlur}
                   onChange={(event) =>
@@ -1033,7 +1094,7 @@ export function OperationDialog({
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-h-[94svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-3xl">
+      <DialogContent className="max-h-[94svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-3xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             {productionMode
@@ -1051,53 +1112,309 @@ export function OperationDialog({
                 : "Réunissez dans le même panier tout ce qui entre et sort de la boutique."}
           </DialogDescription>
         </DialogHeader>
-
-        {loading ? (
-          <div
-            aria-live="polite"
-            className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground"
+        <DialogBody>
+          {loading ? (
+            <div
+              aria-live="polite"
+              className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground"
+            >
+              <Spinner
+                aria-hidden="true"
+                className="motion-reduce:animate-none"
+              />
+              Chargement des données…
+            </div>
+          ) : null}
+          <form
+            aria-hidden={loading || undefined}
+            className={cn(
+              "mt-1 grid min-w-0 grid-cols-1 gap-5",
+              loading && "hidden"
+            )}
+            noValidate
+            ref={formElement}
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
+            }}
           >
-            <Spinner
-              aria-hidden="true"
-              className="motion-reduce:animate-none"
-            />
-            Chargement des données…
-          </div>
-        ) : null}
-        <form
-          aria-hidden={loading || undefined}
-          className={cn("mt-1 grid gap-5", loading && "hidden")}
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          {productionMode ? (
-            <>
-              <form.Field name="productId">
-                {(field) => {
-                  const invalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={invalid}>
-                      <ProductPicker
-                        ariaInvalid={invalid}
-                        label="Produit fabriqué"
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onProductChange={field.handleChange}
-                        products={productionProducts}
-                        selectedProduct={selectedProduct}
-                      />
-                      {invalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : null}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+            {productionMode ? (
+              <>
+                <form.Field name="productId">
+                  {(field) => {
+                    const invalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={invalid}>
+                        <ProductPicker
+                          ariaInvalid={invalid}
+                          label="Produit fabriqué"
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onProductChange={field.handleChange}
+                          products={productionProducts}
+                          selectedProduct={selectedProduct}
+                        />
+                        {invalid ? (
+                          <FieldError errors={field.state.meta.errors} />
+                        ) : null}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                  <form.Field name="characterId">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${formId}-character`}>
+                            Personnage
+                          </FieldLabel>
+                          <Select
+                            name={field.name}
+                            onValueChange={field.handleChange}
+                            value={field.state.value}
+                          >
+                            <SelectTrigger
+                              aria-invalid={invalid}
+                              className="h-10 w-full bg-background/50"
+                              id={`${formId}-character`}
+                              onBlur={field.handleBlur}
+                            >
+                              <SelectValue placeholder="Qui réalise la production ?" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {characters.map((character) => (
+                                <SelectItem
+                                  key={character._id}
+                                  value={character._id}
+                                >
+                                  {character.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <form.Field name="quantity">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${formId}-quantity`}>
+                            Quantité
+                          </FieldLabel>
+                          <Input
+                            aria-invalid={invalid}
+                            id={`${formId}-quantity`}
+                            min="1"
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              field.handleChange(event.target.value)
+                            }
+                            required
+                            step="1"
+                            type="number"
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                </div>
+                {selectedProduct ? (
+                  <Alert
+                    className={cn(
+                      productionPlan.complete &&
+                        (!validProductionQuantity || productionPlan.canProduce)
+                        ? "border-primary/25 bg-primary/[0.045]"
+                        : "border-destructive/35 bg-destructive/[0.045]"
+                    )}
+                    variant={
+                      productionPlan.complete &&
+                      (!validProductionQuantity || productionPlan.canProduce)
+                        ? "default"
+                        : "destructive"
+                    }
+                  >
+                    {productionPlan.complete &&
+                    (!validProductionQuantity || productionPlan.canProduce) ? (
+                      <Hammer aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle aria-hidden="true" />
+                    )}
+                    <AlertTitle>
+                      {!productionPlan.complete
+                        ? "Recette incomplète"
+                        : validProductionQuantity && !productionPlan.canProduce
+                          ? "Ingrédients insuffisants"
+                          : `${formatNumber(productionPlan.maximumQuantity)} fabricable${productionPlan.maximumQuantity === 1 ? "" : "s"} au maximum`}
+                    </AlertTitle>
+                    <AlertDescription className="grid gap-2">
+                      <span>
+                        Stock du produit fini :{" "}
+                        {formatNumber(selectedProduct.currentStock)} →{" "}
+                        {formatNumber(
+                          productionStock ?? selectedProduct.currentStock
+                        )}
+                      </span>
+                      <span className="grid gap-1 border-t border-current/15 pt-2">
+                        {productionPlan.requirements.map((requirement) => {
+                          const insufficient =
+                            requirement.available === undefined ||
+                            (validProductionQuantity &&
+                              requirement.required > requirement.available)
+                          return (
+                            <span
+                              className={cn(
+                                "flex justify-between gap-3",
+                                insufficient && "font-semibold"
+                              )}
+                              key={
+                                requirement.productId ??
+                                requirement.ingredientName
+                              }
+                            >
+                              <span>{requirement.ingredientName}</span>
+                              <span className="text-right tabular-nums">
+                                {validProductionQuantity
+                                  ? `${formatNumber(requirement.required)} requis`
+                                  : `${formatNumber(requirement.requiredPerUnit)} par unité`}{" "}
+                                ·{" "}
+                                {requirement.available === undefined
+                                  ? "stock introuvable"
+                                  : `${formatNumber(requirement.available)} en stock`}
+                              </span>
+                            </span>
+                          )
+                        })}
+                      </span>
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <form.Field name="tradeLines">
+                  {(field) => {
+                    const invalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={invalid}>
+                        <div
+                          aria-label="Articles à ajouter au panier"
+                          className="grid grid-cols-2 gap-2 md:hidden"
+                          role="group"
+                        >
+                          <Button
+                            aria-pressed={activeTradeDirection === "outgoing"}
+                            onClick={() => setActiveTradeDirection("outgoing")}
+                            type="button"
+                            variant={
+                              activeTradeDirection === "outgoing"
+                                ? "default"
+                                : "outline"
+                            }
+                          >
+                            <ShoppingBasket aria-hidden="true" />
+                            Vente
+                          </Button>
+                          <Button
+                            aria-pressed={activeTradeDirection === "incoming"}
+                            onClick={() => setActiveTradeDirection("incoming")}
+                            type="button"
+                            variant={
+                              activeTradeDirection === "incoming"
+                                ? "default"
+                                : "outline"
+                            }
+                          >
+                            <ArrowDownToLine aria-hidden="true" />
+                            Achat
+                          </Button>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <TradeCart
+                            ariaInvalid={
+                              invalid &&
+                              !formValues.tradeLines.length &&
+                              activeTradeDirection === "outgoing"
+                            }
+                            bundles={bundles}
+                            className={cn(
+                              activeTradeDirection === "outgoing"
+                                ? "max-md:order-first"
+                                : !hasOutgoingLines && "max-md:hidden"
+                            )}
+                            direction="outgoing"
+                            lines={formValues.tradeLines}
+                            onAdd={(line) => {
+                              if (
+                                formValues.tradeLines.length >=
+                                MAX_DYNAMIC_LINES
+                              )
+                                return
+                              form.setFieldValue("tradeLines", (current) => [
+                                ...current,
+                                line,
+                              ])
+                            }}
+                            onRemove={removeTradeLine}
+                            onUpdate={updateTradeLine}
+                            products={correctedProducts}
+                            renderLineFields={renderTradeLineFields}
+                          />
+                          <TradeCart
+                            ariaInvalid={
+                              invalid &&
+                              !formValues.tradeLines.length &&
+                              activeTradeDirection === "incoming"
+                            }
+                            bundles={bundles}
+                            className={cn(
+                              activeTradeDirection === "incoming"
+                                ? "max-md:order-first"
+                                : !hasIncomingLines && "max-md:hidden"
+                            )}
+                            direction="incoming"
+                            lines={formValues.tradeLines}
+                            onAdd={(line) => {
+                              if (
+                                formValues.tradeLines.length >=
+                                MAX_DYNAMIC_LINES
+                              )
+                                return
+                              form.setFieldValue("tradeLines", (current) => [
+                                ...current,
+                                line,
+                              ])
+                            }}
+                            onRemove={removeTradeLine}
+                            onUpdate={updateTradeLine}
+                            products={correctedProducts}
+                            renderLineFields={renderTradeLineFields}
+                          />
+                        </div>
+                        {invalid ? (
+                          <FieldError errors={field.state.meta.errors} />
+                        ) : null}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+
                 <form.Field name="characterId">
                   {(field) => {
                     const invalid =
@@ -1118,7 +1435,7 @@ export function OperationDialog({
                             id={`${formId}-character`}
                             onBlur={field.handleBlur}
                           >
-                            <SelectValue placeholder="Qui réalise la production ?" />
+                            <SelectValue placeholder="Qui réalise l’échange ?" />
                           </SelectTrigger>
                           <SelectContent>
                             {characters.map((character) => (
@@ -1138,417 +1455,184 @@ export function OperationDialog({
                     )
                   }}
                 </form.Field>
-                <form.Field name="quantity">
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${formId}-quantity`}>
-                          Quantité
-                        </FieldLabel>
-                        <Input
-                          aria-invalid={invalid}
-                          id={`${formId}-quantity`}
-                          min="1"
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          required
-                          step="1"
-                          type="number"
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-              </div>
-              {selectedProduct ? (
-                <Alert
-                  className={cn(
-                    productionPlan.complete &&
-                      (!validProductionQuantity || productionPlan.canProduce)
-                      ? "border-primary/25 bg-primary/[0.045]"
-                      : "border-destructive/35 bg-destructive/[0.045]"
-                  )}
-                  variant={
-                    productionPlan.complete &&
-                    (!validProductionQuantity || productionPlan.canProduce)
-                      ? "default"
-                      : "destructive"
-                  }
-                >
-                  {productionPlan.complete &&
-                  (!validProductionQuantity || productionPlan.canProduce) ? (
-                    <Hammer aria-hidden="true" />
-                  ) : (
-                    <AlertTriangle aria-hidden="true" />
-                  )}
-                  <AlertTitle>
-                    {!productionPlan.complete
-                      ? "Recette incomplète"
-                      : validProductionQuantity && !productionPlan.canProduce
-                        ? "Ingrédients insuffisants"
-                        : `${formatNumber(productionPlan.maximumQuantity)} fabricable${productionPlan.maximumQuantity === 1 ? "" : "s"} au maximum`}
-                  </AlertTitle>
-                  <AlertDescription className="grid gap-2">
-                    <span>
-                      Stock du produit fini :{" "}
-                      {formatNumber(selectedProduct.currentStock)} →{" "}
-                      {formatNumber(
-                        productionStock ?? selectedProduct.currentStock
-                      )}
-                    </span>
-                    <span className="grid gap-1 border-t border-current/15 pt-2">
-                      {productionPlan.requirements.map((requirement) => {
-                        const insufficient =
-                          requirement.available === undefined ||
-                          (validProductionQuantity &&
-                            requirement.required > requirement.available)
-                        return (
-                          <span
-                            className={cn(
-                              "flex justify-between gap-3",
-                              insufficient && "font-semibold"
-                            )}
-                            key={
-                              requirement.productId ??
-                              requirement.ingredientName
-                            }
-                          >
-                            <span>{requirement.ingredientName}</span>
-                            <span className="text-right tabular-nums">
-                              {validProductionQuantity
-                                ? `${formatNumber(requirement.required)} requis`
-                                : `${formatNumber(requirement.requiredPerUnit)} par unité`}{" "}
-                              ·{" "}
-                              {requirement.available === undefined
-                                ? "stock introuvable"
-                                : `${formatNumber(requirement.available)} en stock`}
-                            </span>
-                          </span>
-                        )
-                      })}
-                    </span>
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <form.Field name="tradeLines">
-                {(field) => {
-                  const invalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={invalid}>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <TradeCart
-                          bundles={bundles}
-                          direction="outgoing"
-                          lines={formValues.tradeLines}
-                          onAdd={(line) => {
-                            if (
-                              formValues.tradeLines.length >= MAX_DYNAMIC_LINES
-                            )
-                              return
-                            form.setFieldValue("tradeLines", (current) => [
-                              ...current,
-                              line,
-                            ])
-                          }}
-                          onRemove={removeTradeLine}
-                          onUpdate={updateTradeLine}
-                          products={correctedProducts}
-                          renderLineFields={renderTradeLineFields}
-                        />
-                        <TradeCart
-                          bundles={bundles}
-                          direction="incoming"
-                          lines={formValues.tradeLines}
-                          onAdd={(line) => {
-                            if (
-                              formValues.tradeLines.length >= MAX_DYNAMIC_LINES
-                            )
-                              return
-                            form.setFieldValue("tradeLines", (current) => [
-                              ...current,
-                              line,
-                            ])
-                          }}
-                          onRemove={removeTradeLine}
-                          onUpdate={updateTradeLine}
-                          products={correctedProducts}
-                          renderLineFields={renderTradeLineFields}
-                        />
-                      </div>
-                      {invalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : null}
-                    </Field>
-                  )
-                }}
-              </form.Field>
 
-              <form.Field name="characterId">
-                {(field) => {
-                  const invalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={invalid}>
-                      <FieldLabel htmlFor={`${formId}-character`}>
-                        Personnage
-                      </FieldLabel>
-                      <Select
-                        name={field.name}
-                        onValueChange={field.handleChange}
-                        value={field.state.value}
-                      >
-                        <SelectTrigger
-                          aria-invalid={invalid}
-                          className="h-10 w-full bg-background/50"
-                          id={`${formId}-character`}
-                          onBlur={field.handleBlur}
-                        >
-                          <SelectValue placeholder="Qui réalise l’échange ?" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {characters.map((character) => (
-                            <SelectItem
-                              key={character._id}
-                              value={character._id}
-                            >
-                              {character.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {invalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : null}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-
-              {formValues.tradeLines.length > 0 ? (
-                <Alert
-                  className={cn(
-                    insufficientProducts.length > 0
-                      ? "border-destructive/35 bg-destructive/[0.045]"
-                      : "border-primary/25 bg-primary/[0.045]"
-                  )}
-                  variant={
-                    insufficientProducts.length > 0 ? "destructive" : "default"
-                  }
-                >
-                  <Coins aria-hidden="true" />
-                  <AlertTitle>
-                    {insufficientProducts.length > 0
-                      ? "Stock insuffisant"
-                      : netTotal > 0
-                        ? `À encaisser : ${formatSeptims(netTotal)}`
-                        : netTotal < 0
-                          ? `À payer : ${formatSeptims(Math.abs(netTotal))}`
-                          : "Échange équilibré"}
-                  </AlertTitle>
-                  <AlertDescription className="flex flex-wrap gap-x-5 gap-y-1">
-                    {insufficientProducts.length > 0 ? (
-                      <span>
-                        À corriger :{" "}
-                        {insufficientProducts
-                          .map((product) => product.name)
-                          .join(", ")}
-                      </span>
-                    ) : (
-                      <>
-                        {outgoingGross > 0 ? (
-                          <span>Vendu : {formatSeptims(outgoingTotal)}</span>
-                        ) : null}
-                        {incomingGross > 0 ? (
-                          <span>Acheté : {formatSeptims(incomingTotal)}</span>
-                        ) : null}
-                        {isPreviewRounded ? (
-                          <span className="text-muted-foreground">
-                            Arrondi au septim inférieur
-                          </span>
-                        ) : null}
-                      </>
+                {formValues.tradeLines.length > 0 ? (
+                  <Alert
+                    className={cn(
+                      insufficientProducts.length > 0
+                        ? "border-destructive/35 bg-destructive/[0.045]"
+                        : "border-primary/25 bg-primary/[0.045]"
                     )}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-            </>
-          )}
-
-          <Collapsible onOpenChange={setDetailsOpen} open={detailsOpen}>
-            <CollapsibleTrigger asChild>
-              <Button
-                className="w-full justify-between border-y border-border/70 px-1"
-                type="button"
-                variant="ghost"
-              >
-                {productionMode
-                  ? "Date et détails facultatifs"
-                  : linkedOrderMode
-                    ? "Date, total convenu et détails"
-                    : "Date, remise et détails facultatifs"}
-                <ChevronDown
-                  aria-hidden="true"
-                  className={cn(
-                    "transition-transform",
-                    detailsOpen && "rotate-180"
-                  )}
-                />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="animate-in pt-4 duration-200 fade-in slide-in-from-top-1 motion-reduce:animate-none">
-              <div
-                className={cn(
-                  "grid gap-4",
-                  !productionMode && "sm:grid-cols-2"
-                )}
-              >
-                {!productionMode ? (
-                  linkedOrderMode ? (
-                    <form.Field name="agreedTotal">
-                      {(field) => {
-                        const invalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid
-                        return (
-                          <Field data-invalid={invalid}>
-                            <FieldLabel htmlFor={`${formId}-agreed-total`}>
-                              Total convenu de la commande
-                            </FieldLabel>
-                            <Input
-                              aria-invalid={invalid}
-                              id={`${formId}-agreed-total`}
-                              min="0"
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(event) =>
-                                field.handleChange(event.target.value)
-                              }
-                              placeholder="0"
-                              step="1"
-                              type="number"
-                              value={field.state.value}
-                            />
-                            {invalid ? (
-                              <FieldError errors={field.state.meta.errors} />
-                            ) : null}
-                          </Field>
-                        )
-                      }}
-                    </form.Field>
-                  ) : (
-                    <form.Field
-                      name="discount"
-                      validators={{
-                        onSubmit: ({ value }) => {
-                          const parsed = value.trim() ? Number(value) : 0
-                          return !Number.isFinite(parsed) ||
-                            parsed < 0 ||
-                            parsed > outgoingGross
-                            ? "La remise doit rester comprise dans le total vendu."
-                            : undefined
-                        },
-                      }}
-                    >
-                      {(field) => {
-                        const invalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid
-                        return (
-                          <Field data-invalid={invalid}>
-                            <FieldLabel htmlFor={`${formId}-discount`}>
-                              Remise sur ce qui est vendu
-                            </FieldLabel>
-                            <Input
-                              aria-invalid={invalid}
-                              id={`${formId}-discount`}
-                              min="0"
-                              name={field.name}
-                              onBlur={field.handleBlur}
-                              onChange={(event) =>
-                                field.handleChange(event.target.value)
-                              }
-                              placeholder="0"
-                              step="any"
-                              type="number"
-                              value={field.state.value}
-                            />
-                            {invalid ? (
-                              <FieldError errors={field.state.meta.errors} />
-                            ) : null}
-                          </Field>
-                        )
-                      }}
-                    </form.Field>
-                  )
+                    variant={
+                      insufficientProducts.length > 0
+                        ? "destructive"
+                        : "default"
+                    }
+                  >
+                    <Coins aria-hidden="true" />
+                    <AlertTitle>
+                      {insufficientProducts.length > 0
+                        ? "Stock insuffisant"
+                        : netTotal > 0
+                          ? `À encaisser : ${formatSeptims(netTotal)}`
+                          : netTotal < 0
+                            ? `À payer : ${formatSeptims(Math.abs(netTotal))}`
+                            : "Échange équilibré"}
+                    </AlertTitle>
+                    <AlertDescription className="flex flex-wrap gap-x-5 gap-y-1">
+                      {insufficientProducts.length > 0 ? (
+                        <span>
+                          À corriger :{" "}
+                          {insufficientProducts
+                            .map((product) => product.name)
+                            .join(", ")}
+                        </span>
+                      ) : (
+                        <>
+                          {outgoingGross > 0 ? (
+                            <span>Vendu : {formatSeptims(outgoingTotal)}</span>
+                          ) : null}
+                          {incomingGross > 0 ? (
+                            <span>Acheté : {formatSeptims(incomingTotal)}</span>
+                          ) : null}
+                          {isPreviewRounded ? (
+                            <span className="text-muted-foreground">
+                              Arrondi au septim inférieur
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </AlertDescription>
+                  </Alert>
                 ) : null}
-                <form.Field name="occurredOn">
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${formId}-date`}>Date</FieldLabel>
-                        <DatePicker
-                          ariaInvalid={invalid}
-                          ariaLabel="Date de l’opération"
-                          id={`${formId}-date`}
-                          max={todayInputValue()}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={field.handleChange}
-                          required
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-              </div>
+              </>
+            )}
 
-              <Separator className="my-4" />
-              <div
-                className={cn(
-                  "grid gap-4",
-                  !productionMode && "sm:grid-cols-2"
-                )}
-              >
-                {!productionMode ? (
-                  <form.Field name="counterparty">
+            <Collapsible onOpenChange={setDetailsOpen} open={detailsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  className="w-full justify-between border-y border-border/70 px-1"
+                  type="button"
+                  variant="ghost"
+                >
+                  {productionMode
+                    ? "Date et détails facultatifs"
+                    : linkedOrderMode
+                      ? "Date, total convenu et détails"
+                      : "Date, remise et détails facultatifs"}
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn(
+                      "transition-transform",
+                      detailsOpen && "rotate-180"
+                    )}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="animate-in pt-4 duration-200 fade-in slide-in-from-top-1 motion-reduce:animate-none">
+                <div
+                  className={cn(
+                    "grid gap-4",
+                    !productionMode && "sm:grid-cols-2"
+                  )}
+                >
+                  {!productionMode ? (
+                    linkedOrderMode ? (
+                      <form.Field name="agreedTotal">
+                        {(field) => {
+                          const invalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={invalid}>
+                              <FieldLabel htmlFor={`${formId}-agreed-total`}>
+                                Total convenu de la commande
+                              </FieldLabel>
+                              <Input
+                                aria-invalid={invalid}
+                                id={`${formId}-agreed-total`}
+                                min="0"
+                                name={field.name}
+                                onBlur={field.handleBlur}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                placeholder="0"
+                                step="1"
+                                type="number"
+                                value={field.state.value}
+                              />
+                              {invalid ? (
+                                <FieldError errors={field.state.meta.errors} />
+                              ) : null}
+                            </Field>
+                          )
+                        }}
+                      </form.Field>
+                    ) : (
+                      <form.Field
+                        name="discount"
+                        validators={{
+                          onSubmit: ({ value }) => {
+                            const parsed = value.trim() ? Number(value) : 0
+                            return !Number.isFinite(parsed) ||
+                              parsed < 0 ||
+                              parsed > outgoingGross
+                              ? "La remise doit rester comprise dans le total vendu."
+                              : undefined
+                          },
+                        }}
+                      >
+                        {(field) => {
+                          const invalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={invalid}>
+                              <FieldLabel htmlFor={`${formId}-discount`}>
+                                Remise sur ce qui est vendu
+                              </FieldLabel>
+                              <Input
+                                aria-invalid={invalid}
+                                id={`${formId}-discount`}
+                                min="0"
+                                name={field.name}
+                                onBlur={field.handleBlur}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                placeholder="0"
+                                step="any"
+                                type="number"
+                                value={field.state.value}
+                              />
+                              {invalid ? (
+                                <FieldError errors={field.state.meta.errors} />
+                              ) : null}
+                            </Field>
+                          )
+                        }}
+                      </form.Field>
+                    )
+                  ) : null}
+                  <form.Field name="occurredOn">
                     {(field) => {
                       const invalid =
                         field.state.meta.isTouched && !field.state.meta.isValid
                       return (
                         <Field data-invalid={invalid}>
-                          <FieldLabel htmlFor={`${formId}-counterparty`}>
-                            Client, fournisseur ou interlocuteur
+                          <FieldLabel htmlFor={`${formId}-date`}>
+                            Date
                           </FieldLabel>
-                          <Input
-                            aria-invalid={invalid}
-                            autoComplete="off"
-                            id={`${formId}-counterparty`}
-                            maxLength={500}
-                            name="transaction-counterparty"
+                          <DatePicker
+                            ariaInvalid={invalid}
+                            ariaLabel="Date de l’opération"
+                            id={`${formId}-date`}
+                            max={todayInputValue()}
+                            name={field.name}
                             onBlur={field.handleBlur}
-                            onChange={(event) =>
-                              field.handleChange(event.target.value)
-                            }
-                            placeholder="Facultatif"
+                            onChange={field.handleChange}
+                            required
                             value={field.state.value}
                           />
                           {invalid ? (
@@ -1558,84 +1642,125 @@ export function OperationDialog({
                       )
                     }}
                   </form.Field>
-                ) : null}
-                <form.Field name="comment">
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${formId}-comment`}>
-                          Note interne
-                        </FieldLabel>
-                        <Textarea
-                          aria-invalid={invalid}
-                          id={`${formId}-comment`}
-                          maxLength={500}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          placeholder="Informations utiles…"
-                          rows={2}
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+                </div>
 
-          <DialogFooter>
-            <Button
-              onClick={() => handleOpenChange(false)}
-              type="button"
-              variant="ghost"
-            >
-              Annuler
-            </Button>
-            <form.Subscribe selector={(state) => state.isSubmitting}>
-              {(isSubmitting) => (
-                <Button
-                  disabled={
-                    isSubmitting ||
-                    (productionMode &&
-                      Boolean(selectedProduct) &&
-                      validProductionQuantity &&
-                      !productionPlan.canProduce) ||
-                    insufficientProducts.length > 0
-                  }
-                  type="submit"
-                >
-                  {isSubmitting ? (
-                    <Spinner
-                      aria-hidden="true"
-                      className="motion-reduce:animate-none"
-                    />
-                  ) : transaction ? (
-                    <>
-                      <Pencil aria-hidden="true" />
-                      Enregistrer les modifications
-                    </>
-                  ) : productionMode ? (
-                    <>
-                      <Hammer aria-hidden="true" />
-                      Enregistrer la production
-                    </>
-                  ) : (
-                    submitLabel
+                <Separator className="my-4" />
+                <div
+                  className={cn(
+                    "grid gap-4",
+                    !productionMode && "sm:grid-cols-2"
                   )}
-                </Button>
-              )}
-            </form.Subscribe>
-          </DialogFooter>
-        </form>
+                >
+                  {!productionMode ? (
+                    <form.Field name="counterparty">
+                      {(field) => {
+                        const invalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={invalid}>
+                            <FieldLabel htmlFor={`${formId}-counterparty`}>
+                              Client, fournisseur ou interlocuteur
+                            </FieldLabel>
+                            <Input
+                              aria-invalid={invalid}
+                              autoComplete="off"
+                              id={`${formId}-counterparty`}
+                              maxLength={500}
+                              name="transaction-counterparty"
+                              onBlur={field.handleBlur}
+                              onChange={(event) =>
+                                field.handleChange(event.target.value)
+                              }
+                              placeholder="Facultatif"
+                              value={field.state.value}
+                            />
+                            {invalid ? (
+                              <FieldError errors={field.state.meta.errors} />
+                            ) : null}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+                  ) : null}
+                  <form.Field name="comment">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${formId}-comment`}>
+                            Note interne
+                          </FieldLabel>
+                          <Textarea
+                            aria-invalid={invalid}
+                            id={`${formId}-comment`}
+                            maxLength={500}
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              field.handleChange(event.target.value)
+                            }
+                            placeholder="Informations utiles…"
+                            rows={2}
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <DialogFooter>
+              <Button
+                onClick={() => handleOpenChange(false)}
+                type="button"
+                variant="ghost"
+              >
+                Annuler
+              </Button>
+              <form.Subscribe selector={(state) => state.isSubmitting}>
+                {(isSubmitting) => (
+                  <Button
+                    disabled={
+                      isSubmitting ||
+                      (productionMode &&
+                        Boolean(selectedProduct) &&
+                        validProductionQuantity &&
+                        !productionPlan.canProduce) ||
+                      insufficientProducts.length > 0
+                    }
+                    type="submit"
+                  >
+                    {isSubmitting ? (
+                      <Spinner
+                        aria-hidden="true"
+                        className="motion-reduce:animate-none"
+                      />
+                    ) : transaction ? (
+                      <>
+                        <Pencil aria-hidden="true" />
+                        Enregistrer les modifications
+                      </>
+                    ) : productionMode ? (
+                      <>
+                        <Hammer aria-hidden="true" />
+                        Enregistrer la production
+                      </>
+                    ) : (
+                      submitLabel
+                    )}
+                  </Button>
+                )}
+              </form.Subscribe>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

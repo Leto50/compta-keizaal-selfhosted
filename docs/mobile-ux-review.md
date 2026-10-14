@@ -40,14 +40,41 @@ du navigateur partagé échouait ou renvoyait une image périmée.
 - Fenêtres et calendriers dépassant la hauteur disponible.
 - Défilement horizontal dans les formulaires de recette et de lot : le produit
   et la quantité sont désormais organisés en lignes sur mobile.
-- Fermeture des longues fenêtres qui disparaissait pendant le défilement.
+- Fermeture intégrée à un en-tête stable, avec le corps de la fenêtre qui défile
+  séparément. Le bouton rond flottant a été retiré.
 - Menu sans fermeture visible et libellés de navigation en anglais.
 - Cases de droits du lecteur dont la ligne cliquable était trop petite.
 - Espacement des historiques de récolte inadapté aux nouvelles zones tactiles.
 
+## Parcours d’enregistrement des achats et ventes
+
+Complément de revue effectué sur la même copie du backend Convex, avec de vrais
+enregistrements depuis le formulaire dans le navigateur. Ces essais ne modifient
+pas la base originale.
+
+| Parcours                 | Saisie et résultat constaté                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vente                    | Deux Breuvages guerriers vendus à 18 septims l’unité : 36 septims encaissés, vente visible sur l’accueil et dans le journal.                                                                                                         |
+| Achat                    | Trois unités de blé achetées au prix de 6 septims pour 2 unités : 9 septims payés, achat visible sur l’accueil et dans le journal.                                                                                                   |
+| Échange mixte            | Un Breuvage guerrier vendu à 25 septims et quatre unités de blé achetées à 1 septim pour 2 unités : solde de 23 septims encaissés, les deux lignes sont conservées.                                                                  |
+| Stock                    | Les trois enregistrements font passer le Breuvage guerrier de 6 à 3 unités et le blé de 913 à 920 unités. Les valeurs finales ont été contrôlées dans l’inventaire.                                                                  |
+| Correction et répétition | Une validation sans personnage ramène au sélecteur et conserve les quantités et le prix. Après un enregistrement réussi, la réouverture présente un panier vide et conserve le dernier personnage malgré le rechargement des listes. |
+
+Sur mobile, le choix « Vente » ou « Achat » présente d’abord le panier choisi.
+Un panier contenant déjà des articles reste visible lorsque l’autre est choisi,
+pour permettre un échange mixte sans cacher les lignes à enregistrer. La
+recherche dispose de la largeur de l’écran ; les prix du catalogue et la quantité
+initiale de 1 sont préremplis et restent modifiables. Les détails facultatifs sont
+repliés et le montant à encaisser ou à payer est explicite avant la validation.
+
+Huit tests de composant vérifient les données envoyées pour les achats, ventes
+et échanges mixtes, la correction des champs invalides, le panier d’achat vide,
+le blocage d’une vente dépassant le stock et la réouverture après succès. Ils
+complètent les essais dans le navigateur ; ils ne vérifient pas l’apparence.
+
 ## Vérification et limites
 
-`pnpm check` et `pnpm build` passent. Les 443 tests couvrent les règles métier,
+`pnpm check` et `pnpm build` passent. Les 451 tests couvrent les règles métier,
 les permissions et les composants existants ; ils ne constituent pas une preuve
 de qualité visuelle.
 

@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -121,163 +122,166 @@ export function ContactManagerDialog() {
             nouvelles commandes.
           </DialogDescription>
         </DialogHeader>
+        <DialogBody>
+          <Alert className="border-primary/25 bg-primary/[0.04]">
+            <ContactRound aria-hidden="true" />
+            <AlertTitle>Historique préservé</AlertTitle>
+            <AlertDescription>
+              Un renommage ne modifie pas le nom déjà enregistré sur les
+              anciennes commandes.
+            </AlertDescription>
+          </Alert>
 
-        <Alert className="border-primary/25 bg-primary/[0.04]">
-          <ContactRound aria-hidden="true" />
-          <AlertTitle>Historique préservé</AlertTitle>
-          <AlertDescription>
-            Un renommage ne modifie pas le nom déjà enregistré sur les anciennes
-            commandes.
-          </AlertDescription>
-        </Alert>
-
-        <ScrollArea className="max-h-[58svh] pr-3">
-          {contacts === undefined ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              Chargement des contacts…
-            </p>
-          ) : contacts.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              Les contacts apparaîtront après la première commande.
-            </p>
-          ) : (
-            <div className="grid gap-6 py-1">
-              {(["client", "supplier"] as const).map((kind) => {
-                const kindContacts = contacts.filter(
-                  (contact) => contact.kind === kind
-                )
-                if (kindContacts.length === 0) return null
-                return (
-                  <section className="grid gap-2" key={kind}>
-                    <h3 className="font-display text-lg">
-                      {contactKindLabels[kind]}
-                    </h3>
-                    {kindContacts.map((contact) => {
-                      const active = contact.active !== false
-                      const editing = editingId === contact._id
-                      const pending = pendingId === contact._id
-                      return (
-                        <div
-                          className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border/60 py-2 last:border-b-0 sm:flex-nowrap"
-                          key={contact._id}
-                        >
-                          {editing ? (
-                            <form
-                              className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-2"
-                              noValidate
-                              onSubmit={(event) => {
-                                event.preventDefault()
-                                void renameForm.handleSubmit()
-                              }}
-                            >
-                              <renameForm.Field name="name">
-                                {(field) => {
-                                  const invalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid
-                                  return (
-                                    <Field data-invalid={invalid}>
-                                      <Input
-                                        aria-invalid={invalid}
-                                        aria-label={`Nouveau nom de ${contact.name}`}
-                                        autoComplete="off"
-                                        autoFocus
-                                        maxLength={100}
-                                        name={`contact-name-${contact._id}`}
-                                        onBlur={field.handleBlur}
-                                        onChange={(event) =>
-                                          field.handleChange(event.target.value)
-                                        }
-                                        value={field.state.value}
-                                      />
-                                      {invalid ? (
-                                        <FieldError
-                                          errors={field.state.meta.errors}
+          <ScrollArea className="max-h-[58svh] pr-3">
+            {contacts === undefined ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                Chargement des contacts…
+              </p>
+            ) : contacts.length === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                Les contacts apparaîtront après la première commande.
+              </p>
+            ) : (
+              <div className="grid gap-6 py-1">
+                {(["client", "supplier"] as const).map((kind) => {
+                  const kindContacts = contacts.filter(
+                    (contact) => contact.kind === kind
+                  )
+                  if (kindContacts.length === 0) return null
+                  return (
+                    <section className="grid gap-2" key={kind}>
+                      <h3 className="font-display text-lg">
+                        {contactKindLabels[kind]}
+                      </h3>
+                      {kindContacts.map((contact) => {
+                        const active = contact.active !== false
+                        const editing = editingId === contact._id
+                        const pending = pendingId === contact._id
+                        return (
+                          <div
+                            className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border/60 py-2 last:border-b-0 sm:flex-nowrap"
+                            key={contact._id}
+                          >
+                            {editing ? (
+                              <form
+                                className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-2"
+                                noValidate
+                                onSubmit={(event) => {
+                                  event.preventDefault()
+                                  void renameForm.handleSubmit()
+                                }}
+                              >
+                                <renameForm.Field name="name">
+                                  {(field) => {
+                                    const invalid =
+                                      field.state.meta.isTouched &&
+                                      !field.state.meta.isValid
+                                    return (
+                                      <Field data-invalid={invalid}>
+                                        <Input
+                                          aria-invalid={invalid}
+                                          aria-label={`Nouveau nom de ${contact.name}`}
+                                          autoComplete="off"
+                                          autoFocus
+                                          maxLength={100}
+                                          name={`contact-name-${contact._id}`}
+                                          onBlur={field.handleBlur}
+                                          onChange={(event) =>
+                                            field.handleChange(
+                                              event.target.value
+                                            )
+                                          }
+                                          value={field.state.value}
                                         />
-                                      ) : null}
-                                    </Field>
-                                  )
-                                }}
-                              </renameForm.Field>
-                              <Button
-                                aria-label="Enregistrer le nom"
-                                disabled={pending}
-                                size="icon"
-                                type="submit"
-                              >
-                                {pending ? (
-                                  <Spinner
-                                    aria-hidden="true"
-                                    className="motion-reduce:animate-none"
-                                  />
-                                ) : (
-                                  <Check aria-hidden="true" />
-                                )}
-                              </Button>
-                              <Button
-                                aria-label="Annuler le renommage"
-                                onClick={() => setEditingId(undefined)}
-                                size="icon"
-                                type="button"
-                                variant="ghost"
-                              >
-                                <X aria-hidden="true" />
-                              </Button>
-                            </form>
-                          ) : (
-                            <>
-                              <span className="min-w-0 flex-1 truncate font-medium max-sm:basis-full max-sm:break-words max-sm:whitespace-normal">
-                                {contact.name}
-                              </span>
-                              <Badge variant="outline">
-                                {active ? "Actif" : "Archivé"}
-                              </Badge>
-                              <Button
-                                aria-label={`Renommer ${contact.name}`}
-                                disabled={pending}
-                                onClick={() => startEditing(contact)}
-                                size="icon"
-                                type="button"
-                                variant="ghost"
-                              >
-                                <Pencil aria-hidden="true" />
-                              </Button>
-                              <Button
-                                aria-label={
-                                  active
-                                    ? `Archiver ${contact.name}`
-                                    : `Réactiver ${contact.name}`
-                                }
-                                disabled={pending}
-                                onClick={() => {
-                                  void toggleContact(contact)
-                                }}
-                                size="icon"
-                                type="button"
-                                variant="ghost"
-                              >
-                                {pending ? (
-                                  <Spinner
-                                    aria-hidden="true"
-                                    className="motion-reduce:animate-none"
-                                  />
-                                ) : active ? (
-                                  <Archive aria-hidden="true" />
-                                ) : (
-                                  <ArchiveRestore aria-hidden="true" />
-                                )}
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </section>
-                )
-              })}
-            </div>
-          )}
-        </ScrollArea>
+                                        {invalid ? (
+                                          <FieldError
+                                            errors={field.state.meta.errors}
+                                          />
+                                        ) : null}
+                                      </Field>
+                                    )
+                                  }}
+                                </renameForm.Field>
+                                <Button
+                                  aria-label="Enregistrer le nom"
+                                  disabled={pending}
+                                  size="icon"
+                                  type="submit"
+                                >
+                                  {pending ? (
+                                    <Spinner
+                                      aria-hidden="true"
+                                      className="motion-reduce:animate-none"
+                                    />
+                                  ) : (
+                                    <Check aria-hidden="true" />
+                                  )}
+                                </Button>
+                                <Button
+                                  aria-label="Annuler le renommage"
+                                  onClick={() => setEditingId(undefined)}
+                                  size="icon"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  <X aria-hidden="true" />
+                                </Button>
+                              </form>
+                            ) : (
+                              <>
+                                <span className="min-w-0 flex-1 truncate font-medium max-sm:basis-full max-sm:break-words max-sm:whitespace-normal">
+                                  {contact.name}
+                                </span>
+                                <Badge variant="outline">
+                                  {active ? "Actif" : "Archivé"}
+                                </Badge>
+                                <Button
+                                  aria-label={`Renommer ${contact.name}`}
+                                  disabled={pending}
+                                  onClick={() => startEditing(contact)}
+                                  size="icon"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  <Pencil aria-hidden="true" />
+                                </Button>
+                                <Button
+                                  aria-label={
+                                    active
+                                      ? `Archiver ${contact.name}`
+                                      : `Réactiver ${contact.name}`
+                                  }
+                                  disabled={pending}
+                                  onClick={() => {
+                                    void toggleContact(contact)
+                                  }}
+                                  size="icon"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  {pending ? (
+                                    <Spinner
+                                      aria-hidden="true"
+                                      className="motion-reduce:animate-none"
+                                    />
+                                  ) : active ? (
+                                    <Archive aria-hidden="true" />
+                                  ) : (
+                                    <ArchiveRestore aria-hidden="true" />
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </section>
+                  )
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

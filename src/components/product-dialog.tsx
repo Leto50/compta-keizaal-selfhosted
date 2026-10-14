@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button"
 import { PriceInput } from "@/components/price-input"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -173,7 +174,7 @@ export function ProductDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[94svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-xl">
+      <DialogContent className="max-h-[94svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Catalogue de la boutique
@@ -185,312 +186,318 @@ export function ProductDialog({
             Renseignez ses prix et, si nécessaire, son niveau de stock.
           </DialogDescription>
         </DialogHeader>
-
-        <form
-          className="grid gap-5"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            submitAction.current = "save"
-            void form.handleSubmit()
-          }}
-        >
-          <form.Field name="name">
-            {(field) => {
-              const invalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field data-invalid={invalid}>
-                  <FieldLabel htmlFor={`${fieldId}-name`}>Nom</FieldLabel>
-                  <Input
-                    aria-invalid={invalid}
-                    autoComplete="off"
-                    id={`${fieldId}-name`}
-                    maxLength={100}
-                    name="product-name"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="Potion de vigueur"
-                    required
-                    value={field.state.value}
-                  />
-                  {invalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
+        <DialogBody>
+          <form
+            className="grid gap-5"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              submitAction.current = "save"
+              void form.handleSubmit()
             }}
-          </form.Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form.Field name="category">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${fieldId}-category`}>
-                    Catégorie
-                  </FieldLabel>
-                  <Select
-                    name={field.name}
-                    onValueChange={(value) => {
-                      if (isProductCategory(value)) field.handleChange(value)
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      id={`${fieldId}-category`}
+          >
+            <form.Field name="name">
+              {(field) => {
+                const invalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={invalid}>
+                    <FieldLabel htmlFor={`${fieldId}-name`}>Nom</FieldLabel>
+                    <Input
+                      aria-invalid={invalid}
+                      autoComplete="off"
+                      id={`${fieldId}-name`}
+                      maxLength={100}
+                      name="product-name"
                       onBlur={field.handleBlur}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {productCategories.map((entry) => (
-                        <SelectItem key={entry} value={entry}>
-                          {categoryLabels[entry]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Potion de vigueur"
+                      required
+                      value={field.state.value}
+                    />
+                    {invalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : null}
+                  </Field>
+                )
+              }}
             </form.Field>
-            {tracksStock ? (
-              <form.Field name="craftable">
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <form.Field name="category">
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor={`${fieldId}-craftable`}>
-                      Mode d’obtention
+                    <FieldLabel htmlFor={`${fieldId}-category`}>
+                      Catégorie
                     </FieldLabel>
                     <Select
                       name={field.name}
-                      onValueChange={(value) =>
-                        field.handleChange(value === "recipe")
-                      }
-                      value={field.state.value ? "recipe" : "loot"}
+                      onValueChange={(value) => {
+                        if (isProductCategory(value)) field.handleChange(value)
+                      }}
+                      value={field.state.value}
                     >
                       <SelectTrigger
                         className="w-full"
-                        id={`${fieldId}-craftable`}
+                        id={`${fieldId}-category`}
                         onBlur={field.handleBlur}
                       >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="recipe">Fabricable</SelectItem>
-                        <SelectItem value="loot">
-                          {formValues.category === "potion"
-                            ? "Trouvée uniquement"
-                            : "Non fabricable"}
-                        </SelectItem>
+                        {productCategories.map((entry) => (
+                          <SelectItem key={entry} value={entry}>
+                            {categoryLabels[entry]}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
                 )}
               </form.Field>
-            ) : null}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form.Field name="purchasePrice">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-purchase-price`}>
-                      Prix d’achat
-                    </FieldLabel>
-                    <PriceInput
-                      ariaInvalid={invalid}
-                      id={`${fieldId}-purchase-price`}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onValueChange={field.handleChange}
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </form.Field>
-            <form.Field name="salePrice">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-sale-price`}>
-                      Prix de vente
-                    </FieldLabel>
-                    <PriceInput
-                      ariaInvalid={invalid}
-                      id={`${fieldId}-sale-price`}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onValueChange={field.handleChange}
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </form.Field>
-          </div>
-
-          {tracksStock ? (
-            <div className="grid gap-4 border-y border-border/70 py-4 sm:grid-cols-2">
-              <>
-                <form.Field name="targetStock">
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${fieldId}-stock`}>
-                          Stock actuel
-                        </FieldLabel>
-                        <Input
-                          aria-invalid={invalid}
-                          id={`${fieldId}-stock`}
-                          min="0"
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          required
-                          step="1"
-                          type="number"
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name="minimumStock">
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${fieldId}-minimum-stock`}>
-                          Seuil d’alerte
-                        </FieldLabel>
-                        <Input
-                          aria-invalid={invalid}
-                          id={`${fieldId}-minimum-stock`}
-                          min="0"
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            field.handleChange(event.target.value)
-                          }
-                          required
-                          step="1"
-                          type="number"
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-              </>
-            </div>
-          ) : null}
-
-          <DialogFooter className="gap-2 sm:justify-between">
-            <div>
-              {product ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="ghost">
-                      <Archive aria-hidden="true" />
-                      Archiver
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Archiver « {product.name} » ?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        La référence ne sera plus proposée dans les nouvelles
-                        opérations. Son historique sera conservé.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Conserver</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          void archiveProduct()
-                        }}
+              {tracksStock ? (
+                <form.Field name="craftable">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel htmlFor={`${fieldId}-craftable`}>
+                        Mode d’obtention
+                      </FieldLabel>
+                      <Select
+                        name={field.name}
+                        onValueChange={(value) =>
+                          field.handleChange(value === "recipe")
+                        }
+                        value={field.state.value ? "recipe" : "loot"}
                       >
-                        Archiver la référence
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <SelectTrigger
+                          className="w-full"
+                          id={`${fieldId}-craftable`}
+                          onBlur={field.handleBlur}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="recipe">Fabricable</SelectItem>
+                          <SelectItem value="loot">
+                            {formValues.category === "potion"
+                              ? "Trouvée uniquement"
+                              : "Non fabricable"}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                </form.Field>
               ) : null}
             </div>
-            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end">
-              <Button
-                onClick={() => setOpen(false)}
-                type="button"
-                variant="ghost"
-              >
-                Annuler
-              </Button>
-              {tracksStock &&
-              formValues.craftable &&
-              onWriteRecipe &&
-              (!product || canWriteRecipe) ? (
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <form.Field name="purchasePrice">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-purchase-price`}>
+                        Prix d’achat
+                      </FieldLabel>
+                      <PriceInput
+                        ariaInvalid={invalid}
+                        id={`${fieldId}-purchase-price`}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onValueChange={field.handleChange}
+                        value={field.state.value}
+                      />
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+              <form.Field name="salePrice">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-sale-price`}>
+                        Prix de vente
+                      </FieldLabel>
+                      <PriceInput
+                        ariaInvalid={invalid}
+                        id={`${fieldId}-sale-price`}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onValueChange={field.handleChange}
+                        value={field.state.value}
+                      />
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+            </div>
+
+            {tracksStock ? (
+              <div className="grid gap-4 border-y border-border/70 py-4 sm:grid-cols-2">
+                <>
+                  <form.Field name="targetStock">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${fieldId}-stock`}>
+                            Stock actuel
+                          </FieldLabel>
+                          <Input
+                            aria-invalid={invalid}
+                            id={`${fieldId}-stock`}
+                            min="0"
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              field.handleChange(event.target.value)
+                            }
+                            required
+                            step="1"
+                            type="number"
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <form.Field name="minimumStock">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${fieldId}-minimum-stock`}>
+                            Seuil d’alerte
+                          </FieldLabel>
+                          <Input
+                            aria-invalid={invalid}
+                            id={`${fieldId}-minimum-stock`}
+                            min="0"
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              field.handleChange(event.target.value)
+                            }
+                            required
+                            step="1"
+                            type="number"
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                </>
+              </div>
+            ) : null}
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <div>
+                {product ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="ghost">
+                        <Archive aria-hidden="true" />
+                        Archiver
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Archiver « {product.name} » ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          La référence ne sera plus proposée dans les nouvelles
+                          opérations. Son historique sera conservé.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Conserver</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            void archiveProduct()
+                          }}
+                        >
+                          Archiver la référence
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : null}
+              </div>
+              <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end">
+                <Button
+                  onClick={() => setOpen(false)}
+                  type="button"
+                  variant="ghost"
+                >
+                  Annuler
+                </Button>
+                {tracksStock &&
+                formValues.craftable &&
+                onWriteRecipe &&
+                (!product || canWriteRecipe) ? (
+                  <form.Subscribe selector={(state) => state.isSubmitting}>
+                    {(isSubmitting) => (
+                      <Button
+                        disabled={isSubmitting || isArchiving}
+                        onClick={() => {
+                          submitAction.current = "write-recipe"
+                          void form.handleSubmit()
+                        }}
+                        type="button"
+                        variant="outline"
+                      >
+                        <BookPlus aria-hidden="true" />
+                        {product ? "Écrire la recette" : "Créer puis écrire"}
+                      </Button>
+                    )}
+                  </form.Subscribe>
+                ) : null}
                 <form.Subscribe selector={(state) => state.isSubmitting}>
                   {(isSubmitting) => (
                     <Button
                       disabled={isSubmitting || isArchiving}
-                      onClick={() => {
-                        submitAction.current = "write-recipe"
-                        void form.handleSubmit()
-                      }}
-                      type="button"
-                      variant="outline"
+                      type="submit"
                     >
-                      <BookPlus aria-hidden="true" />
-                      {product ? "Écrire la recette" : "Créer puis écrire"}
+                      {isSubmitting ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : product ? (
+                        <Pencil aria-hidden="true" />
+                      ) : (
+                        <PackagePlus aria-hidden="true" />
+                      )}
+                      {product ? "Enregistrer" : "Créer la référence"}
                     </Button>
                   )}
                 </form.Subscribe>
-              ) : null}
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || isArchiving} type="submit">
-                    {isSubmitting ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : product ? (
-                      <Pencil aria-hidden="true" />
-                    ) : (
-                      <PackagePlus aria-hidden="true" />
-                    )}
-                    {product ? "Enregistrer" : "Créer la référence"}
-                  </Button>
-                )}
-              </form.Subscribe>
-            </div>
-          </DialogFooter>
-        </form>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
@@ -541,61 +548,62 @@ export function ProductArchivesDialog() {
               : "Les références retirées du catalogue de la boutique."}
           </DialogDescription>
         </DialogHeader>
-
-        {archivedProducts === undefined ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Chargement des archives…
-          </p>
-        ) : archivedProducts.length === 0 ? (
-          <Alert className="border-primary/20 bg-primary/[0.04]">
-            <ArchiveRestore aria-hidden="true" />
-            <AlertTitle>Aucune référence archivée</AlertTitle>
-            <AlertDescription>
-              Les références retirées du catalogue apparaîtront ici.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <ScrollArea className="max-h-80 pr-3">
-            <div className="grid divide-y divide-border/70">
-              {archivedProducts.map((product) => (
-                <div
-                  className="flex items-center justify-between gap-3 py-3"
-                  key={product._id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {product.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {categoryLabels[product.category]}
-                    </p>
+        <DialogBody>
+          {archivedProducts === undefined ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Chargement des archives…
+            </p>
+          ) : archivedProducts.length === 0 ? (
+            <Alert className="border-primary/20 bg-primary/[0.04]">
+              <ArchiveRestore aria-hidden="true" />
+              <AlertTitle>Aucune référence archivée</AlertTitle>
+              <AlertDescription>
+                Les références retirées du catalogue apparaîtront ici.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <ScrollArea className="max-h-80 pr-3">
+              <div className="grid divide-y divide-border/70">
+                {archivedProducts.map((product) => (
+                  <div
+                    className="flex items-center justify-between gap-3 py-3"
+                    key={product._id}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {product.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {categoryLabels[product.category]}
+                      </p>
+                    </div>
+                    {canWrite ? (
+                      <Button
+                        disabled={restoringId !== undefined}
+                        onClick={() => {
+                          void restoreProduct(product)
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        {restoringId === product._id ? (
+                          <Spinner
+                            aria-hidden="true"
+                            className="motion-reduce:animate-none"
+                          />
+                        ) : (
+                          <ArchiveRestore aria-hidden="true" />
+                        )}
+                        Réactiver
+                      </Button>
+                    ) : null}
                   </div>
-                  {canWrite ? (
-                    <Button
-                      disabled={restoringId !== undefined}
-                      onClick={() => {
-                        void restoreProduct(product)
-                      }}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      {restoringId === product._id ? (
-                        <Spinner
-                          aria-hidden="true"
-                          className="motion-reduce:animate-none"
-                        />
-                      ) : (
-                        <ArchiveRestore aria-hidden="true" />
-                      )}
-                      Réactiver
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

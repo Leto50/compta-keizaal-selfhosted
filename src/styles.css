@@ -132,11 +132,15 @@
   [data-slot="dialog-content"],
   [data-slot="alert-dialog-content"] {
     max-height: calc(100dvh - --spacing(8));
-    overflow-y: auto;
     overscroll-behavior-y: contain;
+  }
+
+  [data-slot="dialog-content"] {
+    overflow: clip;
   }
 
   [data-slot="alert-dialog-content"] {
     width: calc(100% - --spacing(8));
+    overflow-y: auto;
   }
 }

@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/collapsible"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -1018,20 +1019,22 @@ function EditorLoadingDialog({
               : "Les références nécessaires sont chargées à la demande."}
           </DialogDescription>
         </DialogHeader>
-        {failed ? (
-          <Alert variant="destructive">
-            <AlertTitle>Chargement impossible</AlertTitle>
-            <AlertDescription>
-              Fermez cette fenêtre puis réessayez.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid gap-3" aria-label="Chargement" role="status">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-2/3" />
-          </div>
-        )}
+        <DialogBody>
+          {failed ? (
+            <Alert variant="destructive">
+              <AlertTitle>Chargement impossible</AlertTitle>
+              <AlertDescription>
+                Fermez cette fenêtre puis réessayez.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-3" aria-label="Chargement" role="status">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-10 w-2/3" />
+            </div>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
