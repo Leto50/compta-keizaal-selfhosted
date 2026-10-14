@@ -94,6 +94,7 @@ appliquées côté serveur.
 Après un déploiement manuel de cette version, lancer une fois :
 
 ```bash
+pnpm exec convex run migrations:prepareExchangeSalaries --codegen disable
 pnpm exec convex run migrations:prepareHistorySummaries --codegen disable
 pnpm exec convex run migrations:prepareHarvestReaderSummaries --codegen disable
 ```
@@ -134,6 +135,11 @@ ni les tarifs historiques, ni les paramètres comptables.
   Masquer un type de prix masque également les montants et totaux dérivés.
 - Chaque échange enregistre atomiquement l’opération, ses lignes, les mouvements
   et les stocks.
+  Les ventes d’un échange hors commande comptent pour le salaire du personnage,
+  après remise, comme une vente enregistrée séparément. Les achats ne réduisent
+  pas cette base, même si le solde de l’échange est nul ou négatif. La reprise
+  `prepareExchangeSalaries` applique aussi cette règle aux anciens échanges et
+  à leurs résumés comptables, y compris ceux des lecteurs.
 - La rubrique « Récoltes » permet aux employés et administrateurs
   de saisir jusqu’à 50 ingrédients actifs suivis en stock en une seule fois.
   Sa consultation par les lecteurs nécessite l’activation explicite du droit
