@@ -10,6 +10,9 @@ updates:
       timezone: Europe/Paris
     open-pull-requests-limit: 1
     ignore:
+      # Convex adapter 0.12.5 requires Better Auth <1.7; revisit with its upgrade.
+      - dependency-name: "better-auth"
+        versions: ["1.7.x"]
       # Keep Node types aligned with the Node 22 container runtime.
       - dependency-name: "@types/node"
         update-types:
