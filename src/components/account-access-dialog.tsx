@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -200,7 +201,7 @@ export function AccountAccessDialog({
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[92svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-xl">
+      <DialogContent className="max-h-[92svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Gestion d’accès
@@ -212,258 +213,267 @@ export function AccountAccessDialog({
             Identifiant · {account.identifier}
           </DialogDescription>
         </DialogHeader>
-
-        {isLastActiveAdmin ? (
-          <Alert className="border-primary/25 bg-primary/5">
-            <ShieldAlert aria-hidden="true" />
-            <AlertTitle>Dernier administrateur actif</AlertTitle>
-            <AlertDescription>
-              Créez ou promouvez un autre administrateur avant de rétrograder ou
-              suspendre ce compte.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <section
-          aria-labelledby={`role-title-${account.id}`}
-          className="grid gap-3"
-        >
-          <div>
-            <h3
-              className="font-display text-base"
-              id={`role-title-${account.id}`}
-            >
-              Rôle et permissions
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Les employés gèrent les opérations de la boutique. Les
-              administrateurs configurent en plus les personnages, les
-              paramètres, les accès et l’historique d’audit.
-            </p>
-          </div>
-          <div className="grid gap-2">
-            <div className="grid flex-1 gap-2">
-              <Label htmlFor={`account-role-${account.id}`}>Rôle</Label>
-              <Select
-                onValueChange={(value) => {
-                  if (isAccountRole(value)) setRole(value)
-                }}
-                value={role}
-              >
-                <SelectTrigger
-                  className="w-full"
-                  id={`account-role-${account.id}`}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem disabled={roleIsProtected} value="reader">
-                    Lecteur
-                  </SelectItem>
-                  <SelectItem disabled={roleIsProtected} value="user">
-                    Employé
-                  </SelectItem>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {role === "reader" ? (
-            <ReaderAccessFields
-              value={access}
-              onChange={setAccess}
-              disabled={isSavingRole}
-            />
+        <DialogBody>
+          {isLastActiveAdmin ? (
+            <Alert className="border-primary/25 bg-primary/5">
+              <ShieldAlert aria-hidden="true" />
+              <AlertTitle>Dernier administrateur actif</AlertTitle>
+              <AlertDescription>
+                Créez ou promouvez un autre administrateur avant de rétrograder
+                ou suspendre ce compte.
+              </AlertDescription>
+            </Alert>
           ) : null}
-          <Button
-            className="w-full sm:w-fit sm:justify-self-end"
-            disabled={
-              isSavingRole ||
-              (role === account.role && !accessChanged) ||
-              (role !== "admin" && roleIsProtected)
-            }
-            onClick={handleRoleSave}
-            type="button"
+
+          <section
+            aria-labelledby={`role-title-${account.id}`}
+            className="grid gap-3"
           >
-            {isSavingRole ? (
-              <Spinner
-                aria-hidden="true"
-                className="motion-reduce:animate-none"
+            <div>
+              <h3
+                className="font-display text-base"
+                id={`role-title-${account.id}`}
+              >
+                Rôle et permissions
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Les employés gèrent les opérations de la boutique. Les
+                administrateurs configurent en plus les personnages, les
+                paramètres, les accès et l’historique d’audit.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <div className="grid flex-1 gap-2">
+                <Label htmlFor={`account-role-${account.id}`}>Rôle</Label>
+                <Select
+                  onValueChange={(value) => {
+                    if (isAccountRole(value)) setRole(value)
+                  }}
+                  value={role}
+                >
+                  <SelectTrigger
+                    className="w-full"
+                    id={`account-role-${account.id}`}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem disabled={roleIsProtected} value="reader">
+                      Lecteur
+                    </SelectItem>
+                    <SelectItem disabled={roleIsProtected} value="user">
+                      Employé
+                    </SelectItem>
+                    <SelectItem value="admin">Administrateur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {role === "reader" ? (
+              <ReaderAccessFields
+                value={access}
+                onChange={setAccess}
+                disabled={isSavingRole}
               />
-            ) : (
-              <Save aria-hidden="true" />
-            )}
-            Enregistrer l’accès
-          </Button>
-        </section>
-
-        <Separator />
-
-        <section
-          aria-labelledby={`status-title-${account.id}`}
-          className="grid gap-3"
-        >
-          <div>
-            <h3
-              className="font-display text-base"
-              id={`status-title-${account.id}`}
-            >
-              État de l’accès
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Suspendre un accès déconnecte la personne sans supprimer son
-              compte ni son historique.
-            </p>
-          </div>
-          {account.banned ? (
+            ) : null}
             <Button
-              className="w-fit"
-              disabled={isChangingStatus}
-              onClick={handleStatusChange}
+              className="w-full sm:w-fit sm:justify-self-end"
+              disabled={
+                isSavingRole ||
+                (role === account.role && !accessChanged) ||
+                (role !== "admin" && roleIsProtected)
+              }
+              onClick={handleRoleSave}
               type="button"
-              variant="outline"
             >
-              {isChangingStatus ? (
+              {isSavingRole ? (
                 <Spinner
                   aria-hidden="true"
                   className="motion-reduce:animate-none"
                 />
               ) : (
-                <Power aria-hidden="true" />
+                <Save aria-hidden="true" />
               )}
-              Réactiver l’accès
+              Enregistrer l’accès
             </Button>
-          ) : (
+          </section>
+
+          <Separator />
+
+          <section
+            aria-labelledby={`status-title-${account.id}`}
+            className="grid gap-3"
+          >
+            <div>
+              <h3
+                className="font-display text-base"
+                id={`status-title-${account.id}`}
+              >
+                État de l’accès
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Suspendre un accès déconnecte la personne sans supprimer son
+                compte ni son historique.
+              </p>
+            </div>
+            {account.banned ? (
+              <Button
+                className="w-fit"
+                disabled={isChangingStatus}
+                onClick={handleStatusChange}
+                type="button"
+                variant="outline"
+              >
+                {isChangingStatus ? (
+                  <Spinner
+                    aria-hidden="true"
+                    className="motion-reduce:animate-none"
+                  />
+                ) : (
+                  <Power aria-hidden="true" />
+                )}
+                Réactiver l’accès
+              </Button>
+            ) : (
+              <Button
+                className="w-fit"
+                disabled={statusIsProtected}
+                onClick={() => setIsSuspendConfirmationOpen(true)}
+                type="button"
+                variant="destructive"
+              >
+                <PowerOff aria-hidden="true" />
+                Suspendre l’accès
+              </Button>
+            )}
+            {isCurrentAccount && !account.banned ? (
+              <p className="text-xs text-muted-foreground">
+                Vous ne pouvez pas suspendre le compte utilisé actuellement.
+              </p>
+            ) : null}
+          </section>
+
+          <Separator />
+
+          <form
+            className="grid gap-3"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void passwordForm.handleSubmit()
+            }}
+          >
+            <div>
+              <h3 className="font-display text-base">
+                Réinitialiser le mot de passe
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Le nouveau mot de passe est appliqué immédiatement et toutes les
+                sessions de ce compte sont fermées.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <passwordForm.Field name="password">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`account-password-${account.id}`}>
+                        Nouveau mot de passe
+                      </FieldLabel>
+                      <Input
+                        aria-invalid={invalid}
+                        autoComplete="new-password"
+                        id={`account-password-${account.id}`}
+                        maxLength={128}
+                        minLength={12}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        required
+                        type="password"
+                        value={field.state.value}
+                      />
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </passwordForm.Field>
+              <passwordForm.Field name="confirmation">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel
+                        htmlFor={`account-password-confirm-${account.id}`}
+                      >
+                        Confirmer
+                      </FieldLabel>
+                      <Input
+                        aria-invalid={invalid}
+                        autoComplete="new-password"
+                        id={`account-password-confirm-${account.id}`}
+                        maxLength={128}
+                        minLength={12}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        required
+                        type="password"
+                        value={field.state.value}
+                      />
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </passwordForm.Field>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Entre 12 et 128 caractères.
+              </p>
+              <passwordForm.Subscribe selector={(state) => state.isSubmitting}>
+                {(isSubmitting) => (
+                  <Button
+                    disabled={isSubmitting}
+                    type="submit"
+                    variant="outline"
+                  >
+                    {isSubmitting ? (
+                      <Spinner
+                        aria-hidden="true"
+                        className="motion-reduce:animate-none"
+                      />
+                    ) : (
+                      <KeyRound aria-hidden="true" />
+                    )}
+                    Remplacer le mot de passe
+                  </Button>
+                )}
+              </passwordForm.Subscribe>
+            </div>
+          </form>
+
+          <DialogFooter>
             <Button
-              className="w-fit"
-              disabled={statusIsProtected}
-              onClick={() => setIsSuspendConfirmationOpen(true)}
+              onClick={() => setOpen(false)}
               type="button"
-              variant="destructive"
+              variant="ghost"
             >
-              <PowerOff aria-hidden="true" />
-              Suspendre l’accès
+              Fermer
             </Button>
-          )}
-          {isCurrentAccount && !account.banned ? (
-            <p className="text-xs text-muted-foreground">
-              Vous ne pouvez pas suspendre le compte utilisé actuellement.
-            </p>
-          ) : null}
-        </section>
-
-        <Separator />
-
-        <form
-          className="grid gap-3"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void passwordForm.handleSubmit()
-          }}
-        >
-          <div>
-            <h3 className="font-display text-base">
-              Réinitialiser le mot de passe
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Le nouveau mot de passe est appliqué immédiatement et toutes les
-              sessions de ce compte sont fermées.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <passwordForm.Field name="password">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`account-password-${account.id}`}>
-                      Nouveau mot de passe
-                    </FieldLabel>
-                    <Input
-                      aria-invalid={invalid}
-                      autoComplete="new-password"
-                      id={`account-password-${account.id}`}
-                      maxLength={128}
-                      minLength={12}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
-                      required
-                      type="password"
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </passwordForm.Field>
-            <passwordForm.Field name="confirmation">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel
-                      htmlFor={`account-password-confirm-${account.id}`}
-                    >
-                      Confirmer
-                    </FieldLabel>
-                    <Input
-                      aria-invalid={invalid}
-                      autoComplete="new-password"
-                      id={`account-password-confirm-${account.id}`}
-                      maxLength={128}
-                      minLength={12}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
-                      required
-                      type="password"
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </passwordForm.Field>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">
-              Entre 12 et 128 caractères.
-            </p>
-            <passwordForm.Subscribe selector={(state) => state.isSubmitting}>
-              {(isSubmitting) => (
-                <Button disabled={isSubmitting} type="submit" variant="outline">
-                  {isSubmitting ? (
-                    <Spinner
-                      aria-hidden="true"
-                      className="motion-reduce:animate-none"
-                    />
-                  ) : (
-                    <KeyRound aria-hidden="true" />
-                  )}
-                  Remplacer le mot de passe
-                </Button>
-              )}
-            </passwordForm.Subscribe>
-          </div>
-        </form>
-
-        <DialogFooter>
-          <Button onClick={() => setOpen(false)} type="button" variant="ghost">
-            Fermer
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </DialogBody>
       </DialogContent>
 
       <AlertDialog

@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/collapsible"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -638,10 +639,10 @@ function JournalRow({
         <OperationPill kind={transaction.kind} />
       </TableCell>
       <TableCell className="max-w-72 max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:pr-24 max-md:whitespace-normal">
-        <span className="block truncate font-semibold max-md:font-display max-md:text-base">
+        <span className="block truncate font-semibold max-md:font-display max-md:text-base max-md:break-words max-md:whitespace-normal">
           {transaction.productName}
         </span>
-        <span className="mt-0.5 block truncate text-xs text-muted-foreground md:hidden">
+        <span className="mt-0.5 block text-xs break-words whitespace-normal text-muted-foreground md:hidden">
           {transaction.actorName}
           {transaction.counterparty && !transaction.orderId
             ? ` · ${transaction.counterparty}`
@@ -1018,20 +1019,22 @@ function EditorLoadingDialog({
               : "Les références nécessaires sont chargées à la demande."}
           </DialogDescription>
         </DialogHeader>
-        {failed ? (
-          <Alert variant="destructive">
-            <AlertTitle>Chargement impossible</AlertTitle>
-            <AlertDescription>
-              Fermez cette fenêtre puis réessayez.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid gap-3" aria-label="Chargement" role="status">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-2/3" />
-          </div>
-        )}
+        <DialogBody>
+          {failed ? (
+            <Alert variant="destructive">
+              <AlertTitle>Chargement impossible</AlertTitle>
+              <AlertDescription>
+                Fermez cette fenêtre puis réessayez.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-3" aria-label="Chargement" role="status">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-10 w-2/3" />
+            </div>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

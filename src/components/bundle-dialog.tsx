@@ -30,6 +30,7 @@ import { PriceInput } from "@/components/price-input"
 import { ProductPicker } from "@/components/product-picker"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -173,7 +174,7 @@ export function BundleDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-h-[94svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[94svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Vente groupée
@@ -186,239 +187,249 @@ export function BundleDialog({
             vente.
           </DialogDescription>
         </DialogHeader>
-
-        <form
-          className="grid gap-5"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form.Field name="name">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-name`}>
-                      Nom du lot
-                    </FieldLabel>
-                    <Input
-                      aria-invalid={invalid}
-                      autoComplete="off"
-                      id={`${fieldId}-name`}
-                      maxLength={100}
-                      name="bundle-name"
-                      onBlur={field.handleBlur}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
-                      placeholder="Nécessaire d’exploration"
-                      required
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </form.Field>
-            <form.Field name="price">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-price`}>
-                      Prix du lot
-                    </FieldLabel>
-                    <PriceInput
-                      ariaInvalid={invalid}
-                      id={`${fieldId}-price`}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onValueChange={field.handleChange}
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </form.Field>
-          </div>
-
-          <Separator />
-          <div className="grid gap-3">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <FieldLabel>Composition</FieldLabel>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Quantité consommée pour un lot vendu.
-                </p>
-              </div>
-              <Button
-                disabled={formValues.items.length >= MAX_DYNAMIC_LINES}
-                onClick={addItem}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <Plus aria-hidden="true" />
-                Ajouter
-              </Button>
-            </div>
-
-            {formValues.items.map((item, index) => {
-              return (
-                <div
-                  className="flex items-end gap-2 border-l-2 border-primary/35 pl-3"
-                  key={item.key}
-                >
-                  <form.Field name={`items[${index}].productId`}>
-                    {(field) => {
-                      const invalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      return (
-                        <Field
-                          className="min-w-0 flex-1"
-                          data-invalid={invalid}
-                        >
-                          <FieldLabel>Produit {index + 1}</FieldLabel>
-                          <ProductPicker
-                            ariaInvalid={invalid}
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(productId) =>
-                              updateItem(item.key, {
-                                productId: productId ?? "",
-                              })
-                            }
-                            products={availableProducts}
-                            selectedProductId={field.state.value}
-                          />
-                          {invalid ? (
-                            <FieldError errors={field.state.meta.errors} />
-                          ) : null}
-                        </Field>
-                      )
-                    }}
-                  </form.Field>
-                  <form.Field name={`items[${index}].quantity`}>
-                    {(field) => {
-                      const invalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-                      return (
-                        <Field className="w-24" data-invalid={invalid}>
-                          <FieldLabel
-                            htmlFor={`${fieldId}-quantity-${item.key}`}
-                          >
-                            Quantité
-                          </FieldLabel>
-                          <Input
-                            aria-invalid={invalid}
-                            id={`${fieldId}-quantity-${item.key}`}
-                            min="1"
-                            name={field.name}
-                            onBlur={field.handleBlur}
-                            onChange={(event) =>
-                              updateItem(item.key, {
-                                quantity: event.target.value,
-                              })
-                            }
-                            required
-                            step="1"
-                            type="number"
-                            value={field.state.value}
-                          />
-                          {invalid ? (
-                            <FieldError errors={field.state.meta.errors} />
-                          ) : null}
-                        </Field>
-                      )
-                    }}
-                  </form.Field>
-                  <Button
-                    aria-label={`Retirer le produit ${index + 1}`}
-                    disabled={formValues.items.length === 1}
-                    onClick={() => removeItem(item.key)}
-                    size="icon-lg"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Trash2 aria-hidden="true" />
-                  </Button>
-                </div>
-              )
-            })}
-          </div>
-
-          <DialogFooter className="gap-2 sm:justify-between">
-            <div>
-              {bundle ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="ghost">
-                      <Archive aria-hidden="true" />
-                      Archiver
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Archiver « {bundle.name} » ?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Le lot ne sera plus proposé lors des ventes. Les ventes
-                        précédentes resteront dans le journal.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Conserver</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          void archiveBundle()
-                        }}
-                      >
-                        Archiver le lot
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : null}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => setOpen(false)}
-                type="button"
-                variant="ghost"
-              >
-                Annuler
-              </Button>
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || isArchiving} type="submit">
-                    {isSubmitting ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
+        <DialogBody>
+          <form
+            className="grid min-w-0 grid-cols-1 gap-5"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
+            }}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <form.Field name="name">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-name`}>
+                        Nom du lot
+                      </FieldLabel>
+                      <Input
+                        aria-invalid={invalid}
+                        autoComplete="off"
+                        id={`${fieldId}-name`}
+                        maxLength={100}
+                        name="bundle-name"
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        placeholder="Nécessaire d’exploration"
+                        required
+                        value={field.state.value}
                       />
-                    ) : bundle ? (
-                      <Pencil aria-hidden="true" />
-                    ) : (
-                      <PackagePlus aria-hidden="true" />
-                    )}
-                    {bundle ? "Enregistrer" : "Créer le lot"}
-                  </Button>
-                )}
-              </form.Subscribe>
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+              <form.Field name="price">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-price`}>
+                        Prix du lot
+                      </FieldLabel>
+                      <PriceInput
+                        ariaInvalid={invalid}
+                        id={`${fieldId}-price`}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onValueChange={field.handleChange}
+                        value={field.state.value}
+                      />
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
             </div>
-          </DialogFooter>
-        </form>
+
+            <Separator />
+            <div className="grid min-w-0 grid-cols-1 gap-3">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <FieldLabel>Composition</FieldLabel>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Quantité consommée pour un lot vendu.
+                  </p>
+                </div>
+                <Button
+                  disabled={formValues.items.length >= MAX_DYNAMIC_LINES}
+                  onClick={addItem}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus aria-hidden="true" />
+                  Ajouter
+                </Button>
+              </div>
+
+              {formValues.items.map((item, index) => {
+                return (
+                  <div
+                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-2 border-l-2 border-primary/35 pl-3 sm:flex"
+                    key={item.key}
+                  >
+                    <form.Field name={`items[${index}].productId`}>
+                      {(field) => {
+                        const invalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field
+                            className="min-w-0 max-sm:col-span-2 sm:flex-1"
+                            data-invalid={invalid}
+                          >
+                            <FieldLabel>Produit {index + 1}</FieldLabel>
+                            <ProductPicker
+                              ariaInvalid={invalid}
+                              ariaLabel={`Produit ${index + 1}`}
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(productId) =>
+                                updateItem(item.key, {
+                                  productId: productId ?? "",
+                                })
+                              }
+                              products={availableProducts}
+                              selectedProductId={field.state.value}
+                            />
+                            {invalid ? (
+                              <FieldError errors={field.state.meta.errors} />
+                            ) : null}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+                    <form.Field name={`items[${index}].quantity`}>
+                      {(field) => {
+                        const invalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field
+                            className="min-w-0 sm:w-24"
+                            data-invalid={invalid}
+                          >
+                            <FieldLabel
+                              htmlFor={`${fieldId}-quantity-${item.key}`}
+                            >
+                              Quantité
+                            </FieldLabel>
+                            <Input
+                              aria-invalid={invalid}
+                              id={`${fieldId}-quantity-${item.key}`}
+                              min="1"
+                              name={field.name}
+                              onBlur={field.handleBlur}
+                              onChange={(event) =>
+                                updateItem(item.key, {
+                                  quantity: event.target.value,
+                                })
+                              }
+                              required
+                              step="1"
+                              type="number"
+                              value={field.state.value}
+                            />
+                            {invalid ? (
+                              <FieldError errors={field.state.meta.errors} />
+                            ) : null}
+                          </Field>
+                        )
+                      }}
+                    </form.Field>
+                    <Button
+                      aria-label={`Retirer le produit ${index + 1}`}
+                      disabled={formValues.items.length === 1}
+                      onClick={() => removeItem(item.key)}
+                      size="icon-lg"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <div>
+                {bundle ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="ghost">
+                        <Archive aria-hidden="true" />
+                        Archiver
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Archiver « {bundle.name} » ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Le lot ne sera plus proposé lors des ventes. Les
+                          ventes précédentes resteront dans le journal.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Conserver</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            void archiveBundle()
+                          }}
+                        >
+                          Archiver le lot
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : null}
+              </div>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  onClick={() => setOpen(false)}
+                  type="button"
+                  variant="ghost"
+                >
+                  Annuler
+                </Button>
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                  {(isSubmitting) => (
+                    <Button
+                      disabled={isSubmitting || isArchiving}
+                      type="submit"
+                    >
+                      {isSubmitting ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : bundle ? (
+                        <Pencil aria-hidden="true" />
+                      ) : (
+                        <PackagePlus aria-hidden="true" />
+                      )}
+                      {bundle ? "Enregistrer" : "Créer le lot"}
+                    </Button>
+                  )}
+                </form.Subscribe>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
@@ -467,65 +478,66 @@ export function BundleArchivesDialog() {
               : "Les lots retirés de la vente."}
           </DialogDescription>
         </DialogHeader>
-
-        {archivedBundles === undefined ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Chargement des archives…
-          </p>
-        ) : archivedBundles.length === 0 ? (
-          <Alert className="border-primary/20 bg-primary/[0.04]">
-            <ArchiveRestore aria-hidden="true" />
-            <AlertTitle>Aucun lot archivé</AlertTitle>
-            <AlertDescription>
-              Les lots retirés de la vente apparaîtront ici.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <ScrollArea className="max-h-80 pr-3">
-            <div className="grid divide-y divide-border/70">
-              {archivedBundles.map((bundle) => (
-                <div
-                  className="flex items-center justify-between gap-3 py-3"
-                  key={bundle._id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {bundle.name}
-                    </p>
-                    {showSalePrices ? (
-                      <p className="text-xs text-muted-foreground">
-                        {bundle.price === undefined
-                          ? "Prix non renseigné"
-                          : formatSeptims(bundle.price)}
+        <DialogBody>
+          {archivedBundles === undefined ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Chargement des archives…
+            </p>
+          ) : archivedBundles.length === 0 ? (
+            <Alert className="border-primary/20 bg-primary/[0.04]">
+              <ArchiveRestore aria-hidden="true" />
+              <AlertTitle>Aucun lot archivé</AlertTitle>
+              <AlertDescription>
+                Les lots retirés de la vente apparaîtront ici.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <ScrollArea className="max-h-80 pr-3">
+              <div className="grid divide-y divide-border/70">
+                {archivedBundles.map((bundle) => (
+                  <div
+                    className="flex items-center justify-between gap-3 py-3"
+                    key={bundle._id}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {bundle.name}
                       </p>
+                      {showSalePrices ? (
+                        <p className="text-xs text-muted-foreground">
+                          {bundle.price === undefined
+                            ? "Prix non renseigné"
+                            : formatSeptims(bundle.price)}
+                        </p>
+                      ) : null}
+                    </div>
+                    {canWrite ? (
+                      <Button
+                        disabled={restoringId !== undefined}
+                        onClick={() => {
+                          void restoreBundle(bundle)
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        {restoringId === bundle._id ? (
+                          <Spinner
+                            aria-hidden="true"
+                            className="motion-reduce:animate-none"
+                          />
+                        ) : (
+                          <ArchiveRestore aria-hidden="true" />
+                        )}
+                        Réactiver
+                      </Button>
                     ) : null}
                   </div>
-                  {canWrite ? (
-                    <Button
-                      disabled={restoringId !== undefined}
-                      onClick={() => {
-                        void restoreBundle(bundle)
-                      }}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      {restoringId === bundle._id ? (
-                        <Spinner
-                          aria-hidden="true"
-                          className="motion-reduce:animate-none"
-                        />
-                      ) : (
-                        <ArchiveRestore aria-hidden="true" />
-                      )}
-                      Réactiver
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

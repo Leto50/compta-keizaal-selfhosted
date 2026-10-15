@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -359,7 +360,7 @@ export function OrderDialog({
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-h-[94svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-3xl">
+      <DialogContent className="max-h-[94svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-3xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Suivi des commandes
@@ -379,108 +380,424 @@ export function OrderDialog({
                 : "Une commande prépare un échange futur et ne modifie pas encore le stock."}
           </DialogDescription>
         </DialogHeader>
+        <DialogBody>
+          {order?.transactionId ? (
+            <Alert className="border-primary/30 bg-primary/[0.04]">
+              <RefreshCw aria-hidden="true" />
+              <AlertTitle>Correction synchronisée</AlertTitle>
+              <AlertDescription>
+                Les lignes, le total, le personnage, la date, la transaction et
+                le stock seront corrigés ensemble.
+              </AlertDescription>
+            </Alert>
+          ) : null}
 
-        {order?.transactionId ? (
-          <Alert className="border-primary/30 bg-primary/[0.04]">
-            <RefreshCw aria-hidden="true" />
-            <AlertTitle>Correction synchronisée</AlertTitle>
-            <AlertDescription>
-              Les lignes, le total, le personnage, la date, la transaction et le
-              stock seront corrigés ensemble.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <form
-          className="grid gap-5"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form.Field name="kind">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${fieldId}-kind`}>
-                    Type de commande
-                  </FieldLabel>
-                  <Select
-                    name={field.name}
-                    onValueChange={(value) => {
-                      if (value === "client" || value === "supplier") {
-                        if (value !== field.state.value) {
-                          form.setFieldValue("contactId", "")
-                          form.setFieldValue("contactName", "")
-                          if (
-                            !orderStatusesForKind(value).includes(
-                              formValues.status
-                            )
-                          ) {
-                            form.setFieldValue("status", "open")
+          <form
+            className="grid gap-5"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
+            }}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <form.Field name="kind">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={`${fieldId}-kind`}>
+                      Type de commande
+                    </FieldLabel>
+                    <Select
+                      name={field.name}
+                      onValueChange={(value) => {
+                        if (value === "client" || value === "supplier") {
+                          if (value !== field.state.value) {
+                            form.setFieldValue("contactId", "")
+                            form.setFieldValue("contactName", "")
+                            if (
+                              !orderStatusesForKind(value).includes(
+                                formValues.status
+                              )
+                            ) {
+                              form.setFieldValue("status", "open")
+                            }
                           }
+                          field.handleChange(value)
                         }
-                        field.handleChange(value)
-                      }
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      id={`${fieldId}-kind`}
-                      onBlur={field.handleBlur}
+                      }}
+                      value={field.state.value}
                     >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="client">Commande client</SelectItem>
-                      <SelectItem value="supplier">
-                        Commande fournisseur
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            </form.Field>
-            <form.Field name="contactName">
+                      <SelectTrigger
+                        className="w-full"
+                        id={`${fieldId}-kind`}
+                        onBlur={field.handleBlur}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="client">Commande client</SelectItem>
+                        <SelectItem value="supplier">
+                          Commande fournisseur
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </form.Field>
+              <form.Field name="contactName">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-contact`}>
+                        {formValues.kind === "client"
+                          ? "Client"
+                          : "Fournisseur"}
+                      </FieldLabel>
+                      <Input
+                        aria-invalid={invalid}
+                        autoComplete="off"
+                        id={`${fieldId}-contact`}
+                        list={`${fieldId}-contact-suggestions`}
+                        maxLength={100}
+                        name="order-contact-name"
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          updateContactName(event.target.value)
+                        }
+                        placeholder={
+                          formValues.kind === "client"
+                            ? "Nom du client"
+                            : "Nom du fournisseur"
+                        }
+                        required
+                        value={field.state.value}
+                      />
+                      <datalist id={`${fieldId}-contact-suggestions`}>
+                        {suggestedContacts.map((contact) => (
+                          <option key={contact._id} value={contact.name} />
+                        ))}
+                      </datalist>
+                      <FieldDescription>
+                        {suggestedContacts.length > 0
+                          ? "Choisissez un contact existant ou saisissez un nouveau nom."
+                          : "Ce nom sera ajouté au carnet après l’enregistrement."}
+                      </FieldDescription>
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+            </div>
+
+            {order?.transactionId ? (
+              <Card className="gap-0 rounded-none border-primary/25 bg-primary/[0.035] py-0 ring-0">
+                <CardContent className="grid gap-4 p-3 sm:grid-cols-2">
+                  <form.Field name="processedCharacterId">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field className="min-w-0" data-invalid={invalid}>
+                          <FieldLabel
+                            htmlFor={`${fieldId}-processed-character`}
+                          >
+                            Personnage de la transaction
+                          </FieldLabel>
+                          <Select
+                            name={field.name}
+                            onValueChange={field.handleChange}
+                            value={field.state.value}
+                          >
+                            <SelectTrigger
+                              aria-invalid={invalid}
+                              className="w-full"
+                              id={`${fieldId}-processed-character`}
+                              onBlur={field.handleBlur}
+                            >
+                              <SelectValue placeholder="Choisir un personnage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {characters.map((character) => (
+                                <SelectItem
+                                  key={character._id}
+                                  value={character._id}
+                                >
+                                  {character.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <form.Field name="processedDate">
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${fieldId}-processed-date`}>
+                            {formValues.kind === "client"
+                              ? "Date du paiement"
+                              : "Date de réception"}
+                          </FieldLabel>
+                          <DatePicker
+                            ariaInvalid={invalid}
+                            ariaLabel={
+                              formValues.kind === "client"
+                                ? "Date du paiement"
+                                : "Date de réception"
+                            }
+                            id={`${fieldId}-processed-date`}
+                            max={todayValue}
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={field.handleChange}
+                            required
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <form.Field name="dueDate">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-due-date`}>
+                        {formValues.kind === "client"
+                          ? "Livraison prévue"
+                          : "Réception prévue"}
+                      </FieldLabel>
+                      <DatePicker
+                        ariaInvalid={invalid}
+                        ariaLabel={
+                          formValues.kind === "client"
+                            ? "Livraison prévue"
+                            : "Réception prévue"
+                        }
+                        id={`${fieldId}-due-date`}
+                        name={field.name}
+                        onBlur={field.handleBlur}
+                        onChange={field.handleChange}
+                        value={field.state.value}
+                      />
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+              <form.Field name="status">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={`${fieldId}-status`}>État</FieldLabel>
+                    <Select
+                      name={field.name}
+                      onValueChange={(value) => {
+                        if (
+                          orderStatusesForKind(formValues.kind).includes(
+                            value as OrderStatus
+                          )
+                        ) {
+                          field.handleChange(value as OrderStatus)
+                        }
+                      }}
+                      value={field.state.value}
+                    >
+                      <SelectTrigger
+                        className="w-full"
+                        id={`${fieldId}-status`}
+                        onBlur={field.handleBlur}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderStatusesForKind(formValues.kind).map((entry) => (
+                          <SelectItem key={entry} value={entry}>
+                            {formatOrderStatus(entry, formValues.kind)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              </form.Field>
+            </div>
+
+            <Separator />
+            <div className="grid gap-3">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <FieldLabel>Contenu</FieldLabel>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Le prix peut être laissé vide s’il reste à convenir.
+                  </p>
+                </div>
+                <Button
+                  disabled={formValues.lines.length >= MAX_DYNAMIC_LINES}
+                  onClick={addLine}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus aria-hidden="true" />
+                  Ajouter
+                </Button>
+              </div>
+
+              {formValues.lines.map((line, index) => (
+                <div
+                  className="grid gap-3 border-l-2 border-primary/35 pl-3 sm:grid-cols-[minmax(10rem,1fr)_6rem_minmax(14rem,1fr)_auto] sm:items-end"
+                  key={line.key}
+                >
+                  <form.Field name={`lines[${index}].productId`}>
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field className="min-w-0" data-invalid={invalid}>
+                          <FieldLabel>Produit {index + 1}</FieldLabel>
+                          <ProductPicker
+                            ariaInvalid={invalid}
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(value) => selectProduct(line.key, value)}
+                            products={
+                              formValues.kind === "supplier"
+                                ? products.filter(
+                                    (product) => product.tracksStock
+                                  )
+                                : products
+                            }
+                            selectedProductId={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <form.Field name={`lines[${index}].quantity`}>
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel
+                            htmlFor={`${fieldId}-quantity-${line.key}`}
+                          >
+                            Quantité
+                          </FieldLabel>
+                          <Input
+                            aria-invalid={invalid}
+                            id={`${fieldId}-quantity-${line.key}`}
+                            min="1"
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              updateLine(line.key, {
+                                quantity: event.target.value,
+                              })
+                            }
+                            required
+                            step="1"
+                            type="number"
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <form.Field name={`lines[${index}].unitPrice`}>
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={invalid}>
+                          <FieldLabel htmlFor={`${fieldId}-price-${line.key}`}>
+                            Prix unitaire
+                          </FieldLabel>
+                          <PriceInput
+                            ariaInvalid={invalid}
+                            id={`${fieldId}-price-${line.key}`}
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onValueChange={(value) =>
+                              updateLine(line.key, { unitPrice: value })
+                            }
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <Button
+                    aria-label={`Retirer le produit ${index + 1}`}
+                    disabled={formValues.lines.length === 1}
+                    onClick={() => removeLine(line.key)}
+                    size="icon-lg"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {formValues.kind === "client" ? (
+              <OrderPreparationDetails
+                defaultOpen={!order}
+                preparation={preparation}
+              />
+            ) : null}
+
+            <form.Field name="notes">
               {(field) => {
                 const invalid =
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-contact`}>
-                      {formValues.kind === "client" ? "Client" : "Fournisseur"}
-                    </FieldLabel>
-                    <Input
+                    <FieldLabel htmlFor={`${fieldId}-notes`}>Notes</FieldLabel>
+                    <Textarea
                       aria-invalid={invalid}
-                      autoComplete="off"
-                      id={`${fieldId}-contact`}
-                      list={`${fieldId}-contact-suggestions`}
-                      maxLength={100}
-                      name="order-contact-name"
+                      id={`${fieldId}-notes`}
+                      maxLength={1000}
+                      name={field.name}
                       onBlur={field.handleBlur}
                       onChange={(event) =>
-                        updateContactName(event.target.value)
+                        field.handleChange(event.target.value)
                       }
-                      placeholder={
-                        formValues.kind === "client"
-                          ? "Nom du client"
-                          : "Nom du fournisseur"
-                      }
-                      required
+                      placeholder="Détails utiles pour préparer ou remettre la commande."
                       value={field.state.value}
                     />
-                    <datalist id={`${fieldId}-contact-suggestions`}>
-                      {suggestedContacts.map((contact) => (
-                        <option key={contact._id} value={contact.name} />
-                      ))}
-                    </datalist>
-                    <FieldDescription>
-                      {suggestedContacts.length > 0
-                        ? "Choisissez un contact existant ou saisissez un nouveau nom."
-                        : "Ce nom sera ajouté au carnet après l’enregistrement."}
-                    </FieldDescription>
                     {invalid ? (
                       <FieldError errors={field.state.meta.errors} />
                     ) : null}
@@ -488,77 +805,84 @@ export function OrderDialog({
                 )
               }}
             </form.Field>
-          </div>
 
-          {order?.transactionId ? (
             <Card className="gap-0 rounded-none border-primary/25 bg-primary/[0.035] py-0 ring-0">
-              <CardContent className="grid gap-4 p-3 sm:grid-cols-2">
-                <form.Field name="processedCharacterId">
+              <CardContent className="grid gap-4 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,0.8fr)] sm:items-end">
+                <div>
+                  <p className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
+                    Total des lignes
+                  </p>
+                  <p className="mt-1 font-display text-xl">
+                    {automaticTotal === undefined
+                      ? "À calculer"
+                      : formatSeptims(automaticTotal)}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Base indicative avant négociation du montant final.
+                  </p>
+                </div>
+                <form.Field
+                  name="agreedTotal"
+                  validators={{
+                    onSubmit: ({ value }) => {
+                      const submitted = formValues.totalOverridden
+                        ? value
+                        : (automaticTotal?.toString() ?? "")
+                      if (!submitted.trim()) return undefined
+                      const parsed = Number(submitted)
+                      return !Number.isSafeInteger(parsed) ||
+                        parsed < 0 ||
+                        parsed > MAX_AMOUNT
+                        ? `Le total convenu doit être un nombre entier compris entre 0 et ${MAX_AMOUNT}.`
+                        : undefined
+                    },
+                  }}
+                >
                   {(field) => {
                     const invalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field className="min-w-0" data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${fieldId}-processed-character`}>
-                          Personnage de la transaction
-                        </FieldLabel>
-                        <Select
-                          name={field.name}
-                          onValueChange={field.handleChange}
-                          value={field.state.value}
-                        >
-                          <SelectTrigger
+                        <div className="flex items-center justify-between gap-2">
+                          <FieldLabel htmlFor={`${fieldId}-agreed-total`}>
+                            Total convenu
+                          </FieldLabel>
+                          {formValues.totalOverridden &&
+                          automaticTotal !== undefined ? (
+                            <Button
+                              className="h-auto px-1 py-0 text-xs"
+                              onClick={() => {
+                                field.handleChange("")
+                                form.setFieldValue("totalOverridden", false)
+                              }}
+                              type="button"
+                              variant="link"
+                            >
+                              <RefreshCw aria-hidden="true" />
+                              Reprendre le calcul
+                            </Button>
+                          ) : null}
+                        </div>
+                        <InputGroup className="bg-background/50">
+                          <InputGroupInput
                             aria-invalid={invalid}
-                            className="w-full"
-                            id={`${fieldId}-processed-character`}
+                            id={`${fieldId}-agreed-total`}
+                            min="0"
+                            name={field.name}
                             onBlur={field.handleBlur}
-                          >
-                            <SelectValue placeholder="Choisir un personnage" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {characters.map((character) => (
-                              <SelectItem
-                                key={character._id}
-                                value={character._id}
-                              >
-                                {character.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name="processedDate">
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${fieldId}-processed-date`}>
-                          {formValues.kind === "client"
-                            ? "Date du paiement"
-                            : "Date de réception"}
-                        </FieldLabel>
-                        <DatePicker
-                          ariaInvalid={invalid}
-                          ariaLabel={
-                            formValues.kind === "client"
-                              ? "Date du paiement"
-                              : "Date de réception"
-                          }
-                          id={`${fieldId}-processed-date`}
-                          max={todayValue}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={field.handleChange}
-                          required
-                          value={field.state.value}
-                        />
+                            onChange={(event) => {
+                              field.handleChange(event.target.value)
+                              form.setFieldValue("totalOverridden", true)
+                            }}
+                            placeholder="À convenir"
+                            step="1"
+                            type="number"
+                            value={displayedTotal}
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupText>septims</InputGroupText>
+                          </InputGroupAddon>
+                        </InputGroup>
                         {invalid ? (
                           <FieldError errors={field.state.meta.errors} />
                         ) : null}
@@ -568,384 +892,70 @@ export function OrderDialog({
                 </form.Field>
               </CardContent>
             </Card>
-          ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form.Field name="dueDate">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-due-date`}>
-                      {formValues.kind === "client"
-                        ? "Livraison prévue"
-                        : "Réception prévue"}
-                    </FieldLabel>
-                    <DatePicker
-                      ariaInvalid={invalid}
-                      ariaLabel={
-                        formValues.kind === "client"
-                          ? "Livraison prévue"
-                          : "Réception prévue"
-                      }
-                      id={`${fieldId}-due-date`}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={field.handleChange}
-                      value={field.state.value}
-                    />
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </form.Field>
-            <form.Field name="status">
-              {(field) => (
-                <Field>
-                  <FieldLabel htmlFor={`${fieldId}-status`}>État</FieldLabel>
-                  <Select
-                    name={field.name}
-                    onValueChange={(value) => {
-                      if (
-                        orderStatusesForKind(formValues.kind).includes(
-                          value as OrderStatus
-                        )
-                      ) {
-                        field.handleChange(value as OrderStatus)
-                      }
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      id={`${fieldId}-status`}
-                      onBlur={field.handleBlur}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orderStatusesForKind(formValues.kind).map((entry) => (
-                        <SelectItem key={entry} value={entry}>
-                          {formatOrderStatus(entry, formValues.kind)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            </form.Field>
-          </div>
-
-          <Separator />
-          <div className="grid gap-3">
-            <div className="flex items-end justify-between gap-3">
+            <DialogFooter className="gap-2 sm:justify-between">
               <div>
-                <FieldLabel>Contenu</FieldLabel>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Le prix peut être laissé vide s’il reste à convenir.
-                </p>
+                {order && !order.transactionId ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="ghost">
+                        <Trash2 aria-hidden="true" />
+                        Supprimer
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Supprimer la commande de « {order.contactName} » ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          La commande et ses lignes seront supprimées. Aucun
+                          mouvement de stock n’est lié à cette préparation.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Conserver</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            void deleteOrder()
+                          }}
+                        >
+                          Supprimer la commande
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : null}
               </div>
-              <Button
-                disabled={formValues.lines.length >= MAX_DYNAMIC_LINES}
-                onClick={addLine}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <Plus aria-hidden="true" />
-                Ajouter
-              </Button>
-            </div>
-
-            {formValues.lines.map((line, index) => (
-              <div
-                className="grid gap-3 border-l-2 border-primary/35 pl-3 sm:grid-cols-[minmax(10rem,1fr)_6rem_minmax(14rem,1fr)_auto] sm:items-end"
-                key={line.key}
-              >
-                <form.Field name={`lines[${index}].productId`}>
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field className="min-w-0" data-invalid={invalid}>
-                        <FieldLabel>Produit {index + 1}</FieldLabel>
-                        <ProductPicker
-                          ariaInvalid={invalid}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(value) => selectProduct(line.key, value)}
-                          products={
-                            formValues.kind === "supplier"
-                              ? products.filter(
-                                  (product) => product.tracksStock
-                                )
-                              : products
-                          }
-                          selectedProductId={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name={`lines[${index}].quantity`}>
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${fieldId}-quantity-${line.key}`}>
-                          Quantité
-                        </FieldLabel>
-                        <Input
-                          aria-invalid={invalid}
-                          id={`${fieldId}-quantity-${line.key}`}
-                          min="1"
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) =>
-                            updateLine(line.key, {
-                              quantity: event.target.value,
-                            })
-                          }
-                          required
-                          step="1"
-                          type="number"
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name={`lines[${index}].unitPrice`}>
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={invalid}>
-                        <FieldLabel htmlFor={`${fieldId}-price-${line.key}`}>
-                          Prix unitaire
-                        </FieldLabel>
-                        <PriceInput
-                          ariaInvalid={invalid}
-                          id={`${fieldId}-price-${line.key}`}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onValueChange={(value) =>
-                            updateLine(line.key, { unitPrice: value })
-                          }
-                          value={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Button
-                  aria-label={`Retirer le produit ${index + 1}`}
-                  disabled={formValues.lines.length === 1}
-                  onClick={() => removeLine(line.key)}
-                  size="icon-lg"
+                  onClick={() => handleOpenChange(false)}
                   type="button"
                   variant="ghost"
                 >
-                  <Trash2 aria-hidden="true" />
+                  Annuler
                 </Button>
-              </div>
-            ))}
-          </div>
-
-          {formValues.kind === "client" ? (
-            <OrderPreparationDetails
-              defaultOpen={!order}
-              preparation={preparation}
-            />
-          ) : null}
-
-          <form.Field name="notes">
-            {(field) => {
-              const invalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field data-invalid={invalid}>
-                  <FieldLabel htmlFor={`${fieldId}-notes`}>Notes</FieldLabel>
-                  <Textarea
-                    aria-invalid={invalid}
-                    id={`${fieldId}-notes`}
-                    maxLength={1000}
-                    name={field.name}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="Détails utiles pour préparer ou remettre la commande."
-                    value={field.state.value}
-                  />
-                  {invalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
-            }}
-          </form.Field>
-
-          <Card className="gap-0 rounded-none border-primary/25 bg-primary/[0.035] py-0 ring-0">
-            <CardContent className="grid gap-4 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,0.8fr)] sm:items-end">
-              <div>
-                <p className="text-[0.65rem] tracking-wider text-muted-foreground uppercase">
-                  Total des lignes
-                </p>
-                <p className="mt-1 font-display text-xl">
-                  {automaticTotal === undefined
-                    ? "À calculer"
-                    : formatSeptims(automaticTotal)}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Base indicative avant négociation du montant final.
-                </p>
-              </div>
-              <form.Field
-                name="agreedTotal"
-                validators={{
-                  onSubmit: ({ value }) => {
-                    const submitted = formValues.totalOverridden
-                      ? value
-                      : (automaticTotal?.toString() ?? "")
-                    if (!submitted.trim()) return undefined
-                    const parsed = Number(submitted)
-                    return !Number.isSafeInteger(parsed) ||
-                      parsed < 0 ||
-                      parsed > MAX_AMOUNT
-                      ? `Le total convenu doit être un nombre entier compris entre 0 et ${MAX_AMOUNT}.`
-                      : undefined
-                  },
-                }}
-              >
-                {(field) => {
-                  const invalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field className="min-w-0" data-invalid={invalid}>
-                      <div className="flex items-center justify-between gap-2">
-                        <FieldLabel htmlFor={`${fieldId}-agreed-total`}>
-                          Total convenu
-                        </FieldLabel>
-                        {formValues.totalOverridden &&
-                        automaticTotal !== undefined ? (
-                          <Button
-                            className="h-auto px-1 py-0 text-xs"
-                            onClick={() => {
-                              field.handleChange("")
-                              form.setFieldValue("totalOverridden", false)
-                            }}
-                            type="button"
-                            variant="link"
-                          >
-                            <RefreshCw aria-hidden="true" />
-                            Reprendre le calcul
-                          </Button>
-                        ) : null}
-                      </div>
-                      <InputGroup className="bg-background/50">
-                        <InputGroupInput
-                          aria-invalid={invalid}
-                          id={`${fieldId}-agreed-total`}
-                          min="0"
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(event) => {
-                            field.handleChange(event.target.value)
-                            form.setFieldValue("totalOverridden", true)
-                          }}
-                          placeholder="À convenir"
-                          step="1"
-                          type="number"
-                          value={displayedTotal}
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                  {(isSubmitting) => (
+                    <Button disabled={isSubmitting || isDeleting} type="submit">
+                      {isSubmitting ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
                         />
-                        <InputGroupAddon align="inline-end">
-                          <InputGroupText>septims</InputGroupText>
-                        </InputGroupAddon>
-                      </InputGroup>
-                      {invalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : null}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-            </CardContent>
-          </Card>
-
-          <DialogFooter className="gap-2 sm:justify-between">
-            <div>
-              {order && !order.transactionId ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="ghost">
-                      <Trash2 aria-hidden="true" />
-                      Supprimer
+                      ) : order ? (
+                        <Pencil aria-hidden="true" />
+                      ) : (
+                        <ClipboardPlus aria-hidden="true" />
+                      )}
+                      {order ? "Enregistrer" : "Créer la commande"}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Supprimer la commande de « {order.contactName} » ?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        La commande et ses lignes seront supprimées. Aucun
-                        mouvement de stock n’est lié à cette préparation.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Conserver</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          void deleteOrder()
-                        }}
-                      >
-                        Supprimer la commande
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : null}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => handleOpenChange(false)}
-                type="button"
-                variant="ghost"
-              >
-                Annuler
-              </Button>
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || isDeleting} type="submit">
-                    {isSubmitting ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : order ? (
-                      <Pencil aria-hidden="true" />
-                    ) : (
-                      <ClipboardPlus aria-hidden="true" />
-                    )}
-                    {order ? "Enregistrer" : "Créer la commande"}
-                  </Button>
-                )}
-              </form.Subscribe>
-            </div>
-          </DialogFooter>
-        </form>
+                  )}
+                </form.Subscribe>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

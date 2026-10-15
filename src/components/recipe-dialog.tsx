@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -277,7 +278,7 @@ export function RecipeDialog({
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-h-[94svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[94svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Registre de fabrication
@@ -294,312 +295,38 @@ export function RecipeDialog({
             fabriquer.
           </DialogDescription>
         </DialogHeader>
-
-        <form
-          className="grid gap-5"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            {recipe || !showOutputProductSelect ? (
-              <form.Field name="name">
-                {(field) => {
-                  const invalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={invalid}>
-                      <FieldLabel htmlFor={`${fieldId}-name`}>
-                        Nom du produit
-                      </FieldLabel>
-                      <Input
-                        aria-invalid={invalid}
-                        autoComplete="off"
-                        id={`${fieldId}-name`}
-                        maxLength={100}
-                        name="recipe-name"
-                        onBlur={field.handleBlur}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                        placeholder="Élixir du veilleur"
-                        required
-                        value={field.state.value}
-                      />
-                      {invalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : null}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-            ) : (
-              <form.Field name="outputProductId">
-                {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={`${fieldId}-output`}>
-                      Produit obtenu
-                    </FieldLabel>
-                    <Select
-                      disabled={initialProduct !== undefined}
-                      name={field.name}
-                      onValueChange={(value) => {
-                        field.handleChange(value)
-                        const product = outputProducts.find(
-                          (entry) => entry._id === value
-                        )
-                        form.setFieldValue("name", product?.name ?? "")
-                      }}
-                      value={field.state.value}
-                    >
-                      <SelectTrigger
-                        className="w-full"
-                        id={`${fieldId}-output`}
-                        onBlur={field.handleBlur}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">
-                          Créer une nouvelle potion
-                        </SelectItem>
-                        {outputProducts.length > 0 ? (
-                          <SelectGroup>
-                            <SelectLabel>
-                              Produits fabricables sans recette
-                            </SelectLabel>
-                            {outputProducts.map((product) => (
-                              <SelectItem key={product._id} value={product._id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        ) : null}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              </form.Field>
-            )}
-            <form.Field name="family">
-              {(field) => {
-                const invalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={invalid}>
-                    <FieldLabel htmlFor={`${fieldId}-family`}>
-                      Catégorie
-                    </FieldLabel>
-                    {creatingFamily ? (
-                      <Input
-                        aria-describedby={`${fieldId}-family-description`}
-                        aria-invalid={invalid}
-                        autoComplete="off"
-                        autoFocus
-                        id={`${fieldId}-family`}
-                        maxLength={MAX_RECIPE_FAMILY_LENGTH}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                        placeholder="Régénération, Force…"
-                        value={field.state.value}
-                      />
-                    ) : (
-                      <Select
-                        name={field.name}
-                        onValueChange={(value) => {
-                          if (families.includes(value))
-                            field.handleChange(value)
-                        }}
-                        value={field.state.value}
-                      >
-                        <SelectTrigger
-                          aria-invalid={invalid}
-                          className="w-full"
-                          id={`${fieldId}-family`}
-                          onBlur={field.handleBlur}
-                        >
-                          <SelectValue placeholder="Choisir une catégorie…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {families.map((entry) => (
-                            <SelectItem key={entry} value={entry}>
-                              {entry}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {creatingFamily ? (
-                      <FieldDescription id={`${fieldId}-family-description`}>
-                        La catégorie sera enregistrée avec la recette et restera
-                        disponible même sans recette.
-                      </FieldDescription>
-                    ) : null}
-                    <Button
-                      className="w-fit px-0"
-                      onClick={() => {
-                        setCreatingFamily((current) => !current)
-                        field.handleChange("")
-                      }}
-                      size="sm"
-                      type="button"
-                      variant="link"
-                    >
-                      {creatingFamily ? null : <Plus aria-hidden="true" />}
-                      {creatingFamily
-                        ? "Choisir une catégorie existante"
-                        : "Nouvelle catégorie"}
-                    </Button>
-                    {invalid ? (
-                      <FieldError errors={field.state.meta.errors} />
-                    ) : null}
-                  </Field>
-                )
-              }}
-            </form.Field>
-            {showOutputProductSelect && formValues.outputProductId === "new" ? (
-              <form.Field name="name">
-                {(field) => {
-                  const invalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field className="sm:col-span-2" data-invalid={invalid}>
-                      <FieldLabel htmlFor={`${fieldId}-name`}>
-                        Nom du produit
-                      </FieldLabel>
-                      <Input
-                        aria-invalid={invalid}
-                        autoComplete="off"
-                        id={`${fieldId}-name`}
-                        maxLength={100}
-                        name="recipe-name"
-                        onBlur={field.handleBlur}
-                        onChange={(event) =>
-                          field.handleChange(event.target.value)
-                        }
-                        placeholder="Élixir du veilleur"
-                        required
-                        value={field.state.value}
-                      />
-                      {invalid ? (
-                        <FieldError errors={field.state.meta.errors} />
-                      ) : null}
-                    </Field>
-                  )
-                }}
-              </form.Field>
-            ) : null}
-          </div>
-
-          <form.Field name="effect">
-            {(field) => {
-              const invalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field data-invalid={invalid}>
-                  <FieldLabel htmlFor={`${fieldId}-effect`}>
-                    Effet ou usage
-                  </FieldLabel>
-                  <Textarea
-                    aria-invalid={invalid}
-                    id={`${fieldId}-effect`}
-                    maxLength={500}
-                    name={field.name}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="Décrivez l’effet utile de cette préparation."
-                    value={field.state.value}
-                  />
-                  {invalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
+        <DialogBody>
+          <form
+            className="grid min-w-0 grid-cols-1 gap-5"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
             }}
-          </form.Field>
-
-          <Separator />
-          <div className="grid gap-3">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <FieldLabel>Ingrédients</FieldLabel>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Quantités consommées pour une fabrication.
-                </p>
-              </div>
-              <Button
-                disabled={formValues.ingredients.length >= MAX_DYNAMIC_LINES}
-                onClick={addIngredient}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                <Plus aria-hidden="true" />
-                Ajouter
-              </Button>
-            </div>
-
-            {formValues.ingredients.map((ingredient, index) => (
-              <div
-                className="flex items-end gap-2 border-l-2 border-primary/35 pl-3"
-                key={ingredient.key}
-              >
-                <form.Field name={`ingredients[${index}].productId`}>
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              {recipe || !showOutputProductSelect ? (
+                <form.Field name="name">
                   {(field) => {
                     const invalid =
                       field.state.meta.isTouched && !field.state.meta.isValid
                     return (
-                      <Field className="min-w-0 flex-1" data-invalid={invalid}>
-                        <FieldLabel>Ingrédient {index + 1}</FieldLabel>
-                        <ProductPicker
-                          ariaInvalid={invalid}
-                          name={field.name}
-                          onBlur={field.handleBlur}
-                          onChange={(value) =>
-                            updateIngredient(ingredient.key, {
-                              productId: value ?? "",
-                            })
-                          }
-                          products={ingredientProducts}
-                          selectedProductId={field.state.value}
-                        />
-                        {invalid ? (
-                          <FieldError errors={field.state.meta.errors} />
-                        ) : null}
-                      </Field>
-                    )
-                  }}
-                </form.Field>
-                <form.Field name={`ingredients[${index}].quantity`}>
-                  {(field) => {
-                    const invalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field className="w-24" data-invalid={invalid}>
-                        <FieldLabel
-                          htmlFor={`${fieldId}-quantity-${ingredient.key}`}
-                        >
-                          Quantité
+                      <Field data-invalid={invalid}>
+                        <FieldLabel htmlFor={`${fieldId}-name`}>
+                          Nom du produit
                         </FieldLabel>
                         <Input
                           aria-invalid={invalid}
-                          id={`${fieldId}-quantity-${ingredient.key}`}
-                          min="1"
-                          name={field.name}
+                          autoComplete="off"
+                          id={`${fieldId}-name`}
+                          maxLength={100}
+                          name="recipe-name"
                           onBlur={field.handleBlur}
                           onChange={(event) =>
-                            updateIngredient(ingredient.key, {
-                              quantity: event.target.value,
-                            })
+                            field.handleChange(event.target.value)
                           }
+                          placeholder="Élixir du veilleur"
                           required
-                          step="1"
-                          type="number"
                           value={field.state.value}
                         />
                         {invalid ? (
@@ -609,115 +336,408 @@ export function RecipeDialog({
                     )
                   }}
                 </form.Field>
+              ) : (
+                <form.Field name="outputProductId">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel htmlFor={`${fieldId}-output`}>
+                        Produit obtenu
+                      </FieldLabel>
+                      <Select
+                        disabled={initialProduct !== undefined}
+                        name={field.name}
+                        onValueChange={(value) => {
+                          field.handleChange(value)
+                          const product = outputProducts.find(
+                            (entry) => entry._id === value
+                          )
+                          form.setFieldValue("name", product?.name ?? "")
+                        }}
+                        value={field.state.value}
+                      >
+                        <SelectTrigger
+                          className="w-full"
+                          id={`${fieldId}-output`}
+                          onBlur={field.handleBlur}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">
+                            Créer une nouvelle potion
+                          </SelectItem>
+                          {outputProducts.length > 0 ? (
+                            <SelectGroup>
+                              <SelectLabel>
+                                Produits fabricables sans recette
+                              </SelectLabel>
+                              {outputProducts.map((product) => (
+                                <SelectItem
+                                  key={product._id}
+                                  value={product._id}
+                                >
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          ) : null}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                </form.Field>
+              )}
+              <form.Field name="family">
+                {(field) => {
+                  const invalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={invalid}>
+                      <FieldLabel htmlFor={`${fieldId}-family`}>
+                        Catégorie
+                      </FieldLabel>
+                      {creatingFamily ? (
+                        <Input
+                          aria-describedby={`${fieldId}-family-description`}
+                          aria-invalid={invalid}
+                          autoComplete="off"
+                          autoFocus
+                          id={`${fieldId}-family`}
+                          maxLength={MAX_RECIPE_FAMILY_LENGTH}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(event) =>
+                            field.handleChange(event.target.value)
+                          }
+                          placeholder="Régénération, Force…"
+                          value={field.state.value}
+                        />
+                      ) : (
+                        <Select
+                          name={field.name}
+                          onValueChange={(value) => {
+                            if (families.includes(value))
+                              field.handleChange(value)
+                          }}
+                          value={field.state.value}
+                        >
+                          <SelectTrigger
+                            aria-invalid={invalid}
+                            className="w-full"
+                            id={`${fieldId}-family`}
+                            onBlur={field.handleBlur}
+                          >
+                            <SelectValue placeholder="Choisir une catégorie…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {families.map((entry) => (
+                              <SelectItem key={entry} value={entry}>
+                                {entry}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {creatingFamily ? (
+                        <FieldDescription id={`${fieldId}-family-description`}>
+                          La catégorie sera enregistrée avec la recette et
+                          restera disponible même sans recette.
+                        </FieldDescription>
+                      ) : null}
+                      <Button
+                        className="w-fit px-0"
+                        onClick={() => {
+                          setCreatingFamily((current) => !current)
+                          field.handleChange("")
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="link"
+                      >
+                        {creatingFamily ? null : <Plus aria-hidden="true" />}
+                        {creatingFamily
+                          ? "Choisir une catégorie existante"
+                          : "Nouvelle catégorie"}
+                      </Button>
+                      {invalid ? (
+                        <FieldError errors={field.state.meta.errors} />
+                      ) : null}
+                    </Field>
+                  )
+                }}
+              </form.Field>
+              {showOutputProductSelect &&
+              formValues.outputProductId === "new" ? (
+                <form.Field name="name">
+                  {(field) => {
+                    const invalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field className="sm:col-span-2" data-invalid={invalid}>
+                        <FieldLabel htmlFor={`${fieldId}-name`}>
+                          Nom du produit
+                        </FieldLabel>
+                        <Input
+                          aria-invalid={invalid}
+                          autoComplete="off"
+                          id={`${fieldId}-name`}
+                          maxLength={100}
+                          name="recipe-name"
+                          onBlur={field.handleBlur}
+                          onChange={(event) =>
+                            field.handleChange(event.target.value)
+                          }
+                          placeholder="Élixir du veilleur"
+                          required
+                          value={field.state.value}
+                        />
+                        {invalid ? (
+                          <FieldError errors={field.state.meta.errors} />
+                        ) : null}
+                      </Field>
+                    )
+                  }}
+                </form.Field>
+              ) : null}
+            </div>
+
+            <form.Field name="effect">
+              {(field) => {
+                const invalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={invalid}>
+                    <FieldLabel htmlFor={`${fieldId}-effect`}>
+                      Effet ou usage
+                    </FieldLabel>
+                    <Textarea
+                      aria-invalid={invalid}
+                      id={`${fieldId}-effect`}
+                      maxLength={500}
+                      name={field.name}
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Décrivez l’effet utile de cette préparation."
+                      value={field.state.value}
+                    />
+                    {invalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : null}
+                  </Field>
+                )
+              }}
+            </form.Field>
+
+            <Separator />
+            <div className="grid min-w-0 grid-cols-1 gap-3">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <FieldLabel>Ingrédients</FieldLabel>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Quantités consommées pour une fabrication.
+                  </p>
+                </div>
                 <Button
-                  aria-label={`Retirer l’ingrédient ${index + 1}`}
-                  disabled={formValues.ingredients.length === 1}
-                  onClick={() => removeIngredient(ingredient.key)}
-                  size="icon-lg"
+                  disabled={formValues.ingredients.length >= MAX_DYNAMIC_LINES}
+                  onClick={addIngredient}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus aria-hidden="true" />
+                  Ajouter
+                </Button>
+              </div>
+
+              {formValues.ingredients.map((ingredient, index) => (
+                <div
+                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-end gap-2 border-l-2 border-primary/35 pl-3 sm:flex"
+                  key={ingredient.key}
+                >
+                  <form.Field name={`ingredients[${index}].productId`}>
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field
+                          className="min-w-0 max-sm:col-span-2 sm:flex-1"
+                          data-invalid={invalid}
+                        >
+                          <FieldLabel>Ingrédient {index + 1}</FieldLabel>
+                          <ProductPicker
+                            ariaInvalid={invalid}
+                            ariaLabel={`Ingrédient ${index + 1}`}
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(value) =>
+                              updateIngredient(ingredient.key, {
+                                productId: value ?? "",
+                              })
+                            }
+                            products={ingredientProducts}
+                            selectedProductId={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <form.Field name={`ingredients[${index}].quantity`}>
+                    {(field) => {
+                      const invalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field
+                          className="min-w-0 sm:w-24"
+                          data-invalid={invalid}
+                        >
+                          <FieldLabel
+                            htmlFor={`${fieldId}-quantity-${ingredient.key}`}
+                          >
+                            Quantité
+                          </FieldLabel>
+                          <Input
+                            aria-invalid={invalid}
+                            id={`${fieldId}-quantity-${ingredient.key}`}
+                            min="1"
+                            name={field.name}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              updateIngredient(ingredient.key, {
+                                quantity: event.target.value,
+                              })
+                            }
+                            required
+                            step="1"
+                            type="number"
+                            value={field.state.value}
+                          />
+                          {invalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  </form.Field>
+                  <Button
+                    aria-label={`Retirer l’ingrédient ${index + 1}`}
+                    disabled={formValues.ingredients.length === 1}
+                    onClick={() => removeIngredient(ingredient.key)}
+                    size="icon-lg"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 aria-hidden="true" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <Card className="gap-0 rounded-none border-primary/20 bg-primary/[0.035] py-0 ring-0">
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Calculator
+                    aria-hidden="true"
+                    className="size-5 shrink-0 text-primary"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">
+                      Coût matière calculé
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Quantités × prix d’achat actuels des ingrédients.
+                    </p>
+                  </div>
+                </div>
+                <output className="shrink-0 font-display text-lg text-primary tabular-nums">
+                  {costCalculation.cost === undefined
+                    ? "—"
+                    : formatDecimalSeptims(costCalculation.cost)}
+                </output>
+              </CardContent>
+            </Card>
+
+            {costCalculation.missingPrices.length > 0 ? (
+              <Alert className="border-[#8a4233]/30 bg-[#8a4233]/5">
+                <CircleAlert aria-hidden="true" />
+                <AlertTitle>Prix d’achat manquant</AlertTitle>
+                <AlertDescription>
+                  Renseignez dans l’inventaire le prix d’achat manquant pour :{" "}
+                  {costCalculation.missingPrices.join(", ")}.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <div>
+                {recipe ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" variant="ghost">
+                        <Archive aria-hidden="true" />
+                        Archiver
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Archiver « {recipe.name} » ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          La recette sera retirée du registre courant, mais son
+                          contenu restera disponible dans les archives.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Conserver</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            void archiveRecipe()
+                          }}
+                        >
+                          Archiver la recette
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : null}
+              </div>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  onClick={() => handleOpenChange(false)}
                   type="button"
                   variant="ghost"
                 >
-                  <Trash2 aria-hidden="true" />
+                  Annuler
                 </Button>
-              </div>
-            ))}
-          </div>
-
-          <Card className="gap-0 rounded-none border-primary/20 bg-primary/[0.035] py-0 ring-0">
-            <CardContent className="flex items-center justify-between gap-4 p-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <Calculator
-                  aria-hidden="true"
-                  className="size-5 shrink-0 text-primary"
-                />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">Coût matière calculé</p>
-                  <p className="text-xs text-muted-foreground">
-                    Quantités × prix d’achat actuels des ingrédients.
-                  </p>
-                </div>
-              </div>
-              <output className="shrink-0 font-display text-lg text-primary tabular-nums">
-                {costCalculation.cost === undefined
-                  ? "—"
-                  : formatDecimalSeptims(costCalculation.cost)}
-              </output>
-            </CardContent>
-          </Card>
-
-          {costCalculation.missingPrices.length > 0 ? (
-            <Alert className="border-[#8a4233]/30 bg-[#8a4233]/5">
-              <CircleAlert aria-hidden="true" />
-              <AlertTitle>Prix d’achat manquant</AlertTitle>
-              <AlertDescription>
-                Renseignez dans l’inventaire le prix d’achat manquant pour :{" "}
-                {costCalculation.missingPrices.join(", ")}.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <DialogFooter className="gap-2 sm:justify-between">
-            <div>
-              {recipe ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button type="button" variant="ghost">
-                      <Archive aria-hidden="true" />
-                      Archiver
+                <form.Subscribe selector={(state) => state.isSubmitting}>
+                  {(isSubmitting) => (
+                    <Button
+                      disabled={isSubmitting || isArchiving}
+                      type="submit"
+                    >
+                      {isSubmitting ? (
+                        <Spinner
+                          aria-hidden="true"
+                          className="motion-reduce:animate-none"
+                        />
+                      ) : recipe ? (
+                        <Pencil aria-hidden="true" />
+                      ) : (
+                        <BookPlus aria-hidden="true" />
+                      )}
+                      {recipe ? "Enregistrer" : "Créer la recette"}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Archiver « {recipe.name} » ?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        La recette sera retirée du registre courant, mais son
-                        contenu restera disponible dans les archives.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Conserver</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          void archiveRecipe()
-                        }}
-                      >
-                        Archiver la recette
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : null}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => handleOpenChange(false)}
-                type="button"
-                variant="ghost"
-              >
-                Annuler
-              </Button>
-              <form.Subscribe selector={(state) => state.isSubmitting}>
-                {(isSubmitting) => (
-                  <Button disabled={isSubmitting || isArchiving} type="submit">
-                    {isSubmitting ? (
-                      <Spinner
-                        aria-hidden="true"
-                        className="motion-reduce:animate-none"
-                      />
-                    ) : recipe ? (
-                      <Pencil aria-hidden="true" />
-                    ) : (
-                      <BookPlus aria-hidden="true" />
-                    )}
-                    {recipe ? "Enregistrer" : "Créer la recette"}
-                  </Button>
-                )}
-              </form.Subscribe>
-            </div>
-          </DialogFooter>
-        </form>
+                  )}
+                </form.Subscribe>
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )
@@ -766,66 +786,67 @@ export function RecipeArchivesDialog() {
               : "Les recettes retirées du registre de fabrication."}
           </DialogDescription>
         </DialogHeader>
-
-        {archivedRecipes === undefined ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Chargement des archives…
-          </p>
-        ) : archivedRecipes.length === 0 ? (
-          <Alert className="border-primary/20 bg-primary/[0.04]">
-            <ArchiveRestore aria-hidden="true" />
-            <AlertTitle>Aucune recette archivée</AlertTitle>
-            <AlertDescription>
-              Les recettes retirées du registre apparaîtront ici.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <ScrollArea className="max-h-80 pr-3">
-            <div className="grid divide-y divide-border/70">
-              {archivedRecipes.map((recipe) => (
-                <div
-                  className="flex items-center justify-between gap-3 py-3"
-                  key={recipe._id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {recipe.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {recipe.family}
-                      {showPurchasePrices
-                        ? recipe.cost === undefined
-                          ? " · coût incomplet"
-                          : ` · ${formatDecimalSeptims(recipe.cost)}`
-                        : null}
-                    </p>
+        <DialogBody>
+          {archivedRecipes === undefined ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Chargement des archives…
+            </p>
+          ) : archivedRecipes.length === 0 ? (
+            <Alert className="border-primary/20 bg-primary/[0.04]">
+              <ArchiveRestore aria-hidden="true" />
+              <AlertTitle>Aucune recette archivée</AlertTitle>
+              <AlertDescription>
+                Les recettes retirées du registre apparaîtront ici.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <ScrollArea className="max-h-80 pr-3">
+              <div className="grid divide-y divide-border/70">
+                {archivedRecipes.map((recipe) => (
+                  <div
+                    className="flex items-center justify-between gap-3 py-3"
+                    key={recipe._id}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {recipe.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {recipe.family}
+                        {showPurchasePrices
+                          ? recipe.cost === undefined
+                            ? " · coût incomplet"
+                            : ` · ${formatDecimalSeptims(recipe.cost)}`
+                          : null}
+                      </p>
+                    </div>
+                    {canWrite ? (
+                      <Button
+                        disabled={restoringId !== undefined}
+                        onClick={() => {
+                          void restoreRecipe(recipe)
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        {restoringId === recipe._id ? (
+                          <Spinner
+                            aria-hidden="true"
+                            className="motion-reduce:animate-none"
+                          />
+                        ) : (
+                          <ArchiveRestore aria-hidden="true" />
+                        )}
+                        Réactiver
+                      </Button>
+                    ) : null}
                   </div>
-                  {canWrite ? (
-                    <Button
-                      disabled={restoringId !== undefined}
-                      onClick={() => {
-                        void restoreRecipe(recipe)
-                      }}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      {restoringId === recipe._id ? (
-                        <Spinner
-                          aria-hidden="true"
-                          className="motion-reduce:animate-none"
-                        />
-                      ) : (
-                        <ArchiveRestore aria-hidden="true" />
-                      )}
-                      Réactiver
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

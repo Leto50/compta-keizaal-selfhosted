@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -190,7 +191,7 @@ export function HarvestDialog({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Entrée de stock
@@ -204,275 +205,286 @@ export function HarvestDialog({
               : "Indiquez les ingrédients collectés. Leurs quantités seront ajoutées au stock de la boutique."}
           </DialogDescription>
         </DialogHeader>
-        {unavailable ? (
-          <Alert>
-            <AlertTitle>
-              {selectableCharacters.length === 0
-                ? "Aucun personnage actif"
-                : "Aucun ingrédient disponible"}
-            </AlertTitle>
-            <AlertDescription>
-              {selectableCharacters.length === 0
-                ? "Un administrateur doit créer un personnage avant la première récolte."
-                : "Ajoutez un ingrédient suivi en stock à l’inventaire avant de saisir une récolte."}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {submitError ? (
-          <Alert variant="destructive">
-            <AlertTitle>
-              {harvest
-                ? "Modification impossible"
-                : "Enregistrement impossible"}
-            </AlertTitle>
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
-        ) : null}
-        <form
-          className="grid gap-5"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void form.handleSubmit()
-          }}
-        >
-          <fieldset
-            className="grid min-w-0 gap-5 disabled:opacity-60"
-            disabled={unavailable || isSubmitting}
+        <DialogBody>
+          {unavailable ? (
+            <Alert>
+              <AlertTitle>
+                {selectableCharacters.length === 0
+                  ? "Aucun personnage actif"
+                  : "Aucun ingrédient disponible"}
+              </AlertTitle>
+              <AlertDescription>
+                {selectableCharacters.length === 0
+                  ? "Un administrateur doit créer un personnage avant la première récolte."
+                  : "Ajoutez un ingrédient suivi en stock à l’inventaire avant de saisir une récolte."}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {submitError ? (
+            <Alert variant="destructive">
+              <AlertTitle>
+                {harvest
+                  ? "Modification impossible"
+                  : "Enregistrement impossible"}
+              </AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          ) : null}
+          <form
+            className="grid gap-5"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
+            }}
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <form.Field name="characterId">
-                {(field) => (
-                  <Field data-invalid={!field.state.meta.isValid}>
-                    <FieldLabel htmlFor={`${fieldId}-character`}>
-                      Personnage
-                    </FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={field.handleChange}
-                    >
-                      <SelectTrigger
-                        id={`${fieldId}-character`}
-                        onBlur={field.handleBlur}
-                        aria-invalid={!field.state.meta.isValid}
-                        className="w-full"
-                      >
-                        <SelectValue placeholder="Qui a récolté ?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectableCharacters.map((character) => (
-                          <SelectItem key={character._id} value={character._id}>
-                            {character.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              </form.Field>
-              <form.Field name="date">
-                {(field) => (
-                  <Field data-invalid={!field.state.meta.isValid}>
-                    <FieldLabel htmlFor={`${fieldId}-date`}>
-                      Date de récolte
-                    </FieldLabel>
-                    <DatePicker
-                      id={`${fieldId}-date`}
-                      ariaLabel="Date de récolte"
-                      ariaInvalid={!field.state.meta.isValid}
-                      max={formatDateValue(new Date())}
-                      required
-                      value={field.state.value}
-                      onChange={field.handleChange}
-                      onBlur={field.handleBlur}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              </form.Field>
-            </div>
-            <form.Field name="lines" mode="array">
-              {(linesField) => (
-                <div className="grid gap-3">
-                  <p className="text-sm font-semibold">Ingrédients récoltés</p>
-                  {linesField.state.value.map((_, index) => (
-                    <div
-                      className="grid grid-cols-[minmax(0,1fr)_5rem_auto] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_auto]"
-                      key={index}
-                    >
-                      <form.Field name={`lines[${index}].productId`}>
-                        {(field) => (
-                          <Field
-                            className="min-w-0"
-                            data-invalid={!field.state.meta.isValid}
-                          >
-                            <FieldLabel
-                              htmlFor={`${fieldId}-ingredient-${index}`}
-                            >
-                              Ingrédient {index + 1}
-                            </FieldLabel>
-                            <div className="flex min-w-0">
-                              <ProductPicker
-                                id={`${fieldId}-ingredient-${index}`}
-                                ariaLabel={`Ingrédient ${index + 1}`}
-                                ariaInvalid={!field.state.meta.isValid}
-                                placeholder="Choisir un ingrédient…"
-                                products={ingredients.filter(
-                                  (product) =>
-                                    product._id === field.state.value ||
-                                    !linesField.state.value.some(
-                                      (line) => line.productId === product._id
-                                    )
-                                )}
-                                selectedProductId={field.state.value}
-                                onBlur={field.handleBlur}
-                                onChange={(id) => field.handleChange(id ?? "")}
-                              />
-                            </div>
-                            <FieldError errors={field.state.meta.errors} />
-                          </Field>
-                        )}
-                      </form.Field>
-                      <form.Field name={`lines[${index}].quantity`}>
-                        {(field) => (
-                          <Field data-invalid={!field.state.meta.isValid}>
-                            <FieldLabel
-                              htmlFor={`${fieldId}-quantity-${index}`}
-                            >
-                              Quantité
-                            </FieldLabel>
-                            <Input
-                              className="h-9"
-                              id={`${fieldId}-quantity-${index}`}
-                              aria-label={`Quantité ${index + 1}`}
-                              aria-invalid={!field.state.meta.isValid}
-                              type="number"
-                              inputMode="numeric"
-                              min={1}
-                              max={MAX_QUANTITY}
-                              step={1}
-                              required
-                              value={field.state.value}
-                              onBlur={field.handleBlur}
-                              onChange={(event) =>
-                                field.handleChange(event.target.value)
-                              }
-                            />
-                            <FieldError errors={field.state.meta.errors} />
-                          </Field>
-                        )}
-                      </form.Field>
-                      <Button
-                        className="mt-6 size-9"
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Retirer l’ingrédient ${index + 1}`}
-                        disabled={linesField.state.value.length === 1}
-                        onClick={() => linesField.removeValue(index)}
-                      >
-                        <Trash2 aria-hidden="true" />
-                      </Button>
-                    </div>
-                  ))}
-                  <FieldError errors={linesField.state.meta.errors} />
-                  <Button
-                    className="justify-self-start"
-                    type="button"
-                    variant="outline"
-                    disabled={
-                      linesField.state.value.length >= MAX_DYNAMIC_LINES ||
-                      linesField.state.value.length >= ingredients.length
-                    }
-                    onClick={() =>
-                      linesField.pushValue({ productId: "", quantity: "1" })
-                    }
-                  >
-                    <Plus aria-hidden="true" />
-                    Ajouter un ingrédient
-                  </Button>
-                </div>
-              )}
-            </form.Field>
-            <form.Subscribe selector={(state) => state.values.lines}>
-              {(lines) => {
-                const complete = lines.every(
-                  (line) =>
-                    ingredients.some(
-                      (product) => product._id === line.productId
-                    ) &&
-                    Number.isInteger(Number(line.quantity)) &&
-                    Number(line.quantity) > 0 &&
-                    Number(line.quantity) <= MAX_QUANTITY
-                )
-                return complete ? (
-                  <div className="grid gap-2">
-                    <HarvestValueSummary
-                      lines={lines.map((line) => ({
-                        quantity: Number(line.quantity),
-                        purchaseUnitPrice: harvest?.lines.some(
-                          (entry) => entry.productId === line.productId
-                        )
-                          ? harvest.lines.find(
-                              (entry) => entry.productId === line.productId
-                            )?.purchaseUnitPrice
-                          : ingredients.find(
-                              (product) => product._id === line.productId
-                            )?.purchasePrice,
-                      }))}
-                    />
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {harvest
-                        ? "Les tarifs enregistrés sont conservés pour les ingrédients déjà présents. Les nouveaux ingrédients utilisent leurs prix d’achat actuels."
-                        : "Quantités × prix d’achat actuels. Ces tarifs seront conservés avec la récolte."}
-                    </p>
-                  </div>
-                ) : null
-              }}
-            </form.Subscribe>
-            <form.Field name="comment">
-              {(field) => (
-                <Field data-invalid={!field.state.meta.isValid}>
-                  <FieldLabel htmlFor={`${fieldId}-comment`}>
-                    Commentaire (facultatif)
-                  </FieldLabel>
-                  <Textarea
-                    id={`${fieldId}-comment`}
-                    maxLength={500}
-                    rows={2}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    aria-invalid={!field.state.meta.isValid}
-                    placeholder="Lieu de récolte, précisions…"
-                  />
-                  <FieldError errors={field.state.meta.errors} />
-                </Field>
-              )}
-            </form.Field>
-          </fieldset>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={isSubmitting}
-              onClick={() => setOpen(false)}
+            <fieldset
+              className="grid min-w-0 gap-5 disabled:opacity-60"
+              disabled={unavailable || isSubmitting}
             >
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isSubmitting || unavailable}>
-              {isSubmitting ? (
-                <Spinner aria-hidden="true" />
-              ) : (
-                <Leaf aria-hidden="true" />
-              )}
-              {harvest
-                ? "Enregistrer les modifications"
-                : "Enregistrer la récolte"}
-            </Button>
-          </DialogFooter>
-        </form>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <form.Field name="characterId">
+                  {(field) => (
+                    <Field data-invalid={!field.state.meta.isValid}>
+                      <FieldLabel htmlFor={`${fieldId}-character`}>
+                        Personnage
+                      </FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={field.handleChange}
+                      >
+                        <SelectTrigger
+                          id={`${fieldId}-character`}
+                          onBlur={field.handleBlur}
+                          aria-invalid={!field.state.meta.isValid}
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="Qui a récolté ?" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectableCharacters.map((character) => (
+                            <SelectItem
+                              key={character._id}
+                              value={character._id}
+                            >
+                              {character.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldError errors={field.state.meta.errors} />
+                    </Field>
+                  )}
+                </form.Field>
+                <form.Field name="date">
+                  {(field) => (
+                    <Field data-invalid={!field.state.meta.isValid}>
+                      <FieldLabel htmlFor={`${fieldId}-date`}>
+                        Date de récolte
+                      </FieldLabel>
+                      <DatePicker
+                        id={`${fieldId}-date`}
+                        ariaLabel="Date de récolte"
+                        ariaInvalid={!field.state.meta.isValid}
+                        max={formatDateValue(new Date())}
+                        required
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        onBlur={field.handleBlur}
+                      />
+                      <FieldError errors={field.state.meta.errors} />
+                    </Field>
+                  )}
+                </form.Field>
+              </div>
+              <form.Field name="lines" mode="array">
+                {(linesField) => (
+                  <div className="grid gap-3">
+                    <p className="text-sm font-semibold">
+                      Ingrédients récoltés
+                    </p>
+                    {linesField.state.value.map((_, index) => (
+                      <div
+                        className="grid grid-cols-[minmax(0,1fr)_5rem_auto] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_auto]"
+                        key={index}
+                      >
+                        <form.Field name={`lines[${index}].productId`}>
+                          {(field) => (
+                            <Field
+                              className="min-w-0"
+                              data-invalid={!field.state.meta.isValid}
+                            >
+                              <FieldLabel
+                                htmlFor={`${fieldId}-ingredient-${index}`}
+                              >
+                                Ingrédient {index + 1}
+                              </FieldLabel>
+                              <div className="flex min-w-0">
+                                <ProductPicker
+                                  id={`${fieldId}-ingredient-${index}`}
+                                  ariaLabel={`Ingrédient ${index + 1}`}
+                                  ariaInvalid={!field.state.meta.isValid}
+                                  placeholder="Choisir un ingrédient…"
+                                  products={ingredients.filter(
+                                    (product) =>
+                                      product._id === field.state.value ||
+                                      !linesField.state.value.some(
+                                        (line) => line.productId === product._id
+                                      )
+                                  )}
+                                  selectedProductId={field.state.value}
+                                  onBlur={field.handleBlur}
+                                  onChange={(id) =>
+                                    field.handleChange(id ?? "")
+                                  }
+                                />
+                              </div>
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        </form.Field>
+                        <form.Field name={`lines[${index}].quantity`}>
+                          {(field) => (
+                            <Field data-invalid={!field.state.meta.isValid}>
+                              <FieldLabel
+                                htmlFor={`${fieldId}-quantity-${index}`}
+                              >
+                                Quantité
+                              </FieldLabel>
+                              <Input
+                                className="h-9"
+                                id={`${fieldId}-quantity-${index}`}
+                                aria-label={`Quantité ${index + 1}`}
+                                aria-invalid={!field.state.meta.isValid}
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={MAX_QUANTITY}
+                                step={1}
+                                required
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        </form.Field>
+                        <Button
+                          className="mt-6 size-9"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Retirer l’ingrédient ${index + 1}`}
+                          disabled={linesField.state.value.length === 1}
+                          onClick={() => linesField.removeValue(index)}
+                        >
+                          <Trash2 aria-hidden="true" />
+                        </Button>
+                      </div>
+                    ))}
+                    <FieldError errors={linesField.state.meta.errors} />
+                    <Button
+                      className="justify-self-start"
+                      type="button"
+                      variant="outline"
+                      disabled={
+                        linesField.state.value.length >= MAX_DYNAMIC_LINES ||
+                        linesField.state.value.length >= ingredients.length
+                      }
+                      onClick={() =>
+                        linesField.pushValue({ productId: "", quantity: "1" })
+                      }
+                    >
+                      <Plus aria-hidden="true" />
+                      Ajouter un ingrédient
+                    </Button>
+                  </div>
+                )}
+              </form.Field>
+              <form.Subscribe selector={(state) => state.values.lines}>
+                {(lines) => {
+                  const complete = lines.every(
+                    (line) =>
+                      ingredients.some(
+                        (product) => product._id === line.productId
+                      ) &&
+                      Number.isInteger(Number(line.quantity)) &&
+                      Number(line.quantity) > 0 &&
+                      Number(line.quantity) <= MAX_QUANTITY
+                  )
+                  return complete ? (
+                    <div className="grid gap-2">
+                      <HarvestValueSummary
+                        lines={lines.map((line) => ({
+                          quantity: Number(line.quantity),
+                          purchaseUnitPrice: harvest?.lines.some(
+                            (entry) => entry.productId === line.productId
+                          )
+                            ? harvest.lines.find(
+                                (entry) => entry.productId === line.productId
+                              )?.purchaseUnitPrice
+                            : ingredients.find(
+                                (product) => product._id === line.productId
+                              )?.purchasePrice,
+                        }))}
+                      />
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {harvest
+                          ? "Les tarifs enregistrés sont conservés pour les ingrédients déjà présents. Les nouveaux ingrédients utilisent leurs prix d’achat actuels."
+                          : "Quantités × prix d’achat actuels. Ces tarifs seront conservés avec la récolte."}
+                      </p>
+                    </div>
+                  ) : null
+                }}
+              </form.Subscribe>
+              <form.Field name="comment">
+                {(field) => (
+                  <Field data-invalid={!field.state.meta.isValid}>
+                    <FieldLabel htmlFor={`${fieldId}-comment`}>
+                      Commentaire (facultatif)
+                    </FieldLabel>
+                    <Textarea
+                      id={`${fieldId}-comment`}
+                      maxLength={500}
+                      rows={2}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      aria-invalid={!field.state.meta.isValid}
+                      placeholder="Lieu de récolte, précisions…"
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              </form.Field>
+            </fieldset>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isSubmitting}
+                onClick={() => setOpen(false)}
+              >
+                Annuler
+              </Button>
+              <Button type="submit" disabled={isSubmitting || unavailable}>
+                {isSubmitting ? (
+                  <Spinner aria-hidden="true" />
+                ) : (
+                  <Leaf aria-hidden="true" />
+                )}
+                {harvest
+                  ? "Enregistrer les modifications"
+                  : "Enregistrer la récolte"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

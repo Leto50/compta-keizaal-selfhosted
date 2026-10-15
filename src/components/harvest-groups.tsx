@@ -102,7 +102,7 @@ function HarvestGroup({
       className="border-b border-[#5b462b]/20 last:border-b-0"
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 bg-[#684f2d]/[0.06] p-4 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:gap-x-6">
-        <div className="min-w-0 max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:pr-10">
+        <div className="min-w-0 max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:pr-12">
           <h2 className="font-display text-sm font-semibold break-words">
             {label}
           </h2>

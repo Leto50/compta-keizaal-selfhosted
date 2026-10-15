@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDate, formatQuantity } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import { usePermissions } from "@/hooks/use-permissions"
 import { api } from "../../convex/_generated/api"
 
@@ -109,7 +110,12 @@ export function HarvestHistory({
                       {formatDate(harvest.occurredAt)}
                     </time>
                   </TableCell>
-                  <TableCell className="max-w-40 font-semibold break-words whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:pr-16 max-md:font-display max-md:text-base">
+                  <TableCell
+                    className={cn(
+                      "max-w-40 font-semibold break-words whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:font-display max-md:text-base",
+                      canWrite && "max-md:pr-24"
+                    )}
+                  >
                     {harvest.actorName}
                   </TableCell>
                   <TableCell className="max-w-72 whitespace-normal max-md:col-span-2 max-md:col-start-1 max-md:row-start-3 max-md:max-w-none max-md:p-0 max-md:pt-2">

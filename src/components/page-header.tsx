@@ -24,7 +24,11 @@ export function PageHeader({
           {children}
         </p>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? (
+        <div className="w-full min-w-0 sm:w-auto sm:shrink-0 max-sm:[&>button]:w-full">
+          {action}
+        </div>
+      ) : null}
     </header>
   )
 }

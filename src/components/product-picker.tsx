@@ -73,7 +73,7 @@ export function ProductPicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] rounded-[0.2rem] border-[#6a5436] bg-[#f4e8cf] p-0"
+        className="w-[var(--radix-popover-trigger-width)] rounded-[0.2rem] border-[#6a5436] bg-[#f4e8cf] p-0 max-sm:w-[calc(100vw-2rem)]"
       >
         <Command className="rounded-[0.2rem] bg-transparent">
           <CommandInput placeholder="Nom du produit…" />
