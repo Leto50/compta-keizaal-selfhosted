@@ -80,3 +80,67 @@
     @apply font-sans;
   }
 }
+
+/* Keep compact desktop controls comfortable to use on narrow touch screens. */
+@media (width < 48rem) {
+  /* Radix triggers replace data-slot; Button's size and variant stay intact. */
+  [data-size][data-variant]:not([data-day]),
+  [data-slot="input"],
+  [data-slot="input-group"],
+  [data-slot="input-group-control"],
+  [data-slot="command-input"],
+  [data-slot="select-trigger"],
+  [data-slot="select-item"],
+  [data-slot="command-item"],
+  [data-slot="tabs-trigger"],
+  [data-slot="sidebar-menu-button"] {
+    @apply min-h-11;
+  }
+
+  [data-size^="icon"][data-variant]:not([data-day]),
+  [data-slot="sidebar-trigger"] {
+    @apply min-h-11 min-w-11;
+  }
+
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="input-group-control"],
+  [data-slot="command-input"] {
+    @apply text-base;
+  }
+
+  [data-slot="tabs"] {
+    @apply max-w-full min-w-0;
+  }
+
+  [data-slot="tabs-list"] {
+    @apply h-auto min-h-12 max-w-full p-0.5;
+  }
+
+  [data-slot="calendar"] {
+    --cell-size: --spacing(9);
+    @apply p-2;
+  }
+
+  [data-slot="popover-content"] {
+    max-width: calc(100vw - --spacing(8));
+    max-height: var(--radix-popover-content-available-height);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"] {
+    max-height: calc(100dvh - --spacing(8));
+    overscroll-behavior-y: contain;
+  }
+
+  [data-slot="dialog-content"] {
+    overflow: clip;
+  }
+
+  [data-slot="alert-dialog-content"] {
+    width: calc(100% - --spacing(8));
+    overflow-y: auto;
+  }
+}

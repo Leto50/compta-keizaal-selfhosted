@@ -94,7 +94,7 @@ export function SiteSettingsForm() {
                 }}
               </form.Field>
               <Button
-                className="justify-self-start"
+                className="justify-self-start max-sm:w-full"
                 disabled={isSubmitting}
                 type="submit"
               >

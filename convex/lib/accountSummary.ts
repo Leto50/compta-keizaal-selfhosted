@@ -7,12 +7,15 @@ export type AccountSummaryTransaction = Pick<
   Doc<"transactions">,
   | "actorCharacterId"
   | "actorName"
+  | "exchangeSalaryIncluded"
   | "incomingTotal"
   | "kind"
   | "occurredAt"
   | "orderId"
   | "outgoingTotal"
   | "total"
+  | "visibilityScopeId"
+  | "harvestScopeContribution"
 >
 
 type WeekActor = Doc<"accountWeekSummaries">["actors"][number]
@@ -23,6 +26,7 @@ type WeekSummary = Omit<
 
 const SALARY_TRANSACTION_KINDS = new Set<Doc<"transactions">["kind"]>([
   "bundle",
+  "exchange",
   "sale",
   "service",
 ])
@@ -30,7 +34,11 @@ const SALARY_TRANSACTION_KINDS = new Set<Doc<"transactions">["kind"]>([
 export function isFinancialTransaction(
   transaction: Pick<Doc<"transactions">, "kind">
 ) {
-  return transaction.kind !== "adjustment" && transaction.kind !== "production"
+  return (
+    transaction.kind !== "adjustment" &&
+    transaction.kind !== "production" &&
+    transaction.kind !== "harvest"
+  )
 }
 
 export function transactionFlows(
@@ -49,6 +57,11 @@ export function salaryRevenue(transaction: AccountSummaryTransaction): number {
   if (transaction.orderId || !SALARY_TRANSACTION_KINDS.has(transaction.kind)) {
     return 0
   }
+  // Old exchanges contributed no salary. Keep that baseline until they are
+  // migrated so concurrent corrections and removals subtract the right amount.
+  if (transaction.kind === "exchange" && !transaction.exchangeSalaryIncluded) {
+    return 0
+  }
   return Math.max(transactionFlows(transaction).incoming, 0)
 }
 
@@ -58,7 +71,7 @@ function actorKey(actor: Pick<WeekActor, "actorCharacterId" | "actorName">) {
     : `name:${actor.actorName}`
 }
 
-function emptyWeek(startsAt: number): WeekSummary {
+export function emptyAccountWeek(startsAt: number): WeekSummary {
   return {
     actors: [],
     balance: 0,
@@ -73,7 +86,7 @@ function normalizedNumber(value: number) {
   return Math.abs(value) < 1e-9 ? 0 : value
 }
 
-function applyTransaction(
+export function applyAccountSummaryTransaction(
   summary: WeekSummary,
   transaction: AccountSummaryTransaction,
   multiplier: 1 | -1
@@ -130,8 +143,8 @@ export function buildAccountWeekSummaries(
   for (const transaction of transactions) {
     if (!isFinancialTransaction(transaction)) continue
     const startsAt = startOfUtcWeek(transaction.occurredAt)
-    const summary = summaries.get(startsAt) ?? emptyWeek(startsAt)
-    applyTransaction(summary, transaction, 1)
+    const summary = summaries.get(startsAt) ?? emptyAccountWeek(startsAt)
+    applyAccountSummaryTransaction(summary, transaction, 1)
     summaries.set(startsAt, summary)
   }
   return [...summaries.values()].sort(
@@ -167,20 +180,20 @@ export async function applyAccountWeekSummaryChange(
           startsAt,
           transactionCount: existing.transactionCount,
         }
-      : emptyWeek(startsAt)
+      : emptyAccountWeek(startsAt)
     if (
       before &&
       isFinancialTransaction(before) &&
       startOfUtcWeek(before.occurredAt) === startsAt
     ) {
-      applyTransaction(summary, before, -1)
+      applyAccountSummaryTransaction(summary, before, -1)
     }
     if (
       after &&
       isFinancialTransaction(after) &&
       startOfUtcWeek(after.occurredAt) === startsAt
     ) {
-      applyTransaction(summary, after, 1)
+      applyAccountSummaryTransaction(summary, after, 1)
     }
 
     if (summary.transactionCount <= 0) {

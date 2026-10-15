@@ -25,8 +25,8 @@ export function OrderPreparationDetails({
   if (preparation.referenceCount === 0) return null
 
   return (
-    <Collapsible onOpenChange={setOpen} open={open}>
-      <Card className="gap-0 rounded-none border-[#5b462b]/25 bg-[#fffbed]/35 py-0 ring-0">
+    <Collapsible className="min-w-0" onOpenChange={setOpen} open={open}>
+      <Card className="min-w-0 gap-0 rounded-none border-[#5b462b]/25 bg-[#fffbed]/35 py-0 ring-0">
         <CardContent className="p-0">
           <CollapsibleTrigger asChild>
             <Button
@@ -34,7 +34,7 @@ export function OrderPreparationDetails({
               type="button"
               variant="ghost"
             >
-              <span className="flex min-w-0 items-center gap-2">
+              <span className="flex min-w-0 flex-1 items-center gap-2">
                 <FlaskConical
                   aria-hidden="true"
                   className="size-4 shrink-0 text-primary"
@@ -43,7 +43,7 @@ export function OrderPreparationDetails({
                   <span className="block text-[0.64rem] font-bold tracking-[0.14em] text-muted-foreground uppercase">
                     Préparation
                   </span>
-                  <span className="block truncate text-xs font-semibold">
+                  <span className="block text-xs font-semibold whitespace-normal">
                     {preparation.ingredients.length}{" "}
                     {preparation.ingredients.length === 1
                       ? "ingrédient"

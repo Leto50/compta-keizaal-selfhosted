@@ -13,6 +13,7 @@ import { buildTransactionSearchText } from "./lib/transactionSearch"
 import { rebuildJournalSummary } from "./lib/journalSummary"
 import { isLootOnlyLegacyProduct } from "./lib/products"
 import { markReadModelsReady } from "./lib/readModels"
+import { resumeHistorySummariesAfterImport } from "./lib/historySummaries"
 import { rebuildRecipeCostProjections } from "./lib/recipeCost"
 import {
   canonicalRecipeFamily,
@@ -296,6 +297,7 @@ export const importWorkbook = mutation({
     await rebuildAccountWeekSummaries(ctx)
     await rebuildInventorySummary(ctx)
     await markReadModelsReady(ctx)
+    await resumeHistorySummariesAfterImport(ctx)
 
     const updatedAt = Date.parse(seedData.metadata.sourceModifiedAt)
     await ctx.db.insert("systemSettings", {

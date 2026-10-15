@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/collapsible"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -95,7 +96,7 @@ import { type Doc, type Id } from "../../../convex/_generated/dataModel"
 const PAGE_SIZE = 30
 type FinancialTransactionKind = Exclude<
   Doc<"transactions">["kind"],
-  "adjustment" | "production"
+  "adjustment" | "production" | "harvest"
 >
 
 const transactionKinds: readonly FinancialTransactionKind[] = [
@@ -227,6 +228,7 @@ const operationToneClasses: Readonly<
   adjustment: "border-[#1E374F]/25 bg-[#1E374F]/[0.08] text-[#1E374F]",
   bundle: "border-[#6c5738]/25 bg-[#6c5738]/[0.08] text-[#6c5738]",
   exchange: "border-[#1E374F]/25 bg-[#1E374F]/[0.08] text-[#1E374F]",
+  harvest: "border-[#405c43]/25 bg-[#405c43]/[0.08] text-[#405c43]",
   order: "border-[#6c5738]/25 bg-[#6c5738]/[0.08] text-[#6c5738]",
   production: "border-[#5d5276]/25 bg-[#5d5276]/[0.07] text-[#5d5276]",
   purchase: "border-[#83513b]/25 bg-[#83513b]/[0.07] text-[#83513b]",
@@ -637,10 +639,10 @@ function JournalRow({
         <OperationPill kind={transaction.kind} />
       </TableCell>
       <TableCell className="max-w-72 max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 max-md:max-w-none max-md:p-0 max-md:pr-24 max-md:whitespace-normal">
-        <span className="block truncate font-semibold max-md:font-display max-md:text-base">
+        <span className="block truncate font-semibold max-md:font-display max-md:text-base max-md:break-words max-md:whitespace-normal">
           {transaction.productName}
         </span>
-        <span className="mt-0.5 block truncate text-xs text-muted-foreground md:hidden">
+        <span className="mt-0.5 block text-xs break-words whitespace-normal text-muted-foreground md:hidden">
           {transaction.actorName}
           {transaction.counterparty && !transaction.orderId
             ? ` · ${transaction.counterparty}`
@@ -1017,20 +1019,22 @@ function EditorLoadingDialog({
               : "Les références nécessaires sont chargées à la demande."}
           </DialogDescription>
         </DialogHeader>
-        {failed ? (
-          <Alert variant="destructive">
-            <AlertTitle>Chargement impossible</AlertTitle>
-            <AlertDescription>
-              Fermez cette fenêtre puis réessayez.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid gap-3" aria-label="Chargement" role="status">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-2/3" />
-          </div>
-        )}
+        <DialogBody>
+          {failed ? (
+            <Alert variant="destructive">
+              <AlertTitle>Chargement impossible</AlertTitle>
+              <AlertDescription>
+                Fermez cette fenêtre puis réessayez.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-3" aria-label="Chargement" role="status">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-10 w-2/3" />
+            </div>
+          )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

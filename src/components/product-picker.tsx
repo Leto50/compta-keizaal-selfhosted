@@ -17,9 +17,14 @@ import {
 import { type Doc, type Id } from "../../convex/_generated/dataModel"
 import { formatNumber } from "@/lib/format"
 
+type PickerProduct = Pick<Doc<"products">, "_id" | "name"> &
+  Partial<Pick<Doc<"products">, "currentStock" | "tracksStock">>
+
 export function ProductPicker({
   ariaInvalid = false,
+  ariaLabel,
   clearLabel,
+  id,
   name,
   onBlur,
   onChange,
@@ -29,12 +34,14 @@ export function ProductPicker({
   showStock = true,
 }: Readonly<{
   ariaInvalid?: boolean
+  ariaLabel?: string
   clearLabel?: string
+  id?: string
   name?: string
   onBlur?: () => void
   onChange: (productId: Id<"products"> | undefined) => void
   placeholder?: string
-  products: readonly Doc<"products">[]
+  products: readonly PickerProduct[]
   selectedProductId?: string
   showStock?: boolean
 }>) {
@@ -49,8 +56,10 @@ export function ProductPicker({
         <Button
           aria-expanded={open}
           aria-invalid={ariaInvalid}
+          aria-label={ariaLabel}
           className="h-9 min-w-0 flex-1 justify-between bg-background/50 px-3 font-normal"
           name={name}
+          id={id}
           onBlur={onBlur}
           role="combobox"
           type="button"
@@ -64,7 +73,7 @@ export function ProductPicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[var(--radix-popover-trigger-width)] rounded-[0.2rem] border-[#6a5436] bg-[#f4e8cf] p-0"
+        className="w-[var(--radix-popover-trigger-width)] rounded-[0.2rem] border-[#6a5436] bg-[#f4e8cf] p-0 max-sm:w-[calc(100vw-2rem)]"
       >
         <Command className="rounded-[0.2rem] bg-transparent">
           <CommandInput placeholder="Nom du produit…" />
@@ -93,7 +102,9 @@ export function ProductPicker({
                 value={product.name}
               >
                 <span className="min-w-0 flex-1 truncate">{product.name}</span>
-                {showStock && product.tracksStock ? (
+                {showStock &&
+                product.tracksStock &&
+                product.currentStock !== undefined ? (
                   <span className="text-[0.68rem] text-muted-foreground tabular-nums">
                     {formatNumber(product.currentStock)} en stock
                   </span>

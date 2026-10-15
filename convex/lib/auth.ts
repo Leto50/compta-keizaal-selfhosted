@@ -30,7 +30,7 @@ export async function requireAdmin(ctx: AuthenticatedContext) {
   return user
 }
 
-export async function requireWriter(ctx: MutationCtx) {
+export async function requireWriter(ctx: AuthenticatedContext) {
   const user = await requireUser(ctx)
   if (!canWrite(user.role)) {
     throw new ConvexError({

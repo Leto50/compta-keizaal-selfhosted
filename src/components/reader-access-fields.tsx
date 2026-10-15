@@ -64,6 +64,10 @@ export function ReaderAccessFields({
           />
         ))}
       </div>
+      <p className="text-xs text-muted-foreground">
+        L’accès aux récoltes doit être accordé explicitement. Il permet
+        uniquement leur consultation.
+      </p>
       <div className="grid gap-2 border-t border-border/60 pt-3">
         <Check
           checked={value.showPrices}
@@ -195,7 +199,7 @@ function Check({
   onChange: (checked: boolean) => void
 }>) {
   return (
-    <label className="flex cursor-pointer items-start gap-2 text-sm leading-5">
+    <label className="flex cursor-pointer items-start gap-2 text-sm leading-5 max-md:min-h-11 max-md:items-center">
       <input
         className="mt-0.5 size-4 shrink-0 accent-primary"
         type="checkbox"

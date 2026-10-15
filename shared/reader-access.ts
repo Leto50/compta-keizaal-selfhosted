@@ -3,6 +3,7 @@ import { canWrite } from "./account-roles"
 export const readerSections = [
   "inventory",
   "transactions",
+  "harvests",
   "account",
   "orders",
   "recipes",
@@ -12,6 +13,7 @@ export type ReaderSection = (typeof readerSections)[number]
 export const readerSectionLabels: Record<ReaderSection, string> = {
   inventory: "Inventaire",
   transactions: "Transactions",
+  harvests: "Récoltes",
   account: "Compte",
   orders: "Commandes",
   recipes: "Recettes",
@@ -44,7 +46,15 @@ export interface ReaderAccess {
   operationKinds: ReaderOperationKind[]
 }
 export const defaultReaderAccess: ReaderAccess = {
-  sections: [...readerSections],
+  // New sections require an explicit grant, including for accounts without a saved policy.
+  sections: [
+    "inventory",
+    "transactions",
+    "account",
+    "orders",
+    "recipes",
+    "bundles",
+  ],
   showPrices: true,
   showStock: true,
   showPurchasePrices: true,
@@ -95,6 +105,8 @@ export function hasScopedReaderAccess(access: ReaderAccess | null): boolean {
 
 const priceFields = new Set([
   "purchasePrice",
+  "purchaseUnitPrice",
+  "knownValue",
   "salePrice",
   "price",
   "unitPrice",
@@ -145,7 +157,10 @@ export function redactReaderData<T>(value: T, access: ReaderAccess | null): T {
         !access.showPrices || access.showPurchasePrices === false
       const saleHidden = !access.showPrices || access.showSalePrices === false
       const hidePrice =
-        key === "purchasePrice" || key === "cost"
+        key === "purchasePrice" ||
+        key === "purchaseUnitPrice" ||
+        key === "cost" ||
+        key === "knownValue"
           ? purchaseHidden
           : key === "salePrice" || key === "price"
             ? saleHidden

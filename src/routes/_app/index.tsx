@@ -267,7 +267,7 @@ function DashboardPage() {
 
       <section aria-labelledby="recent-activity-title" className="mt-6">
         <Card className="border border-[#644c2c]/35 bg-[#f9f0db]/45 py-0 shadow-[inset_0_0_24px_rgba(107,79,40,0.03)] ring-0">
-          <CardHeader className="border-b border-border/60">
+          <CardHeader className="border-b border-border/60 max-sm:has-data-[slot=card-action]:grid-cols-1">
             <CardTitle
               className="font-display text-xl font-[580] text-[#3b2f22]"
               id="recent-activity-title"
@@ -275,7 +275,7 @@ function DashboardPage() {
               Dernières transactions
             </CardTitle>
             <CardDescription>Les derniers flux financiers</CardDescription>
-            <CardAction>
+            <CardAction className="max-sm:col-start-1 max-sm:row-span-1 max-sm:row-start-auto max-sm:justify-self-start">
               <Button asChild size="sm" variant="ghost">
                 <Link to="/journal">
                   Voir le journal
@@ -285,8 +285,8 @@ function DashboardPage() {
             </CardAction>
           </CardHeader>
           <CardContent className="px-0">
-            <Table>
-              <TableHeader>
+            <Table className="max-sm:block">
+              <TableHeader className="max-sm:hidden">
                 <TableRow className="bg-[#684f2d]/8 hover:bg-[#684f2d]/8">
                   <TableHead>Transaction</TableHead>
                   <TableHead className="hidden sm:table-cell">
@@ -295,18 +295,21 @@ function DashboardPage() {
                   <TableHead className="text-right">Montant</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="max-sm:block">
                 {data.recentTransactions.map((transaction) => {
                   const positive = transaction.total >= 0
                   const DirectionIcon = positive ? ArrowUpRight : ArrowDownLeft
 
                   return (
-                    <TableRow key={transaction._id}>
-                      <TableCell>
+                    <TableRow
+                      className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center"
+                      key={transaction._id}
+                    >
+                      <TableCell className="max-sm:min-w-0 max-sm:whitespace-normal">
                         <div className="flex min-w-0 items-center gap-3">
                           <div
                             className={cn(
-                              "grid size-8 shrink-0 place-items-center rounded-full border border-current [&_svg]:size-3.5",
+                              "grid size-8 shrink-0 place-items-center rounded-full border border-current max-sm:hidden [&_svg]:size-3.5",
                               positive
                                 ? "bg-[#4d664b]/[0.07] text-[#4e684d]"
                                 : "bg-[#8c4936]/[0.07] text-[#8c4936]"
@@ -317,7 +320,7 @@ function DashboardPage() {
                           <div className="min-w-0">
                             <Link
                               aria-label={`Voir les mouvements liés à ${transaction.productName}`}
-                              className="block truncate font-semibold underline-offset-4 hover:underline"
+                              className="block truncate font-semibold underline-offset-4 hover:underline max-sm:break-words max-sm:whitespace-normal"
                               search={{ q: transaction.productName }}
                               to="/journal"
                             >

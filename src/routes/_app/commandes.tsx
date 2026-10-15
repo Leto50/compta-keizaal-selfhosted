@@ -298,8 +298,7 @@ function OrdersPage() {
       <PageHeader
         action={
           canWrite ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <ContactManagerDialog />
+            <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
               <OrderDialog
                 characters={characters}
                 contacts={contacts}
@@ -307,6 +306,7 @@ function OrdersPage() {
                 products={products}
                 recipes={recipes}
               />
+              <ContactManagerDialog />
             </div>
           ) : null
         }
@@ -318,13 +318,13 @@ function OrdersPage() {
 
       <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-y border-border/70 py-3">
         <Tabs
-          className="max-w-full min-w-0"
+          className="max-w-full min-w-0 max-sm:w-full"
           onValueChange={handleViewChange}
           value={view}
         >
           <TabsList
             aria-label="Vue des commandes"
-            className="max-w-full [scrollbar-width:none] justify-start overflow-x-auto overflow-y-hidden bg-[#6e5330]/8 max-sm:[&_svg]:hidden [&::-webkit-scrollbar]:hidden"
+            className="max-w-full [scrollbar-width:none] justify-start overflow-x-auto overflow-y-hidden bg-[#6e5330]/8 max-sm:grid max-sm:w-full max-sm:grid-cols-2 max-sm:overflow-visible max-sm:[&_svg]:hidden [&::-webkit-scrollbar]:hidden"
           >
             <TabsTrigger value="attention">
               <AlertTriangle aria-hidden="true" />À traiter
@@ -472,8 +472,8 @@ function OrderEntry({
         overdue && "border-t-[#9a3f31]"
       )}
     >
-      <CardHeader>
-        <CardTitle className="font-display text-xl">
+      <CardHeader className="max-md:has-data-[slot=card-action]:grid-cols-1">
+        <CardTitle className="min-w-0 font-display text-xl break-words">
           {order.contactName}
         </CardTitle>
         {order.dueAt || order.dueLabel ? (
@@ -498,11 +498,11 @@ function OrderEntry({
           </CardDescription>
         ) : null}
         {canWrite ? (
-          <CardAction className="flex items-center gap-1">
+          <CardAction className="flex items-center gap-1 max-md:col-start-1 max-md:row-span-1 max-md:row-start-auto max-md:mt-2 max-md:w-full max-md:justify-self-start">
             <Select onValueChange={onStatusChange} value={displayedStatus}>
               <SelectTrigger
                 aria-label={`État de la commande ${order.contactName}`}
-                className="w-36 bg-background/40"
+                className="w-36 bg-background/40 max-md:min-w-0 max-md:flex-1"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -535,23 +535,28 @@ function OrderEntry({
       </CardHeader>
 
       <CardContent className="grid gap-4">
-        <Table>
-          <TableBody>
+        <Table className="max-sm:block">
+          <TableBody className="max-sm:block">
             {order.lines.map((line) => (
-              <TableRow className="border-border/60" key={line._id}>
-                <TableCell className="max-w-48 pl-0">
-                  <p className="truncate font-semibold">{line.productName}</p>
+              <TableRow
+                className="border-border/60 max-sm:grid max-sm:grid-cols-2"
+                key={line._id}
+              >
+                <TableCell className="max-w-48 pl-0 max-sm:col-span-2 max-sm:max-w-none max-sm:whitespace-normal">
+                  <p className="truncate font-semibold max-sm:break-words max-sm:whitespace-normal">
+                    {line.productName}
+                  </p>
                   {showPrices && line.unitPrice !== undefined ? (
                     <p className="text-xs text-muted-foreground">
                       {formatUnitPrice(line.unitPrice)}
                     </p>
                   ) : null}
                 </TableCell>
-                <TableCell className="w-16 tabular-nums">
+                <TableCell className="w-16 tabular-nums max-sm:w-auto max-sm:pt-0 max-sm:pl-0">
                   × {formatNumber(line.quantity)}
                 </TableCell>
                 {showPrices ? (
-                  <TableCell className="w-28 pr-0 text-right font-semibold tabular-nums">
+                  <TableCell className="w-28 pr-0 text-right font-semibold tabular-nums max-sm:w-auto max-sm:pt-0">
                     {line.total === undefined ? "—" : formatSeptims(line.total)}
                   </TableCell>
                 ) : null}

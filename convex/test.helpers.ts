@@ -22,8 +22,11 @@ function documentId(value: unknown): string {
   return value._id
 }
 
-export function createTestBackend() {
-  const backend = convexTest(schema, modules)
+export function createTestBackend(
+  transactionLimits:
+    false | { bytesRead?: number; documentsRead?: number } = false
+) {
+  const backend = convexTest({ schema, modules, transactionLimits })
   backend.registerComponent("betterAuth", authSchema, authModules)
   return backend
 }

@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -132,7 +133,7 @@ export function RecipeCategoryManagerDialog({
           Catégories
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[94svh] overflow-y-auto rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[94svh] rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7] ring-0 sm:max-w-2xl">
         <DialogHeader className="pr-8">
           <p className="text-[0.66rem] font-bold tracking-[0.2em] text-primary uppercase">
             Registre de fabrication
@@ -145,201 +146,211 @@ export function RecipeCategoryManagerDialog({
             catégorie met à jour les recettes actives et archivées.
           </DialogDescription>
         </DialogHeader>
-
-        <form
-          className="flex items-end gap-2"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault()
-            void createForm.handleSubmit()
-          }}
-        >
-          <createForm.Field name="name">
-            {(field) => {
-              const invalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field className="min-w-0 flex-1" data-invalid={invalid}>
-                  <FieldLabel htmlFor="new-recipe-category">
-                    Nouvelle catégorie
-                  </FieldLabel>
-                  <Input
-                    id="new-recipe-category"
-                    aria-invalid={invalid}
-                    autoComplete="off"
-                    maxLength={MAX_RECIPE_FAMILY_LENGTH}
-                    name="category-name"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="Régénération, Force…"
-                    value={field.state.value}
-                  />
-                  {invalid ? (
-                    <FieldError errors={field.state.meta.errors} />
-                  ) : null}
-                </Field>
-              )
+        <DialogBody>
+          <form
+            className="flex items-end gap-2"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault()
+              void createForm.handleSubmit()
             }}
-          </createForm.Field>
-          <Button disabled={pending || categories === undefined} type="submit">
-            <Plus aria-hidden="true" />
-            Créer
-          </Button>
-        </form>
-
-        <div className="max-h-[55svh] overflow-y-auto">
-          {categories === undefined ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Chargement des catégories…
-            </p>
-          ) : categories.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Aucune catégorie. Créez-en une pour classer vos recettes.
-            </p>
-          ) : (
-            categories.map((category) => (
-              <div
-                className="flex min-w-0 items-center gap-2 border-b border-border/60 py-3 last:border-b-0"
-                key={category.name}
-              >
-                {editingName === category.name ? (
-                  <form
-                    className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-2"
-                    noValidate
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      void renameForm.handleSubmit()
-                    }}
-                  >
-                    <renameForm.Field name="name">
-                      {(field) => {
-                        const invalid =
-                          field.state.meta.isTouched &&
-                          !field.state.meta.isValid
-                        return (
-                          <Field data-invalid={invalid}>
-                            <Input
-                              aria-label={`Nouveau nom de ${category.name}`}
-                              aria-invalid={invalid}
-                              autoComplete="off"
-                              autoFocus
-                              maxLength={MAX_RECIPE_FAMILY_LENGTH}
-                              name="category-rename"
-                              onBlur={field.handleBlur}
-                              onChange={(event) =>
-                                field.handleChange(event.target.value)
-                              }
-                              value={field.state.value}
-                            />
-                            {invalid ? (
-                              <FieldError errors={field.state.meta.errors} />
-                            ) : null}
-                          </Field>
-                        )
-                      }}
-                    </renameForm.Field>
-                    <Button
-                      aria-label="Enregistrer le nom"
-                      disabled={pending}
-                      size="icon"
-                      type="submit"
-                    >
-                      <Check aria-hidden="true" />
-                    </Button>
-                    <Button
-                      aria-label="Annuler le renommage"
-                      disabled={pending}
-                      onClick={() => setEditingName(undefined)}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <X aria-hidden="true" />
-                    </Button>
-                  </form>
-                ) : (
-                  <>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium" title={category.name}>
-                        {category.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {category.recipeCount === 0
-                          ? "Aucune recette"
-                          : `${category.recipeCount} ${category.recipeCount === 1 ? "recette" : "recettes"}`}
-                        {category.archivedRecipeCount > 0
-                          ? ` · ${category.archivedRecipeCount} ${category.archivedRecipeCount === 1 ? "archivée" : "archivées"}`
-                          : ""}
-                      </p>
-                    </div>
-                    <Button
-                      aria-label={`Renommer ${category.name}`}
-                      disabled={pending}
-                      onClick={() => {
-                        setEditingName(category.name)
-                        renameForm.reset({ name: category.name })
-                      }}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Pencil aria-hidden="true" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          aria-label={`Supprimer ${category.name}`}
-                          disabled={pending || category.recipeCount > 0}
-                          size="icon"
-                          type="button"
-                          variant="ghost"
-                          title={
-                            category.recipeCount > 0
-                              ? "Réaffectez les recettes, y compris archivées, avant de supprimer cette catégorie."
-                              : undefined
-                          }
-                        >
-                          <Trash2 aria-hidden="true" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Supprimer « {category.name} » ?
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Cette catégorie sans recette ne sera plus proposée.
-                            Vous pourrez en créer une nouvelle si nécessaire.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Conserver</AlertDialogCancel>
-                          <AlertDialogAction
-                            disabled={pending}
-                            onClick={() => {
-                              void remove(category.name)
-                            }}
-                          >
-                            Supprimer la catégorie
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-        {pending ? (
-          <p
-            className="flex items-center gap-2 text-sm text-muted-foreground"
-            role="status"
           >
-            <Spinner aria-hidden="true" />
-            Enregistrement…
-          </p>
-        ) : null}
+            <createForm.Field name="name">
+              {(field) => {
+                const invalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field className="min-w-0 flex-1" data-invalid={invalid}>
+                    <FieldLabel htmlFor="new-recipe-category">
+                      Nouvelle catégorie
+                    </FieldLabel>
+                    <Input
+                      id="new-recipe-category"
+                      aria-invalid={invalid}
+                      autoComplete="off"
+                      maxLength={MAX_RECIPE_FAMILY_LENGTH}
+                      name="category-name"
+                      onBlur={field.handleBlur}
+                      onChange={(event) =>
+                        field.handleChange(event.target.value)
+                      }
+                      placeholder="Régénération, Force…"
+                      value={field.state.value}
+                    />
+                    {invalid ? (
+                      <FieldError errors={field.state.meta.errors} />
+                    ) : null}
+                  </Field>
+                )
+              }}
+            </createForm.Field>
+            <Button
+              disabled={pending || categories === undefined}
+              type="submit"
+            >
+              <Plus aria-hidden="true" />
+              Créer
+            </Button>
+          </form>
+
+          <div className="max-h-[55svh] overflow-y-auto">
+            {categories === undefined ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Chargement des catégories…
+              </p>
+            ) : categories.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Aucune catégorie. Créez-en une pour classer vos recettes.
+              </p>
+            ) : (
+              categories.map((category) => (
+                <div
+                  className="flex min-w-0 items-center gap-2 border-b border-border/60 py-3 last:border-b-0"
+                  key={category.name}
+                >
+                  {editingName === category.name ? (
+                    <form
+                      className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-2"
+                      noValidate
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        void renameForm.handleSubmit()
+                      }}
+                    >
+                      <renameForm.Field name="name">
+                        {(field) => {
+                          const invalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={invalid}>
+                              <Input
+                                aria-label={`Nouveau nom de ${category.name}`}
+                                aria-invalid={invalid}
+                                autoComplete="off"
+                                autoFocus
+                                maxLength={MAX_RECIPE_FAMILY_LENGTH}
+                                name="category-rename"
+                                onBlur={field.handleBlur}
+                                onChange={(event) =>
+                                  field.handleChange(event.target.value)
+                                }
+                                value={field.state.value}
+                              />
+                              {invalid ? (
+                                <FieldError errors={field.state.meta.errors} />
+                              ) : null}
+                            </Field>
+                          )
+                        }}
+                      </renameForm.Field>
+                      <Button
+                        aria-label="Enregistrer le nom"
+                        disabled={pending}
+                        size="icon"
+                        type="submit"
+                      >
+                        <Check aria-hidden="true" />
+                      </Button>
+                      <Button
+                        aria-label="Annuler le renommage"
+                        disabled={pending}
+                        onClick={() => setEditingName(undefined)}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <X aria-hidden="true" />
+                      </Button>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate font-medium"
+                          title={category.name}
+                        >
+                          {category.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {category.recipeCount === 0
+                            ? "Aucune recette"
+                            : `${category.recipeCount} ${category.recipeCount === 1 ? "recette" : "recettes"}`}
+                          {category.archivedRecipeCount > 0
+                            ? ` · ${category.archivedRecipeCount} ${category.archivedRecipeCount === 1 ? "archivée" : "archivées"}`
+                            : ""}
+                        </p>
+                      </div>
+                      <Button
+                        aria-label={`Renommer ${category.name}`}
+                        disabled={pending}
+                        onClick={() => {
+                          setEditingName(category.name)
+                          renameForm.reset({ name: category.name })
+                        }}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Pencil aria-hidden="true" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            aria-label={`Supprimer ${category.name}`}
+                            disabled={pending || category.recipeCount > 0}
+                            size="icon"
+                            type="button"
+                            variant="ghost"
+                            title={
+                              category.recipeCount > 0
+                                ? "Réaffectez les recettes, y compris archivées, avant de supprimer cette catégorie."
+                                : undefined
+                            }
+                          >
+                            <Trash2 aria-hidden="true" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-[0.2rem] border-[#6a5436] bg-[#eee1c7]">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Supprimer « {category.name} » ?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Cette catégorie sans recette ne sera plus
+                              proposée. Vous pourrez en créer une nouvelle si
+                              nécessaire.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Conserver</AlertDialogCancel>
+                            <AlertDialogAction
+                              disabled={pending}
+                              onClick={() => {
+                                void remove(category.name)
+                              }}
+                            >
+                              Supprimer la catégorie
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          {pending ? (
+            <p
+              className="flex items-center gap-2 text-sm text-muted-foreground"
+              role="status"
+            >
+              <Spinner aria-hidden="true" />
+              Enregistrement…
+            </p>
+          ) : null}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   )

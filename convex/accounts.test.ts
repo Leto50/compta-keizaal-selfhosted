@@ -294,6 +294,7 @@ describe("accounts", () => {
     await backend.run((ctx) =>
       ctx.db.insert("transactions", {
         actorName: "Alixard Veliane",
+        exchangeSalaryIncluded: true,
         incomingTotal: 80,
         kind: "exchange",
         occurredAt: now,
@@ -322,16 +323,16 @@ describe("accounts", () => {
           incoming: 100,
           net: 20,
           outgoing: 80,
-          salary: 0,
-          salaryRevenue: 0,
+          salary: 25,
+          salaryRevenue: 100,
           transactionCount: 1,
         },
       ],
       incoming: 100,
       net: 20,
       outgoing: 80,
-      salary: 0,
-      salaryRevenue: 0,
+      salary: 25,
+      salaryRevenue: 100,
       transactionCount: 1,
     })
     expect(account.charges.tax).toBe(0)
@@ -385,12 +386,22 @@ describe("accounts", () => {
         { actorName: "Gand", kind: "bundle" as const, total: 40 },
         {
           actorName: "Alix",
+          exchangeSalaryIncluded: true,
           incomingTotal: 10,
           kind: "exchange" as const,
           outgoingTotal: 60,
           total: 50,
         },
         { actorName: "Alix", kind: "order" as const, total: 500 },
+        {
+          actorName: "Alix",
+          exchangeSalaryIncluded: true,
+          incomingTotal: 50,
+          kind: "exchange" as const,
+          orderId,
+          outgoingTotal: 500,
+          total: 450,
+        },
         {
           actorName: "Alix",
           kind: "sale" as const,
@@ -425,8 +436,8 @@ describe("accounts", () => {
       actors: [
         {
           actorName: "Alix",
-          salary: 30,
-          salaryRevenue: 120,
+          salary: 45,
+          salaryRevenue: 180,
         },
         {
           actorName: "Gand",
@@ -434,10 +445,10 @@ describe("accounts", () => {
           salaryRevenue: 40,
         },
       ],
-      salary: 40,
-      salaryRevenue: 160,
+      salary: 55,
+      salaryRevenue: 220,
     })
-    expect(account.charges.salary).toBe(40)
+    expect(account.charges.salary).toBe(55)
   })
 
   it("applique le taux par défaut aux anciens paramètres comptables", async () => {
