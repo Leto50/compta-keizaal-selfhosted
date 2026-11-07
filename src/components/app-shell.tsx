@@ -2,6 +2,7 @@ import { authClient } from "@/lib/auth-client"
 import { Link, useRouterState } from "@tanstack/react-router"
 import {
   BookOpenText,
+  ChartNoAxesCombined,
   Boxes,
   ClipboardList,
   Landmark,
@@ -54,6 +55,7 @@ interface NavigationItem {
     | "/personnages"
     | "/recoltes"
     | "/recettes"
+    | "/statistiques"
 }
 
 const navigation: readonly NavigationItem[] = [
@@ -72,6 +74,12 @@ const navigation: readonly NavigationItem[] = [
   },
   { icon: Leaf, label: "Récoltes", to: "/recoltes", sections: ["harvests"] },
   { icon: Landmark, label: "Compte", to: "/compte", sections: ["account"] },
+  {
+    icon: ChartNoAxesCombined,
+    label: "Statistiques",
+    to: "/statistiques",
+    sections: ["statistics"],
+  },
   {
     icon: ClipboardList,
     label: "Commandes",

@@ -83,6 +83,35 @@ pnpm build
 
 ## Règles métier
 
+La rubrique « Statistiques » est organisée en quatre onglets : activité,
+produits et lots, récoltes, et situation actuelle des commandes. Chaque onglet
+exporte ses propres données en CSV. L’accès lecteur doit être accordé
+explicitement ; les restrictions sur les rubriques, références, opérations et
+montants restent appliquées côté serveur.
+
+L’activité suit les dates UTC du journal et les mêmes flux que le Compte, avant
+charges. Le solde ne constitue ni un bénéfice ni une reconstitution de la caisse.
+Une période bornée est comparée à la fenêtre précédente de même durée, sans
+pourcentage sur une base nulle ou négative. Les anciens échanges incomplets sont
+signalés. Les périodes personnalisées incluent le jour de fin ; « Tout
+l’historique » parcourt toutes les pages. Les résultats partiels sont signalés et
+ne peuvent pas être exportés.
+
+Les classements utilisent les quantités et les prix historiques. Les montants
+par référence sont indicatifs, après remise au prorata des lignes. Une recherche
+ne change pas les parts dans le total de la période. Les lots restent distincts
+et les montants non ventilés restent inclus dans les flux du journal. Les
+récoltes sans tarif historique sont signalées ; les prix actuels ne comblent pas
+les valeurs manquantes.
+
+Les commandes décrivent uniquement leur situation actuelle, sans filtre de
+période ni historique de statuts inventé. Une commande terminée exige sa
+livraison ou réception et son opération financière. Les montants prévus restant
+à encaisser ou décaisser excluent les annulations et paiements déjà enregistrés.
+
+Les parcours et la validation visuelle sont décrits dans
+[docs/statistiques.md](docs/statistiques.md).
+
 Les totaux des récoltes et des comptes lecteurs sont enregistrés à chaque
 création, correction ou suppression, sans supprimer les opérations anciennes.
 Les historiques restent paginés et le compte affiche les huit dernières semaines.

@@ -68,6 +68,10 @@ export function ReaderAccessFields({
         L’accès aux récoltes doit être accordé explicitement. Il permet
         uniquement leur consultation.
       </p>
+      <p className="text-xs text-muted-foreground">
+        Les statistiques nécessitent un accès explicite et portent uniquement
+        sur les rubriques et produits autorisés.
+      </p>
       <div className="grid gap-2 border-t border-border/60 pt-3">
         <Check
           checked={value.showPrices}

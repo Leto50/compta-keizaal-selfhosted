@@ -22,6 +22,9 @@ import type * as lib_accountSummary from "../lib/accountSummary.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_contacts from "../lib/contacts.js";
 import type * as lib_exchange from "../lib/exchange.js";
+import type * as lib_harvestReaderSummary from "../lib/harvestReaderSummary.js";
+import type * as lib_harvestSummary from "../lib/harvestSummary.js";
+import type * as lib_historySummaries from "../lib/historySummaries.js";
 import type * as lib_inventorySummary from "../lib/inventorySummary.js";
 import type * as lib_journalSummary from "../lib/journalSummary.js";
 import type * as lib_numbers from "../lib/numbers.js";
@@ -34,6 +37,7 @@ import type * as lib_recipeCost from "../lib/recipeCost.js";
 import type * as lib_recipeFamilies from "../lib/recipeFamilies.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_time from "../lib/time.js";
+import type * as lib_transactionScopes from "../lib/transactionScopes.js";
 import type * as lib_transactionSearch from "../lib/transactionSearch.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as migrations from "../migrations.js";
@@ -41,6 +45,7 @@ import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as recipes from "../recipes.js";
 import type * as seed from "../seed.js";
+import type * as statistics from "../statistics.js";
 import type * as transactions from "../transactions.js";
 
 import type {
@@ -64,6 +69,9 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   "lib/contacts": typeof lib_contacts;
   "lib/exchange": typeof lib_exchange;
+  "lib/harvestReaderSummary": typeof lib_harvestReaderSummary;
+  "lib/harvestSummary": typeof lib_harvestSummary;
+  "lib/historySummaries": typeof lib_historySummaries;
   "lib/inventorySummary": typeof lib_inventorySummary;
   "lib/journalSummary": typeof lib_journalSummary;
   "lib/numbers": typeof lib_numbers;
@@ -76,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "lib/recipeFamilies": typeof lib_recipeFamilies;
   "lib/text": typeof lib_text;
   "lib/time": typeof lib_time;
+  "lib/transactionScopes": typeof lib_transactionScopes;
   "lib/transactionSearch": typeof lib_transactionSearch;
   "lib/validators": typeof lib_validators;
   migrations: typeof migrations;
@@ -83,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   products: typeof products;
   recipes: typeof recipes;
   seed: typeof seed;
+  statistics: typeof statistics;
   transactions: typeof transactions;
 }>;
 

@@ -20,6 +20,7 @@ import { Route as AppJournalRouteImport } from './routes/_app/journal'
 import { Route as AppPersonnagesRouteImport } from './routes/_app/personnages'
 import { Route as AppRecettesRouteImport } from './routes/_app/recettes'
 import { Route as AppRecoltesRouteImport } from './routes/_app/recoltes'
+import { Route as AppStatistiquesRouteImport } from './routes/_app/statistiques'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AppRoute = AppRouteImport.update({
@@ -76,6 +77,11 @@ const AppRecoltesRoute = AppRecoltesRouteImport.update({
   path: '/recoltes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStatistiquesRoute = AppStatistiquesRouteImport.update({
+  id: '/statistiques',
+  path: '/statistiques',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/personnages': typeof AppPersonnagesRoute
   '/recettes': typeof AppRecettesRoute
   '/recoltes': typeof AppRecoltesRoute
+  '/statistiques': typeof AppStatistiquesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/personnages': typeof AppPersonnagesRoute
   '/recettes': typeof AppRecettesRoute
   '/recoltes': typeof AppRecoltesRoute
+  '/statistiques': typeof AppStatistiquesRoute
   '/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_app/personnages': typeof AppPersonnagesRoute
   '/_app/recettes': typeof AppRecettesRoute
   '/_app/recoltes': typeof AppRecoltesRoute
+  '/_app/statistiques': typeof AppStatistiquesRoute
   '/_app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/personnages'
     | '/recettes'
     | '/recoltes'
+    | '/statistiques'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/personnages'
     | '/recettes'
     | '/recoltes'
+    | '/statistiques'
     | '/'
     | '/api/auth/$'
   id:
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_app/personnages'
     | '/_app/recettes'
     | '/_app/recoltes'
+    | '/_app/statistiques'
     | '/_app/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecoltesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/statistiques': {
+      id: '/_app/statistiques'
+      path: '/statistiques'
+      fullPath: '/statistiques'
+      preLoaderRoute: typeof AppStatistiquesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -270,6 +289,7 @@ interface AppRouteChildren {
   AppPersonnagesRoute: typeof AppPersonnagesRoute
   AppRecettesRoute: typeof AppRecettesRoute
   AppRecoltesRoute: typeof AppRecoltesRoute
+  AppStatistiquesRoute: typeof AppStatistiquesRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -282,6 +302,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPersonnagesRoute: AppPersonnagesRoute,
   AppRecettesRoute: AppRecettesRoute,
   AppRecoltesRoute: AppRecoltesRoute,
+  AppStatistiquesRoute: AppStatistiquesRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
